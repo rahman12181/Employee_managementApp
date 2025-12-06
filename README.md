@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # management_app
 
 A new Flutter project.
@@ -14,3 +15,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# Employee_managementApp
+This app is for pioneer.Tech group
+>>>>>>> 6ec21533a93b5c8f5fec1217d786505423ca469c
