@@ -30,7 +30,7 @@ class SplashScreen extends StatefulWidget {
 
       controller = AnimationController(
         vsync: this,
-        duration: Duration(seconds: 2),
+        duration: Duration(seconds: 3),
         );
 
         positionAnimation = Tween<double>(
@@ -54,8 +54,8 @@ class SplashScreen extends StatefulWidget {
            WidgetsBinding.instance.addPostFrameCallback((_){
             if(!mounted) return;
            // Navigator.pushReplacementNamed(context, '/loginScreen');
-           // CheckuserUtils.checkUser(context);
-           });    // typing animation starts after logo stops
+            CheckuserUtils.checkUser(context);
+           });    
          }
        });
 
@@ -70,7 +70,6 @@ class SplashScreen extends StatefulWidget {
              displayedText = fullText.substring(0, i + 1);
             });
        }
-       Navigator.pushReplacementNamed(context, '/loginScreen');
      }
 
 

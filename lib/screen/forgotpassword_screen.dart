@@ -4,15 +4,16 @@ class ForgotpasswordScreen extends StatefulWidget {
   const ForgotpasswordScreen({super.key});
 
   @override
-  State<ForgotpasswordScreen> createState() => _ForgotpasswordScreenState();
+  State<ForgotpasswordScreen> createState()=>_ForgotPasswordScreenState();
 }
 
-class _ForgotpasswordScreenState extends State<ForgotpasswordScreen>{
+class _ForgotPasswordScreenState extends State<ForgotpasswordScreen>{
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(child: Text("its you forgot password screen")),
-    );
+   return Scaffold(
+    body: Center(
+      child: Text("THis is your forgotpassword screen"),
+    ),
+   );
   }
 }

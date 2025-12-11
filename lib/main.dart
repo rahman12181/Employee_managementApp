@@ -1,16 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:management_app/card_screen/attendance_regularization.dart';
+import 'package:management_app/card_screen/check_more.dart';
+import 'package:management_app/card_screen/leave_approval.dart';
+import 'package:management_app/card_screen/leaverequest.dart';
+import 'package:management_app/card_screen/leaverequestdetail.dart';
+import 'package:management_app/card_screen/regularization_approval.dart';
+import 'package:management_app/card_screen/regularization_lsiting.dart';
+import 'package:management_app/screen/HomeMain_Screen.dart';
+import 'package:management_app/screen/attendence_screen.dart';
 import 'package:management_app/screen/forgotpassword_screen.dart';
 import 'package:management_app/screen/home_screen.dart';
 import 'package:management_app/screen/login_screen.dart';
+import 'package:management_app/screen/notification_screen.dart';
+import 'package:management_app/screen/setting_screen.dart';
 import 'package:management_app/screen/splash_screen.dart';
+import 'package:management_app/services/auth_service.dart';
+import 'package:management_app/services/profile_provider.dart';
+import 'package:provider/provider.dart';
 
-void main() {
+void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  runApp(const MyApp());
+  
+  await AuthService.loadCookies();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
@@ -21,14 +43,16 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       theme: ThemeData(
         brightness: Brightness.light,
+        scaffoldBackgroundColor: Colors.white,
         appBarTheme: AppBarTheme(
+          backgroundColor: Colors.white,
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
             systemNavigationBarColor: Colors.transparent,
             statusBarIconBrightness: Brightness.dark,
             systemNavigationBarIconBrightness: Brightness.dark,
           ),
-        )
+        ),
       ),
 
       darkTheme: ThemeData(
@@ -40,18 +64,31 @@ class MyApp extends StatelessWidget {
             statusBarIconBrightness: Brightness.light,
             systemNavigationBarIconBrightness: Brightness.light,
           ),
-        )
+        ),
       ),
       home: SplashScreen(),
 
       initialRoute: '/splashScreen',
       routes: {
-        '/splashScreen': (context) => SplashScreen(),
-        '/homeScreen': (context) => HomeScreen(),
-        '/loginScreen': (context) => LoginScreen(),
-        '/forgotpasswordScreen': (context) =>ForgotpasswordScreen(),
-      },
-    );
+  '/splashScreen': (context) => SplashScreen(),
+  '/loginScreen': (context) => LoginScreen(),
+  '/forgotpasswordScreen': (context) => ForgotpasswordScreen(),
+  '/homeMainScreen': (context) => HomemainScreen(),
+  '/homeScreen': (context) => HomeScreen(),
+  '/settingScreen': (context) => SettingsScreen(),
+  '/attendanceScreen': (context) => AttendenceScreen(),
+  '/notificationScreen': (context) => NotificationScreen(),
+   //card screen here
+   '/leaveRequest':(context) =>Leaverequest(),
+   '/leaveRequestDetail':(context)=> LeaveRequestdetail(),
+   '/leaveApproval':(context)=> LeaveApproval(),
+   '/attendanceRegularization':(context) =>AttendanceRegularization(),
+   '/regularizationApproval':(context)=>RegularizationApproval(),
+   '/regularizationListing':(context) =>RegularizationLsiting(),
+   '/checkMore':(context)=>CheckMore()
+}
+ );
   }
 }
+
 

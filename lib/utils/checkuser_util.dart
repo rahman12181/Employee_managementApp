@@ -1,39 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:management_app/screen/home_screen.dart';
-import 'package:management_app/screen/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CheckuserUtils {
-  
-  static Future<void> checkUser(BuildContext context) async{
-    SharedPreferences preference=await SharedPreferences.getInstance();
-    await Future.delayed(const Duration(seconds: 3));
+  static Future<void> checkUser(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await Future.delayed(const Duration(seconds: 2));
+
     if (!context.mounted) return;
 
-    bool isFirstTime=preference.getBool("isFirstTime") ?? true;
-    bool isLoggedIn=preference.getBool("isLoggedIn") ?? false;
+    bool isFirstTime = prefs.getBool("isFirstTime") ?? true;
+    bool isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
+    String? savedRoute = prefs.getString("home_page");
 
-     
     if (isFirstTime) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()) 
-      );
-      preference.setBool("isFirstTime", false);
-    }else{
-
-       if (isLoggedIn) {
-         Navigator.pushReplacement(
-         context,
-         MaterialPageRoute(builder: (context) => const HomeScreen())
-       );
-     }else{
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen())
-      );
-     }
+      await prefs.setBool("isFirstTime", false);
+      Navigator.pushReplacementNamed(context, "/loginScreen");
+      return;
     }
-   
+
+    if (isLoggedIn && savedRoute != null) {
+      Navigator.pushReplacementNamed(context, savedRoute);
+      return;
+    }
+
+    Navigator.pushReplacementNamed(context, "/loginScreen");
+  }
+
+  static Future<void> saveloginStatus(String route) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("isLoggedIn", true);
+    await prefs.setString("home_page", route);
   }
 }

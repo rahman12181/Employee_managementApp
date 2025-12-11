@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:management_app/animations/slide_animation.dart';
-import 'package:management_app/screen/home_screen.dart';
+import 'package:management_app/screen/setting_screen.dart';
 import 'package:management_app/services/auth_service.dart';
+import 'package:management_app/utils/checkuser_util.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,14 +21,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.width;
-    double screenWidth = MediaQuery.of(context).size.height;
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(20, 30, 20, 20),
+          padding: EdgeInsets.fromLTRB(20, 35, 20, 20),
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
@@ -39,11 +40,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Align(
                           alignment: Alignment.topLeft,
-                          child: Image.asset(
-                            "assets/images/app_icon.png",
-                            width: 100,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SettingsScreen(),
+                                ),
+                              );
+                            },
+                            child: Image.asset(
+                              "assets/images/app_icon.png",
+                              width: 100,
+                            ),
                           ),
                         ),
+
+                        SizedBox(height: screenHeight * 0.07),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -62,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontFamily: "poppins",
-                              color: const Color.fromARGB(255, 134, 133, 133),
+                              color: const Color.fromARGB(255, 96, 93, 93),
                             ),
                           ),
                         ),
@@ -95,7 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (value) => (value == null || value.isEmpty)
                               ? "email required"
-                              :  (!RegExp(r'^[a-zA-Z0-9._%+-]+@extensioncrm\.com$').hasMatch(value))
+                              : (!RegExp(
+                                  r'^[a-zA-Z0-9._%+-]+@ppecon\.com$',
+                                ).hasMatch(value))
                               ? "invalid email address"
                               : null,
                         ),
@@ -140,14 +155,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (value) => (value == null || value.isEmpty)
                               ? "password required"
-                              : value.length <= 6
-                              ? "invalid password,length should be greater then 6 charecter."
-                              : !RegExp(r'[A-Z]').hasMatch(value)
-                              ? "At least one uppercase letter required"
-                              : !RegExp(
-                                  r'[!@#\$&*~%^()_+\-=\[\]{};:"\\|,.<>\/?]',
-                                ).hasMatch(value)
-                              ? "At least one special character required"
                               : null,
                         ),
                         SizedBox(height: 17),
@@ -185,130 +192,172 @@ class _LoginScreenState extends State<LoginScreen> {
                                   if (!_formKey.currentState!.validate()) {
                                     return;
                                   }
-
-                                  setState(() {
-                                    _isloading = true;
-                                  });
+                                  setState(() => _isloading = true);
 
                                   try {
                                     final auth = AuthService();
-
                                     final response = await auth.loginUser(
                                       email: _emailController.text.trim(),
                                       password: _passwordController.text.trim(),
                                     );
-                                    if (!mounted) return;
-                                    if (response["status"] == true) {
-                                      setState(() {
-                                        _isloading = false;
+
+                                    String title = "";
+                                    String content = "";
+                                    bool loginSuccess = false;
+
+                                    if (response["success"] == true) {
+                                      title = "Success";
+                                      content =
+                                          "Welcome, ${response["full_name"]}!";
+                                      loginSuccess = true;
+
+                                      String route = response["home_page"];
+                                      if (route == "/app/home") {
+                                        route = "/homeScreen";
+                                      }
+                                      await CheckuserUtils.saveloginStatus(route);
+                                     /* SharedPreferences prefs =
+                                         await SharedPreferences.getInstance();
+                                      await prefs.setString("home_page", route);*/
+
+                                      setState(() => _isloading = false);
+
+                                      WidgetsBinding.instance.addPostFrameCallback((
+                                        _,
+                                      ) async {
+                                        showDialog(
+                                          context: context,
+                                          barrierDismissible: false,
+                                          builder: (dialogContext) {
+                                            // Auto-dismiss success dialog after 1 second
+                                            if (loginSuccess) {
+                                              Future.delayed(
+                                                Duration(seconds: 1),
+                                                () {
+                                                  Navigator.pop(dialogContext);
+                                                  if (mounted) {
+                                                    Navigator.pushReplacementNamed(
+                                                      context,
+                                                      route,
+                                                    );
+                                                  }
+                                                },
+                                              );
+                                            }
+
+                                            return AlertDialog(
+                                              title: Text(title),
+                                              content: Text(content),
+                                              actions: loginSuccess
+                                                  ? null
+                                                  : [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                              dialogContext,
+                                                            ),
+                                                        child: Text("OK"),
+                                                      ),
+                                                    ],
+                                            );
+                                          },
+                                        );
                                       });
-                                      if (!mounted) return;
-                                      Navigator.pushAndRemoveUntil(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => HomeScreen(),
-                                        ),
-                                        (route) => false,
-                                      );
+                                    } else if (response["exc_type"] ==
+                                        "DoesNotExistError") {
+                                      title = "Login Failed";
+                                      content = "User not found!";
+                                      setState(() => _isloading = false);
+                                    } else if (response["exc_type"] ==
+                                        "AuthenticationError") {
+                                      title = "Invalid Credentials";
+                                      content = "Incorrect password.";
+                                      setState(() => _isloading = false);
                                     } else {
-                                      if (!mounted) return;
-                                      setState(() {
-                                        _isloading = false;
-                                      });
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            response["message"] ??
-                                                "Login failed",
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontFamily: "poppins",
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          behavior: SnackBarBehavior.floating,
-                                          margin: EdgeInsets.all(17),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadiusGeometry.circular(
-                                                  15,
-                                                ),
-                                          ),
-                                          duration: Duration(seconds: 2),
-                                          backgroundColor: const Color.fromARGB(
-                                            255,
-                                            52,
-                                            169,
-                                            232,
-                                          ),
-                                        ),
-                                      );
+                                      title = "Error";
+                                      content =
+                                          response["message"] ??
+                                          "Something went wrong";
+                                      setState(() => _isloading = false);
+                                    }
+
+                                    // Show error dialog if login failed
+                                    if (!loginSuccess) {
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => AlertDialog(
+                                                title: Text(title),
+                                                content: Text(content),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(context),
+                                                    child: Text("OK"),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          });
                                     }
                                   } catch (e) {
-                                    setState(() {
-                                      _isloading = false;
-                                    });
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          "Error: $e",
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontFamily: "poppins",
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        behavior: SnackBarBehavior.floating,
-                                        margin: EdgeInsets.all(17),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadiusGeometry.circular(15),
-                                        ),
-                                        backgroundColor: const Color.fromARGB(
-                                          255,
-                                          52,
-                                          169,
-                                          232,
-                                        ),
-                                      ),
-                                    );
+                                    setState(() => _isloading = false);
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                          showDialog(
+                                            context: context,
+                                            builder: (_) => AlertDialog(
+                                              title: Text("Network Error"),
+                                              content: Text("$e"),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: Text("OK"),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        });
                                   }
                                 },
-
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color.fromARGB(255, 52, 169, 232),
+                            backgroundColor: Color.fromARGB(255, 38, 161, 227),
                             minimumSize: Size(
                               screenWidth * 0.9,
-                              screenHeight * 0.10,
+                              screenHeight * 0.05,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
                           ),
-
                           child: _isloading
-                              ? CircularProgressIndicator(color: Colors.white)
-                              : Text(
-                                  "Continue",
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  "Login",
                                   style: TextStyle(
-                                    fontSize: 13,
-                                    fontFamily: "poppins",
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                     color: Colors.black,
                                   ),
                                 ),
                         ),
-                        SizedBox(height: screenHeight * 0.07),
+
+                        SizedBox(height: screenHeight * 0.08),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Flexible(
                               child: Container(
                                 height: 1,
-                                width: 50, 
+                                width: 50,
                                 color: Colors.grey.shade400,
                               ),
                             ),

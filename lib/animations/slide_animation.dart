@@ -12,7 +12,6 @@ class SlideAnimation extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() => _SlideAnimationState();
-  
 }
 
 class _SlideAnimationState extends State<SlideAnimation> with
@@ -34,7 +33,6 @@ SingleTickerProviderStateMixin{
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller.forward();
   }
-
   @override
   Widget build(BuildContext context) {
     return SlideTransition(
