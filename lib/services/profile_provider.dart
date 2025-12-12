@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:management_app/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileProvider extends ChangeNotifier {
   Map<String, dynamic>? profileData;
@@ -8,6 +9,12 @@ class ProfileProvider extends ChangeNotifier {
   final String baseUrl = "https://ppecon.erpnext.com";
 
   Future<void> loadProfile() async {
+    final prefs=await SharedPreferences.getInstance();
+     String? cachedProfile = prefs.getString('profileData');
+    if (cachedProfile != null) {
+      profileData = jsonDecode(cachedProfile);
+      notifyListeners(); // UI turant update
+    }
     try {
       final loggedUserResponse = await AuthService.client.get(
         Uri.parse("$baseUrl/api/method/frappe.auth.get_logged_user"),

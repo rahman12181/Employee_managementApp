@@ -13,7 +13,6 @@ class AuthService {
     await prefs.setStringList('cookies', cookies);
   }
 
-  // 🔹 Load cookies from SharedPreferences
   static Future<void> loadCookies() async {
     final prefs = await SharedPreferences.getInstance();
     cookies = prefs.getStringList('cookies') ?? [];
@@ -23,14 +22,14 @@ class AuthService {
     String? rawCookie = response.headers['set-cookie'];
     if (rawCookie != null) {
       cookies = rawCookie.split(',');
-      saveCookies(); // save cookies after login
+      saveCookies();
     }
   }
 
   Map<String, String> _buildHeaders() {
     return {
       "Content-Type": "application/x-www-form-urlencoded",
-      if (cookies.isNotEmpty) "Cookie": cookies.join(';')
+      if (cookies.isNotEmpty) "Cookie": cookies.join(';'),
     };
   }
 
@@ -44,13 +43,10 @@ class AuthService {
       final response = await client.post(
         url,
         headers: _buildHeaders(),
-        body: {
-          "usr": email,
-          "pwd": password,
-        },
+        body: {"usr": email, "pwd": password},
       );
 
-      _updateCookies(response); 
+      _updateCookies(response);
 
       final data = jsonDecode(response.body);
 
@@ -80,11 +76,7 @@ class AuthService {
         };
       }
 
-      return {
-        "success": false,
-        "message": data["message"] ?? "Login failed",
-      };
-
+      return {"success": false, "message": data["message"] ?? "Login failed"};
     } catch (e) {
       return {
         "success": false,
@@ -94,17 +86,13 @@ class AuthService {
     }
   }
 
-  
   Future<Map<String, dynamic>> logoutUser() async {
     final url = Uri.parse("$baseUrl/api/method/logout");
 
     try {
-      final response = await client.get(
-        url,
-        headers: _buildHeaders(), 
-      );
+      final response = await client.get(url, headers: _buildHeaders());
 
-      cookies.clear(); 
+      cookies.clear();
 
       if (response.statusCode == 200) {
         return {
@@ -120,8 +108,37 @@ class AuthService {
     } catch (e) {
       return {
         "success": false,
-       "message": "Something went wrong"
-       };
+         "message": "Something went wrong"
+         };
+    }
+  }
+
+  Future<String> forgotPassword(String email) async {
+    final url =
+        "$baseUrl/api/method/frappe.core.doctype.user.user.reset_password";
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/x-www-form-urlencoded"},
+      body: {"user": email},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      final serverMessages = data["_server_messages"];
+
+      if (serverMessages != null) {
+        return "A password reset link has been sent to your registered email address.";
+      } else {
+        return "Request processed, but no confirmation message was received from the server.";
+      }
+    } else if (response.statusCode == 404) {
+      throw "User not found. Please check the email you entered.";
+    } else if (response.statusCode == 500) {
+      throw "Server error. Please try again later.";
+    } else {
+      throw "Request failed with status: ${response.statusCode}. Please try again.";
     }
   }
 }

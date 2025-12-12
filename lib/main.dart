@@ -9,7 +9,7 @@ import 'package:management_app/card_screen/regularization_approval.dart';
 import 'package:management_app/card_screen/regularization_lsiting.dart';
 import 'package:management_app/screen/HomeMain_Screen.dart';
 import 'package:management_app/screen/attendence_screen.dart';
-import 'package:management_app/screen/forgotpassword_screen.dart';
+import 'package:management_app/screen/forgotPassword_screen.dart';
 import 'package:management_app/screen/home_screen.dart';
 import 'package:management_app/screen/login_screen.dart';
 import 'package:management_app/screen/notification_screen.dart';

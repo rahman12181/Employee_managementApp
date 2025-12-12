@@ -108,9 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (value) => (value == null || value.isEmpty)
                               ? "email required"
-                              : (!RegExp(
-                                  r'^[a-zA-Z0-9._%+-]+@ppecon\.com$',
-                                ).hasMatch(value))
+                              : (!RegExp(r'^[a-zA-Z0-9._%+-]+@ppecon\.com$').hasMatch(value))
                               ? "invalid email address"
                               : null,
                         ),

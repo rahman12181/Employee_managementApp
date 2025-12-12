@@ -57,42 +57,46 @@ class _HomemainScreenState extends State<HomemainScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
-            SizedBox(height: screenHeight * 0.12),
+            SizedBox(height: screenHeight * 0.07),
 
             Consumer<ProfileProvider>(
               builder: (context, provider, child) {
-                if (provider.profileData == null) {
-                  return const CircularProgressIndicator();
-                }
-
-                final user = provider.profileData!;
+                final user = provider.profileData;
 
                 return Row(
                   children: [
                     CircleAvatar(
                       radius: 30,
                       backgroundImage:
-                          user['user_image'] != null && user['user_image'] != ""
+                          (user != null &&
+                              user['user_image'] != null &&
+                              user['user_image'] != "")
                           ? NetworkImage(
                               "https://ppecon.erpnext.com${user['user_image']}",
                             )
-                          : AssetImage("assets/images/profile.png")
+                          : const AssetImage("assets/images/app_icon.png")
                                 as ImageProvider,
                     ),
 
                     const SizedBox(width: 12),
+
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user['full_name'] ?? "",
+                          user != null && user['full_name'] != null
+                              ? user['full_name']
+                              : "Loading...", 
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+
                         Text(
-                          user['email'] ?? "",
+                          user != null && user['email'] != null
+                              ? user['email']
+                              : "",
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
@@ -105,7 +109,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
               },
             ),
 
-            SizedBox(height: screenHeight * 0.03),
+            SizedBox(height: screenHeight * 0.07),
 
             Text(
               _currentTime,
