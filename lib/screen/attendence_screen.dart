@@ -11,7 +11,9 @@ class _AttendenceScreenState extends State<AttendenceScreen> {
   @override
   Widget build(BuildContext context) {
   return Scaffold(
-    body: Text("This is our Attendance Screen"),
+    body: Center(
+     child:  Text("This is our Attendance Screen"),
+    ),
   );
   }
   

@@ -57,7 +57,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
-            SizedBox(height: screenHeight * 0.07),
+            SizedBox(height: screenHeight * 0.04),
 
             Consumer<ProfileProvider>(
               builder: (context, provider, child) {
