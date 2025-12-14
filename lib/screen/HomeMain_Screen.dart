@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:management_app/services/profile_provider.dart';
+import 'package:management_app/providers/employee_provider.dart';
+import 'package:management_app/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class HomemainScreen extends StatefulWidget {
@@ -12,8 +13,9 @@ class HomemainScreen extends StatefulWidget {
 }
 
 class _HomemainScreenState extends State<HomemainScreen> {
-  late String _currentTime;
-  late String _currentDate;
+  String _currentTime = '';
+  String _currentDate = '';
+  Timer? _timer; 
 
   @override
   void initState() {
@@ -21,29 +23,44 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
     _updateTime();
 
-    Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
       _updateTime();
     });
 
-    Future.microtask(() {
-      Provider.of<ProfileProvider>(
+    Future.microtask(() async {
+      try {
+        await Provider.of<ProfileProvider>(
+          context,
+          listen: false,
+        ).loadProfile();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+
+      await Provider.of<EmployeeProvider>(
         context,
         listen: false,
-      ).loadProfile().catchError((err) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(err.toString())));
-      });
+      ).loadEmployeeIdFromLocal();
     });
   }
 
   void _updateTime() {
-    final now = DateTime.now();
+    if (!mounted) return;
 
+    final now = DateTime.now();
     setState(() {
       _currentTime = DateFormat('hh:mm a').format(now);
       _currentDate = DateFormat('MMM dd, yyyy • EEEE').format(now);
     });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); 
+    super.dispose();
   }
 
   @override
@@ -59,6 +76,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
           children: [
             SizedBox(height: screenHeight * 0.04),
 
+            /// 🔹 PROFILE
             Consumer<ProfileProvider>(
               builder: (context, provider, child) {
                 final user = provider.profileData;
@@ -69,34 +87,28 @@ class _HomemainScreenState extends State<HomemainScreen> {
                       radius: 30,
                       backgroundImage:
                           (user != null &&
-                              user['user_image'] != null &&
-                              user['user_image'] != "")
-                          ? NetworkImage(
-                              "https://ppecon.erpnext.com${user['user_image']}",
-                            )
-                          : const AssetImage("assets/images/app_icon.png")
-                                as ImageProvider,
+                                  user['user_image'] != null &&
+                                  user['user_image'] != "")
+                              ? NetworkImage(
+                                  "https://ppecon.erpnext.com${user['user_image']}",
+                                )
+                              : const AssetImage(
+                                      "assets/images/app_icon.png")
+                                  as ImageProvider,
                     ),
-
                     const SizedBox(width: 12),
-
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user != null && user['full_name'] != null
-                              ? user['full_name']
-                              : "Loading...", 
+                          user?['full_name'] ?? "Loading...",
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         Text(
-                          user != null && user['email'] != null
-                              ? user['email']
-                              : "",
+                          user?['email'] ?? "",
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
@@ -111,9 +123,10 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
             SizedBox(height: screenHeight * 0.07),
 
+            /// 🔹 TIME
             Text(
               _currentTime,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 38,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
@@ -122,15 +135,15 @@ class _HomemainScreenState extends State<HomemainScreen> {
             const SizedBox(height: 5),
             Text(
               _currentDate,
-              style: TextStyle(fontSize: 14, color: Colors.black54),
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
 
             SizedBox(height: screenHeight * 0.08),
 
-            // 🔹 PUNCH BUTTON
+            /// 🔹 PUNCH BUTTON
             GestureDetector(
               onTap: () {
-                debugPrint("button pressed");
+                debugPrint("Punch button pressed");
               },
               child: Container(
                 width: screenWidth * 0.45,
@@ -142,7 +155,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black12,
                       blurRadius: 20,
@@ -150,33 +163,31 @@ class _HomemainScreenState extends State<HomemainScreen> {
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.fingerprint,
-                        size: 55,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.fingerprint,
+                      size: 55,
+                      color: Colors.red.shade600,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "PUNCH IN",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                         color: Colors.red.shade600,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "PUNCH IN",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
 
             SizedBox(height: screenHeight * 0.08),
 
-            // 🔹 SMALL INFO
+            /// 🔹 INFO
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -195,10 +206,11 @@ class _HomemainScreenState extends State<HomemainScreen> {
     return Column(
       children: [
         Icon(icon, size: 30, color: Colors.red.shade600),
-        SizedBox(height: 4),
-        Text(time, style: TextStyle(fontWeight: FontWeight.bold)),
-        SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 4),
+        Text(time, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 2),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: Colors.black54)),
       ],
     );
   }

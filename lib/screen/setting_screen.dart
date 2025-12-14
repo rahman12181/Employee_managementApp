@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/screen/about_us_screen.dart';
 import 'package:management_app/screen/change_password_screen.dart';
 import 'package:management_app/screen/feedback_screen.dart';
@@ -6,7 +7,6 @@ import 'package:management_app/screen/help_support_screen.dart';
 import 'package:management_app/screen/privacy_policy_screen.dart';
 import 'package:management_app/screen/reports_screen.dart';
 import 'package:management_app/services/auth_service.dart';
-import 'package:management_app/services/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatelessWidget {

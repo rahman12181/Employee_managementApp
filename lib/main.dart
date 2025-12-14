@@ -7,6 +7,8 @@ import 'package:management_app/card_screen/leaverequest.dart';
 import 'package:management_app/card_screen/leaverequestdetail.dart';
 import 'package:management_app/card_screen/regularization_approval.dart';
 import 'package:management_app/card_screen/regularization_lsiting.dart';
+import 'package:management_app/providers/employee_provider.dart';
+import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/screen/HomeMain_Screen.dart';
 import 'package:management_app/screen/attendence_screen.dart';
 import 'package:management_app/screen/forgotPassword_screen.dart';
@@ -16,7 +18,6 @@ import 'package:management_app/screen/notification_screen.dart';
 import 'package:management_app/screen/setting_screen.dart';
 import 'package:management_app/screen/splash_screen.dart';
 import 'package:management_app/services/auth_service.dart';
-import 'package:management_app/services/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 void main() async{
@@ -28,6 +29,7 @@ void main() async{
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => EmployeeProvider()),
       ],
       child: const MyApp(),
     ),
@@ -79,7 +81,7 @@ class MyApp extends StatelessWidget {
   '/attendanceScreen': (context) => AttendenceScreen(),
   '/notificationScreen': (context) => NotificationScreen(),
    //card screen here
-   '/leaveRequest':(context) =>Leaverequest(),
+   '/leaveRequest':(context) =>LeaveRequest(),
    '/leaveRequestDetail':(context)=> LeaveRequestdetail(),
    '/leaveApproval':(context)=> LeaveApproval(),
    '/attendanceRegularization':(context) =>AttendanceRegularization(),

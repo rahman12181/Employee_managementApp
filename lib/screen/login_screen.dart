@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:management_app/animations/slide_animation.dart';
+import 'package:management_app/providers/employee_provider.dart';
+import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/screen/setting_screen.dart';
 import 'package:management_app/services/auth_service.dart';
 import 'package:management_app/utils/checkuser_util.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -108,7 +111,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (value) => (value == null || value.isEmpty)
                               ? "email required"
-                              : (!RegExp(r'^[a-zA-Z0-9._%+-]+@ppecon\.com$').hasMatch(value))
+                              : (!RegExp(
+                                  r'^[a-zA-Z0-9._%+-]+@ppecon\.com$',
+                                ).hasMatch(value))
                               ? "invalid email address"
                               : null,
                         ),
@@ -209,12 +214,31 @@ class _LoginScreenState extends State<LoginScreen> {
                                           "Welcome, ${response["full_name"]}!";
                                       loginSuccess = true;
 
+                                      final profileProvider =
+                                          Provider.of<ProfileProvider>(
+                                            context,
+                                            listen: false,
+                                          );
+                                      await profileProvider.loadProfile();
+
+                                      final email =
+                                          profileProvider.profileData?["email"];
+
+                                      if (email != null) {
+                                        await Provider.of<EmployeeProvider>(
+                                          context,
+                                          listen: false,
+                                        ).fetchAndSaveEmployeeId(email);
+                                      }
+
                                       String route = response["home_page"];
                                       if (route == "/app/home") {
                                         route = "/homeScreen";
                                       }
-                                      await CheckuserUtils.saveloginStatus(route);
-                                     /* SharedPreferences prefs =
+                                      await CheckuserUtils.saveloginStatus(
+                                        route,
+                                      );
+                                      /* SharedPreferences prefs =
                                          await SharedPreferences.getInstance();
                                       await prefs.setString("home_page", route);*/
 
@@ -227,7 +251,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                           context: context,
                                           barrierDismissible: false,
                                           builder: (dialogContext) {
-                                            // Auto-dismiss success dialog after 1 second
                                             if (loginSuccess) {
                                               Future.delayed(
                                                 Duration(seconds: 1),

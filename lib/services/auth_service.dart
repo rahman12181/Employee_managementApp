@@ -95,21 +95,12 @@ class AuthService {
       cookies.clear();
 
       if (response.statusCode == 200) {
-        return {
-          "success": true,
-           "message": "Logged out successfully"
-           };
+        return {"success": true, "message": "Logged out successfully"};
       } else {
-        return {
-          "success": false,
-           "message": "Logout failed"
-           };
+        return {"success": false, "message": "Logout failed"};
       }
     } catch (e) {
-      return {
-        "success": false,
-         "message": "Something went wrong"
-         };
+      return {"success": false, "message": "Something went wrong"};
     }
   }
 
@@ -141,4 +132,49 @@ class AuthService {
       throw "Request failed with status: ${response.statusCode}. Please try again.";
     }
   }
+
+  Future<bool> employeeCheckIn({
+    required String employeeId,
+    double latitude = 0,
+    double longitude = 0,
+  }) async {
+    final response = await AuthService.client.post(
+      Uri.parse("https://ppecon.erpnext.com/api/resource/Employee Checkin"),
+      headers: {
+        "Content-Type": "application/json",
+        "Cookie": AuthService.cookies.join(";"),
+      },
+      body: jsonEncode({
+        "employee": employeeId,
+        "log_type": "IN",
+        "latitude": latitude,
+        "longitude": longitude,
+      }),
+    );
+
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  Future<bool> employeeCheckOut({
+  required String employeeId,
+  double latitude = 0,
+  double longitude = 0,
+}) async {
+  final response = await AuthService.client.post(
+    Uri.parse("https://ppecon.erpnext.com/api/resource/Employee Checkin"),
+    headers: {
+      "Content-Type": "application/json",
+      "Cookie": AuthService.cookies.join(";"),
+    },
+    body: jsonEncode({
+      "employee": employeeId,
+      "log_type": "OUT",
+      "latitude": latitude,
+      "longitude": longitude,
+    }),
+  );
+
+  return response.statusCode == 200 || response.statusCode == 201;
+}
+
 }

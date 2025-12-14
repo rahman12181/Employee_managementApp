@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:management_app/services/profile_provider.dart';
+import 'package:management_app/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class DashboardScreen extends StatefulWidget {
