@@ -5,6 +5,7 @@ import 'package:management_app/screen/change_password_screen.dart';
 import 'package:management_app/screen/feedback_screen.dart';
 import 'package:management_app/screen/help_support_screen.dart';
 import 'package:management_app/screen/privacy_policy_screen.dart';
+import 'package:management_app/screen/profilescreen.dart';
 import 'package:management_app/screen/reports_screen.dart';
 import 'package:management_app/services/auth_service.dart';
 import 'package:provider/provider.dart';
@@ -29,22 +30,31 @@ class SettingsScreen extends StatelessWidget {
 
                     return Row(
                       children: [
-                       GestureDetector(
+                        GestureDetector(
                           onTap: () {
-                            Navigator.pushNamed(context, "/profileScreen");
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Profilescreen(),
+                              ),
+                            );
                           },
-                          child: CircleAvatar(
-                            radius: 25,
-                            backgroundImage:
-                                (user != null &&
-                                        user['user_image'] != null &&
-                                        user['user_image'] != "")
-                                    ? NetworkImage(
-                                        "https://ppecon.erpnext.com${user['user_image']}",
-                                      )
-                                    : const AssetImage(
-                                            "assets/images/app_icon.png")
+                          child: Hero(
+                            tag: 'profile-hero',
+                            child: CircleAvatar(
+                              radius: 25,
+                              backgroundImage:
+                                  (user != null &&
+                                      user['user_image'] != null &&
+                                      user['user_image'] != "")
+                                  ? NetworkImage(
+                                      "https://ppecon.erpnext.com${user['user_image']}",
+                                    )
+                                  : const AssetImage(
+                                          "assets/images/app_icon.png",
+                                        )
                                         as ImageProvider,
+                            ),
                           ),
                         ),
 
@@ -166,17 +176,18 @@ class SettingsScreen extends StatelessWidget {
                     showDialog(
                       context: context,
                       builder: (context) {
-                        Future.delayed(Duration(milliseconds: 1200),(){
+                        Future.delayed(Duration(milliseconds: 1200), () {
                           if (result["success"]) {
-                                  Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    "/loginScreen",(route) => false);
-                                }
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              "/loginScreen",
+                              (route) => false,
+                            );
+                          }
                         });
                         return AlertDialog(
                           title: Text(result["success"] ? "Success" : "Error"),
                           content: Text(result["message"]),
-                          
                         );
                       },
                     );
