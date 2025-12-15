@@ -240,10 +240,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         route: route,
                                         cookies: AuthService.cookies,
                                       );
-
-                                      /* SharedPreferences prefs =
-                                         await SharedPreferences.getInstance();
-                                      await prefs.setString("home_page", route);*/
+                                    //  final check=CheckuserUtils();      this is used to check sharedpreferecne data
+                                     // await check.checkSharedPrefs();
 
                                       setState(() => _isloading = false);
 

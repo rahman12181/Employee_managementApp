@@ -56,5 +56,18 @@ class CheckuserUtils {
   }
 }
 
+/* Future<void> checkSharedPrefs() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  print("======= SHARED PREFERENCES DATA =======");
+
+  for (String key in prefs.getKeys()) {
+    print("$key => ${prefs.get(key)}");                 // this method is only used for chekck sharedpreference data 
+  }
+
+  print("======================================");
+}
+*/
+
 
 }

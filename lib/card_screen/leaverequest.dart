@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:management_app/services/leave_request_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LeaveRequest extends StatefulWidget {
   const LeaveRequest({super.key});
@@ -10,18 +12,33 @@ class LeaveRequest extends StatefulWidget {
 
 class _LeaveRequestState extends State<LeaveRequest> {
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading=false;
+  bool _isLoading = false;
 
   final TextEditingController fromDateCtrl = TextEditingController();
   final TextEditingController toDateCtrl = TextEditingController();
   final TextEditingController reasonCtrl = TextEditingController();
   final TextEditingController empCodeCtrl = TextEditingController();
   final TextEditingController empNameCtrl = TextEditingController();
-  final TextEditingController phoneCtrl = TextEditingController();
+  final TextEditingController inchargeCtrl = TextEditingController();
 
   String? leaveType;
-  String durationType = "FULL";
   String compOff = "NO";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmployeeData();
+  }
+
+  Future<void> _loadEmployeeData() async {
+    final prefs = await SharedPreferences.getInstance();
+    empCodeCtrl.text = prefs.getString("employeeId") ?? "HR-EMP-0015";
+    final profileData = prefs.getString("profileData");
+    if (profileData != null) {
+      final data = jsonDecode(profileData);
+      empNameCtrl.text = data["full_name"] ?? "";
+    }
+  }
 
   Future<void> selectDate(TextEditingController controller) async {
     DateTime? pickedDate = await showDatePicker(
@@ -30,7 +47,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-
     if (pickedDate != null) {
       controller.text =
           "${pickedDate.day.toString().padLeft(2, '0')}-"
@@ -41,6 +57,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xffF5F6FA),
       appBar: AppBar(
@@ -50,20 +69,20 @@ class _LeaveRequestState extends State<LeaveRequest> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              // Leave Type
+              Text(
                 "Leave Type",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.black54,
                 ),
               ),
-              const SizedBox(height: 6),
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
                   hintText: "Select leave type",
@@ -83,9 +102,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 validator: (value) =>
                     value == null ? "Select leave type" : null,
               ),
+              SizedBox(height: screenHeight * 0.02),
 
-              const SizedBox(height: 16),
-
+              // From & To Date
               Row(
                 children: [
                   Expanded(
@@ -107,7 +126,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                           value!.isEmpty ? "Select from date" : null,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: TextFormField(
                       controller: toDateCtrl,
@@ -129,56 +148,16 @@ class _LeaveRequestState extends State<LeaveRequest> {
                   ),
                 ],
               ),
+              SizedBox(height: screenHeight * 0.02),
 
-              const SizedBox(height: 16),
-
-              const Text(
-                "Duration",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: ["FULL", "AN", "FN"].map((e) {
-                  final isSelected = durationType == e;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => durationType = e),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.red : Colors.transparent,
-                          border: Border.all(color: Colors.red),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Center(
-                          child: Text(
-                            e == "FULL" ? "Full day" : e,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.red,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 16),
-
-              const Text(
+              // Reason
+              Text(
                 "Reason for leave",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.black54,
                 ),
               ),
-              const SizedBox(height: 6),
               TextFormField(
                 controller: reasonCtrl,
                 maxLines: 3,
@@ -194,17 +173,16 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 validator: (value) =>
                     value!.isEmpty ? "Reason is required" : null,
               ),
+              SizedBox(height: screenHeight * 0.02),
 
-              const SizedBox(height: 16),
-
-              const Text(
+              // Comp Off
+              Text(
                 "Is it a Comp Off?",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.black54,
                 ),
               ),
-              const SizedBox(height: 8),
               Row(
                 children: ["NO", "YES"].map((e) {
                   final isSelected = compOff == e;
@@ -212,12 +190,16 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     child: GestureDetector(
                       onTap: () => setState(() => compOff = e),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: EdgeInsets.symmetric(
+                          vertical: screenHeight * 0.015,
+                        ),
+                        margin: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.01,
+                        ),
                         decoration: BoxDecoration(
                           color: isSelected ? Colors.red : Colors.transparent,
                           border: Border.all(color: Colors.red),
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(15),
                         ),
                         child: Center(
                           child: Text(
@@ -233,51 +215,20 @@ class _LeaveRequestState extends State<LeaveRequest> {
                   );
                 }).toList(),
               ),
+              SizedBox(height: screenHeight * 0.02),
 
-              const SizedBox(height: 16),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    "Employee Code",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  Text("Handover Duty", style: TextStyle(color: Colors.red)),
-                ],
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: empCodeCtrl,
-                decoration: InputDecoration(
-                  hintText: "Employee Code",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              /// Employee Name
-              const Text(
-                "Employee Name",
+              // Incharge Replacement
+              Text(
+                "Incharge Replacement",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.black54,
                 ),
               ),
-              const SizedBox(height: 6),
               TextFormField(
-                controller: empNameCtrl,
+                controller: inchargeCtrl,
                 decoration: InputDecoration(
-                  hintText: "Employee Name",
+                  hintText: "Enter incharge replacement",
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -285,83 +236,32 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     borderSide: BorderSide.none,
                   ),
                 ),
+                validator: (value) => value!.isEmpty ? "Enter incharge" : null,
               ),
+              SizedBox(height: screenHeight * 0.03),
 
-              const SizedBox(height: 16),
-
-              const Text(
-                "Applicant's phone Number",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  hintText: "Phone Number",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                validator: (value) =>
-                    value!.length < 10 ? "Enter valid number" : null,
-              ),
-
-              const SizedBox(height: 30),
-
+              // Submit Button
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: screenHeight * 0.06,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: () async {
-                    if (!_formKey.currentState!.validate()) return;
-
-                    setState(() => _isLoading = true);
-
-                    final result = await LeaveRequestService.submitLeave(
-                      employeeCode: empCodeCtrl.text.trim(),
-                      leaveType: LeaveRequestService.mapLeaveType(leaveType),
-                      fromDate: fromDateCtrl.text,
-                      toDate: toDateCtrl.text,
-                      reason: reasonCtrl.text.trim(),
-                      compOff: compOff,
-                    );
-
-                    setState(() => _isLoading = false);
-
-                    if (result["success"] == true) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Leave applied successfully"),
-                          backgroundColor: Colors.green,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)
+                    ),
+                    ),
+                  onPressed: _isLoading ? null : _submitLeave,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "SUBMIT",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
-                      );
-
-                      _formKey.currentState!.reset();
-                      fromDateCtrl.clear();
-                      toDateCtrl.clear();
-                      reasonCtrl.clear();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(result["message"]),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-
-                  child: const Text(
-                    "SUBMIT",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.black),
-                  ),
                 ),
               ),
             ],
@@ -369,5 +269,52 @@ class _LeaveRequestState extends State<LeaveRequest> {
         ),
       ),
     );
+  }
+
+  Future<void> _submitLeave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final result = await LeaveRequestService.submitLeave(
+      employeeCode: empCodeCtrl.text.trim(),
+      leaveType: LeaveRequestService.mapLeaveType(leaveType),
+      fromDate: fromDateCtrl.text,
+      toDate: toDateCtrl.text,
+      reason: reasonCtrl.text.trim(),
+      compOff: compOff,
+      inchargeReplacement: inchargeCtrl.text.trim(),
+    );
+
+    setState(() => _isLoading = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(
+    content: Text(
+      result["success"] == true
+          ? "Leave applied successfully"
+          : result["message"],
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    backgroundColor: result["success"] == true ? Colors.green : Colors.red,
+    behavior: SnackBarBehavior.floating, 
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(15),
+    ),
+    duration: const Duration(seconds: 2),
+  ),
+);
+
+
+    if (result["success"] == true) {
+      _formKey.currentState!.reset();
+      fromDateCtrl.clear();
+      toDateCtrl.clear();
+      reasonCtrl.clear();
+      inchargeCtrl.clear();
+    }
   }
 }
