@@ -10,7 +10,7 @@ class LeaveRequest extends StatefulWidget {
 
 class _LeaveRequestState extends State<LeaveRequest> {
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
+  bool _isLoading=false;
 
   final TextEditingController fromDateCtrl = TextEditingController();
   final TextEditingController toDateCtrl = TextEditingController();

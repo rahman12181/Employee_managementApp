@@ -13,7 +13,7 @@ class ProfileProvider extends ChangeNotifier {
      String? cachedProfile = prefs.getString('profileData');
     if (cachedProfile != null) {
       profileData = jsonDecode(cachedProfile);
-      notifyListeners(); // UI turant update
+      notifyListeners(); 
     }
     try {
       final loggedUserResponse = await AuthService.client.get(

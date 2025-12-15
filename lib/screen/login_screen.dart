@@ -235,9 +235,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                       if (route == "/app/home") {
                                         route = "/homeScreen";
                                       }
+
                                       await CheckuserUtils.saveloginStatus(
-                                        route,
+                                        route: route,
+                                        employeeId: response["employeeId"],
+                                        userName: response["userName"],
+                                        authToken: response["token"],
+                                        cookies: AuthService.cookies, 
                                       );
+
                                       /* SharedPreferences prefs =
                                          await SharedPreferences.getInstance();
                                       await prefs.setString("home_page", route);*/
