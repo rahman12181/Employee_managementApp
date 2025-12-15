@@ -9,18 +9,16 @@ class ProfileProvider extends ChangeNotifier {
   final String baseUrl = "https://ppecon.erpnext.com";
 
   Future<void> loadProfile() async {
-    final prefs=await SharedPreferences.getInstance();
-     String? cachedProfile = prefs.getString('profileData');
+    final prefs = await SharedPreferences.getInstance();
+    String? cachedProfile = prefs.getString('profileData');
     if (cachedProfile != null) {
       profileData = jsonDecode(cachedProfile);
-      notifyListeners(); 
+      notifyListeners();
     }
     try {
       final loggedUserResponse = await AuthService.client.get(
         Uri.parse("$baseUrl/api/method/frappe.auth.get_logged_user"),
-        headers: {
-          "Cookie": AuthService.cookies.join(';'),
-        },
+        headers: {"Cookie": AuthService.cookies.join(';')},
       );
 
       if (loggedUserResponse.statusCode != 200) {
@@ -33,12 +31,9 @@ class ProfileProvider extends ChangeNotifier {
         throw Exception("User email not found.");
       }
 
-
       final profileResponse = await AuthService.client.get(
         Uri.parse("$baseUrl/api/resource/User/$loggedUserEmail"),
-        headers: {
-          "Cookie": AuthService.cookies.join(';'),
-        },
+        headers: {"Cookie": AuthService.cookies.join(';')},
       );
 
       if (profileResponse.statusCode != 200) {
@@ -52,6 +47,9 @@ class ProfileProvider extends ChangeNotifier {
         "email": profileJson["data"]["email"] ?? "",
         "user_image": profileJson["data"]["user_image"] ?? "",
       };
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profileData', jsonEncode(profileData));
 
       notifyListeners();
     } catch (e) {

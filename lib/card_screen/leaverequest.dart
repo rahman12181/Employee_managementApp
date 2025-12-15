@@ -360,7 +360,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
 
                   child: const Text(
                     "SUBMIT",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.black),
                   ),
                 ),
               ),

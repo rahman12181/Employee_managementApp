@@ -29,18 +29,32 @@ class CheckuserUtils {
 
   static Future<void> saveloginStatus({
   required String route,
-  required String employeeId,
+  String? employeeId,
   String? userName,
   String? authToken,
-  List<String>? cookies, // ← added
+  List<String>? cookies,
 }) async {
   final prefs = await SharedPreferences.getInstance();
+
   await prefs.setBool("isLoggedIn", true);
   await prefs.setString("home_page", route);
-  await prefs.setString("employeeId", employeeId);
-  if(userName != null) await prefs.setString("userName", userName);
-  if(authToken != null) await prefs.setString("authToken", authToken);
-  if(cookies != null) await prefs.setStringList("cookies", cookies); 
+
+  if (employeeId != null) {
+    await prefs.setString("employeeId", employeeId);
+  }
+
+  if (userName != null) {
+    await prefs.setString("userName", userName);
+  }
+
+  if (authToken != null) {
+    await prefs.setString("authToken", authToken);
+  }
+
+  if (cookies != null) {
+    await prefs.setStringList("cookies", cookies);
+  }
 }
+
 
 }

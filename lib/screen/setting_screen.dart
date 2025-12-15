@@ -29,17 +29,23 @@ class SettingsScreen extends StatelessWidget {
 
                     return Row(
                       children: [
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundImage:
-                              (user != null &&
-                                  user['user_image'] != null &&
-                                  user['user_image'] != "")
-                              ? NetworkImage(
-                                  "https://ppecon.erpnext.com${user['user_image']}",
-                                )
-                              : const AssetImage("assets/images/app_icon.png")
-                                    as ImageProvider,
+                       GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(context, "/profileScreen");
+                          },
+                          child: CircleAvatar(
+                            radius: 25,
+                            backgroundImage:
+                                (user != null &&
+                                        user['user_image'] != null &&
+                                        user['user_image'] != "")
+                                    ? NetworkImage(
+                                        "https://ppecon.erpnext.com${user['user_image']}",
+                                      )
+                                    : const AssetImage(
+                                            "assets/images/app_icon.png")
+                                        as ImageProvider,
+                          ),
                         ),
 
                         const SizedBox(width: 12),

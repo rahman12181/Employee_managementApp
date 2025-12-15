@@ -15,6 +15,7 @@ import 'package:management_app/screen/forgotPassword_screen.dart';
 import 'package:management_app/screen/home_screen.dart';
 import 'package:management_app/screen/login_screen.dart';
 import 'package:management_app/screen/notification_screen.dart';
+import 'package:management_app/screen/profilescreen.dart';
 import 'package:management_app/screen/setting_screen.dart';
 import 'package:management_app/screen/splash_screen.dart';
 import 'package:management_app/services/auth_service.dart';
@@ -44,6 +45,7 @@ class MyApp extends StatelessWidget {
       title: 'Management_App',
       themeMode: ThemeMode.system,
       theme: ThemeData(
+        fontFamily: 'poppins',
         brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.white,
         appBarTheme: AppBarTheme(
@@ -80,6 +82,7 @@ class MyApp extends StatelessWidget {
   '/settingScreen': (context) => SettingsScreen(),
   '/attendanceScreen': (context) => AttendenceScreen(),
   '/notificationScreen': (context) => NotificationScreen(),
+  '/profileScreen': (context) => Profilescreen(),
    //card screen here
    '/leaveRequest':(context) =>LeaveRequest(),
    '/leaveRequestDetail':(context)=> LeaveRequestdetail(),

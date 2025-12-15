@@ -238,10 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                       await CheckuserUtils.saveloginStatus(
                                         route: route,
-                                        employeeId: response["employeeId"],
-                                        userName: response["userName"],
-                                        authToken: response["token"],
-                                        cookies: AuthService.cookies, 
+                                        cookies: AuthService.cookies,
                                       );
 
                                       /* SharedPreferences prefs =

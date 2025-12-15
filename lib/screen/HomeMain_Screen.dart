@@ -76,7 +76,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
           children: [
             SizedBox(height: screenHeight * 0.04),
 
-            /// 🔹 PROFILE
+            
             Consumer<ProfileProvider>(
               builder: (context, provider, child) {
                 final user = provider.profileData;
@@ -84,7 +84,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                 return Row(
                   children: [
                     CircleAvatar(
-                      radius: 30,
+                      radius: 25,
                       backgroundImage:
                           (user != null &&
                                   user['user_image'] != null &&
