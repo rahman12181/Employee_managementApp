@@ -84,6 +84,17 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 ),
               ),
               DropdownButtonFormField<String>(
+                dropdownColor: Colors.white.withAlpha(230), 
+                style: const TextStyle(
+             
+                  color: Colors.black,
+                  fontSize: 15,
+                ),
+                icon: const Icon(
+              
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.black54,
+                ),
                 decoration: InputDecoration(
                   hintText: "Select leave type",
                   filled: true,
@@ -102,9 +113,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 validator: (value) =>
                     value == null ? "Select leave type" : null,
               ),
+
               SizedBox(height: screenHeight * 0.02),
 
-              // From & To Date
               Row(
                 children: [
                   Expanded(
@@ -248,9 +259,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15)
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                    ),
+                  ),
                   onPressed: _isLoading ? null : _submitLeave,
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
@@ -289,25 +300,22 @@ class _LeaveRequestState extends State<LeaveRequest> {
     setState(() => _isLoading = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
-  SnackBar(
-    content: Text(
-      result["success"] == true
-          ? "Leave applied successfully"
-          : result["message"],
-      style: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
+      SnackBar(
+        content: Text(
+          result["success"] == true
+              ? "Leave applied successfully"
+              : result["message"],
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: result["success"] == true ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        duration: const Duration(seconds: 2),
       ),
-    ),
-    backgroundColor: result["success"] == true ? Colors.green : Colors.red,
-    behavior: SnackBarBehavior.floating, 
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(15),
-    ),
-    duration: const Duration(seconds: 2),
-  ),
-);
-
+    );
 
     if (result["success"] == true) {
       _formKey.currentState!.reset();

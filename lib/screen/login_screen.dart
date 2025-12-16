@@ -223,7 +223,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                       final email =
                                           profileProvider.profileData?["email"];
-
                                       if (email != null) {
                                         await Provider.of<EmployeeProvider>(
                                           context,
@@ -240,21 +239,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                         route: route,
                                         cookies: AuthService.cookies,
                                       );
-                                    //  final check=CheckuserUtils();      this is used to check sharedpreferecne data
-                                     // await check.checkSharedPrefs();
 
                                       setState(() => _isloading = false);
 
-                                      WidgetsBinding.instance.addPostFrameCallback((
-                                        _,
-                                      ) async {
+                                      WidgetsBinding.instance.addPostFrameCallback((_,) {
                                         showDialog(
                                           context: context,
                                           barrierDismissible: false,
                                           builder: (dialogContext) {
                                             if (loginSuccess) {
                                               Future.delayed(
-                                                Duration(seconds: 1),
+                                                const Duration(seconds: 1),
                                                 () {
                                                   Navigator.pop(dialogContext);
                                                   if (mounted) {
@@ -267,20 +262,81 @@ class _LoginScreenState extends State<LoginScreen> {
                                               );
                                             }
 
-                                            return AlertDialog(
-                                              title: Text(title),
-                                              content: Text(content),
-                                              actions: loginSuccess
-                                                  ? null
-                                                  : [
-                                                      TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.pop(
-                                                              dialogContext,
-                                                            ),
-                                                        child: Text("OK"),
+                                            
+                                            return Dialog(
+                                              backgroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 28,
+                                                      horizontal: 24,
+                                                    ),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Container(
+                                                      height: 60,
+                                                      width: 60,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.green
+                                                            .withAlpha(30),
+                                                        shape: BoxShape.circle,
                                                       ),
-                                                    ],
+                                                      child: const Icon(
+                                                        Icons
+                                                            .check_circle_rounded,
+                                                        color: Colors.green,
+                                                        size: 42,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 18),
+                                                    Text(
+                                                      title,
+                                                      style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      content,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade700,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 20),
+                                                    const SizedBox(
+                                                      height: 18,
+                                                      width: 18,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    Text(
+                                                      "Signing you in...",
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                             );
                                           },
                                         );
@@ -303,7 +359,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       setState(() => _isloading = false);
                                     }
 
-                                    // Show error dialog if login failed
                                     if (!loginSuccess) {
                                       WidgetsBinding.instance
                                           .addPostFrameCallback((_) {
@@ -316,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   TextButton(
                                                     onPressed: () =>
                                                         Navigator.pop(context),
-                                                    child: Text("OK"),
+                                                    child: const Text("OK"),
                                                   ),
                                                 ],
                                               ),
@@ -330,13 +385,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                           showDialog(
                                             context: context,
                                             builder: (_) => AlertDialog(
-                                              title: Text("Network Error"),
+                                              title: const Text(
+                                                "Network Error",
+                                              ),
                                               content: Text("$e"),
                                               actions: [
                                                 TextButton(
                                                   onPressed: () =>
                                                       Navigator.pop(context),
-                                                  child: Text("OK"),
+                                                  child: const Text("OK"),
                                                 ),
                                               ],
                                             ),
@@ -345,7 +402,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color.fromARGB(255, 38, 161, 227),
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              38,
+                              161,
+                              227,
+                            ),
                             minimumSize: Size(
                               screenWidth * 0.9,
                               screenHeight * 0.05,

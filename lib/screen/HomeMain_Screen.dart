@@ -139,8 +139,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
             ),
 
             SizedBox(height: screenHeight * 0.08),
-
-            /// 🔹 PUNCH BUTTON
+            
             GestureDetector(
               onTap: () {
                 debugPrint("Punch button pressed");

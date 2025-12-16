@@ -38,17 +38,20 @@ void main() async{
 }
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Management_App',
       themeMode: ThemeMode.system,
+
       theme: ThemeData(
+        useMaterial3: false, 
         fontFamily: 'poppins',
         brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.white,
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
@@ -59,9 +62,11 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
+     
       darkTheme: ThemeData(
+        useMaterial3: false, 
         brightness: Brightness.dark,
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
             systemNavigationBarColor: Colors.transparent,
@@ -70,30 +75,30 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: SplashScreen(),
 
+      home: SplashScreen(),
       initialRoute: '/splashScreen',
+
       routes: {
-  '/splashScreen': (context) => SplashScreen(),
-  '/loginScreen': (context) => LoginScreen(),
-  '/forgotpasswordScreen': (context) => ForgotpasswordScreen(),
-  '/homeMainScreen': (context) => HomemainScreen(),
-  '/homeScreen': (context) => HomeScreen(),
-  '/settingScreen': (context) => SettingsScreen(),
-  '/attendanceScreen': (context) => AttendenceScreen(),
-  '/notificationScreen': (context) => NotificationScreen(),
-  '/profileScreen': (context) => Profilescreen(),
-   //card screen here
-   '/leaveRequest':(context) =>LeaveRequest(),
-   '/leaveRequestDetail':(context)=> LeaveRequestdetail(),
-   '/leaveApproval':(context)=> LeaveApproval(),
-   '/attendanceRegularization':(context) =>AttendanceRegularization(),
-   '/regularizationApproval':(context)=>RegularizationApproval(),
-   '/regularizationListing':(context) =>RegularizationLsiting(),
-   '/checkMore':(context)=>CheckMore()
-}
- );
+        '/splashScreen': (context) => SplashScreen(),
+        '/loginScreen': (context) => LoginScreen(),
+        '/forgotpasswordScreen': (context) => ForgotpasswordScreen(),
+        '/homeMainScreen': (context) => HomemainScreen(),
+        '/homeScreen': (context) => HomeScreen(),
+        '/settingScreen': (context) => SettingsScreen(),
+        '/attendanceScreen': (context) => AttendenceScreen(),
+        '/notificationScreen': (context) => NotificationScreen(),
+        '/profileScreen': (context) => Profilescreen(),
+
+        // card screens
+        '/leaveRequest': (context) => LeaveRequest(),
+        '/leaveRequestDetail': (context) => LeaveRequestdetail(),
+        '/leaveApproval': (context) => LeaveApproval(),
+        '/attendanceRegularization': (context) => AttendanceRegularization(),
+        '/regularizationApproval': (context) => RegularizationApproval(),
+        '/regularizationListing': (context) => RegularizationLsiting(),
+        '/checkMore': (context) => CheckMore(),
+      },
+    );
   }
 }
-
-

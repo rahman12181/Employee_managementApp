@@ -146,10 +146,13 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   onTap: () async {
-                    bool? confirmLogout = await showDialog(
+                    bool? confirm = await showDialog<bool>(
                       context: context,
                       builder: (context) {
                         return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           title: const Text("Confirm Logout"),
                           content: const Text(
                             "Are you sure you want to logout?",
@@ -159,7 +162,13 @@ class SettingsScreen extends StatelessWidget {
                               onPressed: () => Navigator.pop(context, false),
                               child: const Text("Cancel"),
                             ),
-                            TextButton(
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                               onPressed: () => Navigator.pop(context, true),
                               child: const Text("Logout"),
                             ),
@@ -168,26 +177,156 @@ class SettingsScreen extends StatelessWidget {
                       },
                     );
 
-                    if (confirmLogout != true) return;
+                    if (confirm != true) return;
+
+                    showGeneralDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      barrierLabel: "logout",
+                      barrierColor: Colors.black.withAlpha(150),
+                      transitionDuration: const Duration(milliseconds: 250),
+                      pageBuilder: (_, __, ___) {
+                        return Center(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Container(
+                              width: MediaQuery.of(context).size.width * 0.85,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 28,
+                                horizontal: 24,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    "Logging you out...",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      transitionBuilder: (_, anim, __, child) {
+                        return FadeTransition(
+                          opacity: anim,
+                          child: ScaleTransition(
+                            scale: Tween(begin: 0.9, end: 1.0).animate(anim),
+                            child: child,
+                          ),
+                        );
+                      },
+                    );
 
                     final auth = AuthService();
                     final result = await auth.logoutUser();
 
-                    showDialog(
+                    Navigator.pop(context);
+
+                    showGeneralDialog(
                       context: context,
-                      builder: (context) {
-                        Future.delayed(Duration(milliseconds: 1200), () {
+                      barrierDismissible: false,
+                      barrierLabel: "logout-result",
+                      barrierColor: Colors.black.withAlpha(150),
+                      transitionDuration: const Duration(milliseconds: 250),
+                      pageBuilder: (_, __, ___) {
+                        Future.delayed(const Duration(milliseconds: 900), () {
                           if (result["success"]) {
                             Navigator.pushNamedAndRemoveUntil(
                               context,
                               "/loginScreen",
                               (route) => false,
                             );
+                          } else {
+                            Navigator.pop(context);
                           }
                         });
-                        return AlertDialog(
-                          title: Text(result["success"] ? "Success" : "Error"),
-                          content: Text(result["message"]),
+
+                        return Center(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Container(
+                              width: MediaQuery.of(context).size.width * 0.85,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 28,
+                                horizontal: 24,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    height: 64,
+                                    width: 64,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          (result["success"]
+                                                  ? Colors.green
+                                                  : Colors.red)
+                                              .withAlpha(30),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      result["success"]
+                                          ? Icons.logout_rounded
+                                          : Icons.error_rounded,
+                                      color: result["success"]
+                                          ? Colors.green
+                                          : Colors.red,
+                                      size: 40,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Text(
+                                    result["success"]
+                                        ? "Logged out"
+                                        : "Logout failed",
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    result["message"] ?? "",
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      transitionBuilder: (_, anim, __, child) {
+                        return FadeTransition(
+                          opacity: anim,
+                          child: ScaleTransition(
+                            scale: Tween(begin: 0.9, end: 1.0).animate(anim),
+                            child: child,
+                          ),
                         );
                       },
                     );
