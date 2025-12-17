@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
+import 'package:management_app/services/checkin_service.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 class HomemainScreen extends StatefulWidget {
   const HomemainScreen({super.key});
@@ -15,42 +18,34 @@ class HomemainScreen extends StatefulWidget {
 class _HomemainScreenState extends State<HomemainScreen> {
   String _currentTime = '';
   String _currentDate = '';
-  Timer? _timer; 
+  Timer? _timer;
+
+  final CheckinService _checkinService = CheckinService();
+
+  DateTime? punchInTime;
+  DateTime? punchOutTime;
+  bool isPunching = false;
+  bool showSuccess = false;
+  String successText = "";
 
   @override
   void initState() {
     super.initState();
 
     _updateTime();
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
-      _updateTime();
-    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
 
     Future.microtask(() async {
-      try {
-        await Provider.of<ProfileProvider>(
-          context,
-          listen: false,
-        ).loadProfile();
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-
-      await Provider.of<EmployeeProvider>(
-        context,
-        listen: false,
-      ).loadEmployeeIdFromLocal();
+      await Provider.of<ProfileProvider>(context, listen: false).loadProfile();
+      await Provider.of<EmployeeProvider>(context, listen: false)
+          .loadEmployeeIdFromLocal();
+      await _loadDailyPunches(); // Load daily punches from local storage
     });
   }
 
   void _updateTime() {
-    if (!mounted) return;
-
     final now = DateTime.now();
+    if (!mounted) return;
     setState(() {
       _currentTime = DateFormat('hh:mm a').format(now);
       _currentDate = DateFormat('MMM dd, yyyy • EEEE').format(now);
@@ -59,14 +54,112 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel(); 
+    _timer?.cancel();
     super.dispose();
+  }
+
+  /// Local Storage Helpers
+  Future<void> _savePunch(String type, DateTime time) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = "${type}_${DateFormat('yyyy-MM-dd').format(DateTime.now())}";
+    await prefs.setString(key, time.toIso8601String());
+  }
+
+  Future<DateTime?> _getPunch(String type) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = "${type}_${DateFormat('yyyy-MM-dd').format(DateTime.now())}";
+    final timeStr = prefs.getString(key);
+    if (timeStr != null) return DateTime.parse(timeStr);
+    return null;
+  }
+
+  Future<void> _loadDailyPunches() async {
+    punchInTime = await _getPunch("IN");
+    punchOutTime = await _getPunch("OUT");
+    setState(() {});
+  }
+
+  String punchText() {
+    if (punchInTime == null) return "PUNCH IN";
+    if (punchOutTime == null) return "PUNCH OUT";
+    return "DONE";
+  }
+
+  String totalHours() {
+    if (punchInTime == null) return "00:00";
+    final end = punchOutTime ?? DateTime.now();
+    final diff = end.difference(punchInTime!);
+    return "${diff.inHours.toString().padLeft(2, '0')}:"
+        "${(diff.inMinutes % 60).toString().padLeft(2, '0')}";
+  }
+
+  double progressValue() {
+    if (punchInTime == null) return 0;
+    final end = punchOutTime ?? DateTime.now();
+    return end.difference(punchInTime!).inSeconds /
+        const Duration(hours: 12).inSeconds;
+  }
+
+  Future<void> onPunchTap() async {
+    final employeeId =
+        Provider.of<EmployeeProvider>(context, listen: false).employeeId;
+
+    if (employeeId == null || isPunching) return;
+
+    String logType = punchInTime == null ? "IN" : "OUT";
+
+    // Daily punch check
+    if (logType == "IN" && punchInTime != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("You have already checked in today!")));
+      return;
+    }
+    if (logType == "OUT" && punchOutTime != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("You have already checked out today!")));
+      return;
+    }
+
+    try {
+      setState(() => isPunching = true);
+
+      HapticFeedback.lightImpact(); // subtle vibration
+
+      await _checkinService.checkIn(
+        employeeId: employeeId,
+        logType: logType,
+      );
+
+      final now = DateTime.now();
+      await _savePunch(logType, now);
+
+      setState(() {
+        if (logType == "IN") {
+          punchInTime = now;
+          successText = "Checked in at ${DateFormat('hh:mm a').format(now)}";
+        } else {
+          punchOutTime = now;
+          successText = "Checked out at ${DateFormat('hh:mm a').format(now)}";
+        }
+        showSuccess = true;
+      });
+
+      // Hide success after 2 sec
+      Timer(const Duration(seconds: 2), () {
+        if (mounted) setState(() => showSuccess = false);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Punch failed: $e")));
+    } finally {
+      setState(() => isPunching = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -76,44 +169,30 @@ class _HomemainScreenState extends State<HomemainScreen> {
           children: [
             SizedBox(height: screenHeight * 0.04),
 
-            
+            /// PROFILE
             Consumer<ProfileProvider>(
-              builder: (context, provider, child) {
+              builder: (_, provider, __) {
                 final user = provider.profileData;
-
                 return Row(
                   children: [
                     CircleAvatar(
                       radius: 25,
-                      backgroundImage:
-                          (user != null &&
-                                  user['user_image'] != null &&
-                                  user['user_image'] != "")
-                              ? NetworkImage(
-                                  "https://ppecon.erpnext.com${user['user_image']}",
-                                )
-                              : const AssetImage(
-                                      "assets/images/app_icon.png")
-                                  as ImageProvider,
+                      backgroundImage: (user?['user_image'] != null &&
+                              user!['user_image'] != "")
+                          ? NetworkImage(
+                              "https://ppecon.erpnext.com${user['user_image']}")
+                          : const AssetImage("assets/images/app_icon.png")
+                              as ImageProvider,
                     ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user?['full_name'] ?? "Loading...",
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          user?['email'] ?? "",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
+                        Text(user?['full_name'] ?? "",
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(user?['email'] ?? "",
+                            style: const TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ],
@@ -123,76 +202,102 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
             SizedBox(height: screenHeight * 0.07),
 
-            /// 🔹 TIME
-            Text(
-              _currentTime,
-              style: const TextStyle(
-                fontSize: 38,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              _currentDate,
-              style: const TextStyle(fontSize: 14, color: Colors.black54),
-            ),
+            /// TIME & DATE
+            Text(_currentTime,
+                style:
+                    const TextStyle(fontSize: 38, fontWeight: FontWeight.bold)),
+            Text(_currentDate,
+                style: const TextStyle(fontSize: 14, color: Colors.black54)),
 
             SizedBox(height: screenHeight * 0.08),
-            
-            GestureDetector(
-              onTap: () {
-                debugPrint("Punch button pressed");
-              },
-              child: Container(
-                width: screenWidth * 0.45,
-                height: screenWidth * 0.45,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Colors.grey.shade200, Colors.grey.shade100],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+
+            /// PUNCH BUTTON WITH PROGRESS
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: screenWidth * 0.48,
+                  height: screenWidth * 0.48,
+                  child: CircularProgressIndicator(
+                    value: progressValue().clamp(0.0, 1.0),
+                    strokeWidth: 6,
+                    color: punchOutTime != null
+                        ? Colors.grey
+                        : Colors.green,
+                    backgroundColor: Colors.grey.shade300,
                   ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 20,
-                      offset: Offset(0, 6),
-                    ),
-                  ],
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.fingerprint,
-                      size: 55,
-                      color: Colors.red.shade600,
+                InkWell(
+                  onTap: isPunching ? null : onPunchTap,
+                  borderRadius: BorderRadius.circular(screenWidth * 0.45 / 2),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                    width: screenWidth * 0.45,
+                    height: screenWidth * 0.45,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isPunching ? Colors.grey.shade300 : Colors.grey.shade100,
+                      boxShadow: isPunching
+                          ? []
+                          : const [
+                              BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 20,
+                                  offset: Offset(0, 6)),
+                            ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "PUNCH IN",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade600,
+                    child: Center(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 800),
+                        child: showSuccess
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.check_circle,
+                                      color: Colors.green, size: 60),
+                                  const SizedBox(height: 6),
+                                  Text(successText,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                ],
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.fingerprint,
+                                      size: 55, color: Colors.red.shade600),
+                                  const SizedBox(height: 8),
+                                  Text(punchText(),
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.red.shade600)),
+                                ],
+                              ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
 
             SizedBox(height: screenHeight * 0.08),
 
-            /// 🔹 INFO
+            /// INFO ROW
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _smallInfo(Icons.login, "00:00 AM", "Punch In"),
-                _smallInfo(Icons.logout, "00:00 PM", "Punch Out"),
-                _smallInfo(Icons.av_timer, "00:00", "Total Hours"),
+                _smallInfo(Icons.login,
+                    punchInTime == null
+                        ? "00:00 AM"
+                        : DateFormat('hh:mm a').format(punchInTime!),
+                    "Punch In"),
+                _smallInfo(Icons.logout,
+                    punchOutTime == null
+                        ? "00:00 PM"
+                        : DateFormat('hh:mm a').format(punchOutTime!),
+                    "Punch Out"),
+                _smallInfo(Icons.av_timer, totalHours(), "Total Hours"),
               ],
             ),
           ],
@@ -207,7 +312,6 @@ class _HomemainScreenState extends State<HomemainScreen> {
         Icon(icon, size: 30, color: Colors.red.shade600),
         const SizedBox(height: 4),
         Text(time, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 2),
         Text(label,
             style: const TextStyle(fontSize: 12, color: Colors.black54)),
       ],
