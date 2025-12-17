@@ -1,4 +1,3 @@
-// screens/attendance_history_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,32 +11,50 @@ class AttendanceHistoryScreen extends StatefulWidget {
 }
 
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
-  late DateTime _currentDisplayMonth;
+  late DateTime _currentMonth;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _currentDisplayMonth = DateTime.now();
-    _loadAttendanceData();
+    _currentMonth = DateTime.now();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
-  Future<void> _loadAttendanceData() async {
-    final provider = Provider.of<AttendanceHistoryProvider>(context, listen: false);
-    await provider.loadAttendanceForMonth(_currentDisplayMonth);
+  Future<void> _loadData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      
+      final provider = Provider.of<AttendanceHistoryProvider>(context, listen: false);
+      await provider.loadAttendanceForMonth(_currentMonth);
+      
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _previousMonth() {
     setState(() {
-      _currentDisplayMonth = DateTime(_currentDisplayMonth.year, _currentDisplayMonth.month - 1);
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
     });
-    _loadAttendanceData();
+    _loadData();
   }
 
   void _nextMonth() {
     setState(() {
-      _currentDisplayMonth = DateTime(_currentDisplayMonth.year, _currentDisplayMonth.month + 1);
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
     });
-    _loadAttendanceData();
+    _loadData();
   }
 
   @override
@@ -45,43 +62,77 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Attendance History'),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadAttendanceData,
+            onPressed: _loadData,
           ),
         ],
       ),
-      body: Consumer<AttendanceHistoryProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? _buildErrorView()
+              : Consumer<AttendanceHistoryProvider>(
+                  builder: (context, provider, child) {
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Statistics Card
+                          _buildStatisticsCard(provider),
+                          
+                          // Calendar
+                          _buildCalendarCard(provider),
+                          
+                          // Attendance List
+                          provider.attendanceRecords.isEmpty
+                              ? _buildEmptyView()
+                              : _buildAttendanceList(provider),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                // Month Selector with Statistics
-                _buildMonthSelector(provider),
-                
-                // Calendar View
-                _buildCalendarView(provider),
-                
-                // Attendance List
-                _buildAttendanceList(provider),
-              ],
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 64),
+          const SizedBox(height: 16),
+          const Text(
+            'Error Loading Data',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              _errorMessage ?? 'Unknown error',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _loadData,
+            child: const Text('Try Again'),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMonthSelector(AttendanceHistoryProvider provider) {
+  Widget _buildStatisticsCard(AttendanceHistoryProvider provider) {
     final stats = provider.getMonthlyStatistics();
     
     return Card(
       margin: const EdgeInsets.all(16),
+      elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -93,30 +144,128 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                 IconButton(
                   icon: const Icon(Icons.arrow_back_ios),
                   onPressed: _previousMonth,
+                  tooltip: 'Previous Month',
                 ),
                 Text(
-                  DateFormat('MMMM yyyy').format(_currentDisplayMonth),
+                  DateFormat('MMMM yyyy').format(_currentMonth),
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
+                    color: Colors.blue,
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.arrow_forward_ios),
                   onPressed: _nextMonth,
+                  tooltip: 'Next Month',
                 ),
               ],
             ),
             
             const SizedBox(height: 16),
             
-            // Statistics
+            // Statistics Row
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatItem('Present', stats['present'].toString(), Colors.green),
-                _buildStatItem('Absent', stats['absent'].toString(), Colors.red),
-                _buildStatItem('Avg Hours', stats['avg_hours'], Colors.blue),
+                // Present
+                Column(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.green, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          stats['present'].toString(),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Present',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Absent
+                Column(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.red, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          stats['absent'].toString(),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Absent',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Average Hours
+                Column(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.blue, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          stats['avg_hours'],
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Avg Hours',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ],
@@ -125,50 +274,10 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     );
   }
 
-  Widget _buildStatItem(String title, String value, Color color) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            title == 'Present' ? Icons.check_circle :
-            title == 'Absent' ? Icons.cancel :
-            Icons.access_time,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCalendarView(AttendanceHistoryProvider provider) {
-    final firstDay = DateTime(_currentDisplayMonth.year, _currentDisplayMonth.month, 1);
-    final lastDay = DateTime(_currentDisplayMonth.year, _currentDisplayMonth.month + 1, 0);
-    final startWeekday = firstDay.weekday;
-    final totalDays = lastDay.day;
-    
+  Widget _buildCalendarCard(AttendanceHistoryProvider provider) {
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -176,118 +285,177 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             // Weekday Headers
             const Row(
               children: [
-                Expanded(child: Center(child: Text('Sun', style: TextStyle(fontWeight: FontWeight.bold)))),
+                Expanded(child: Center(child: Text('Sun', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)))),
                 Expanded(child: Center(child: Text('Mon', style: TextStyle(fontWeight: FontWeight.bold)))),
                 Expanded(child: Center(child: Text('Tue', style: TextStyle(fontWeight: FontWeight.bold)))),
                 Expanded(child: Center(child: Text('Wed', style: TextStyle(fontWeight: FontWeight.bold)))),
                 Expanded(child: Center(child: Text('Thu', style: TextStyle(fontWeight: FontWeight.bold)))),
                 Expanded(child: Center(child: Text('Fri', style: TextStyle(fontWeight: FontWeight.bold)))),
-                Expanded(child: Center(child: Text('Sat', style: TextStyle(fontWeight: FontWeight.bold)))),
+                Expanded(child: Center(child: Text('Sat', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)))),
               ],
             ),
             
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             
             // Calendar Grid
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: 42, // 6 weeks
-              itemBuilder: (context, index) {
-                final dayOffset = index - startWeekday;
-                final currentDate = firstDay.add(Duration(days: dayOffset));
-                
-                return _buildCalendarDay(currentDate, provider);
-              },
-            ),
+            _buildCalendarGrid(provider),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCalendarDay(DateTime date, AttendanceHistoryProvider provider) {
-    final isCurrentMonth = date.month == _currentDisplayMonth.month;
-    final isToday = _isSameDate(date, DateTime.now());
+  Widget _buildCalendarGrid(AttendanceHistoryProvider provider) {
+    final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
+    final startWeekday = firstDay.weekday; // 1=Monday, 7=Sunday
     
-    // Get attendance for this date
+    // Calculate days before
+    final daysBefore = startWeekday % 7; // Sunday=0, Monday=1
+    
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        childAspectRatio: 1.0,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+      ),
+      itemCount: 42, // 6 weeks
+      itemBuilder: (context, index) {
+        final dayOffset = index - daysBefore + 1;
+        
+        if (dayOffset < 1) {
+          // Previous month
+          final prevMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+          final prevMonthDays = DateTime(prevMonth.year, prevMonth.month + 1, 0).day;
+          final dayNumber = prevMonthDays + dayOffset;
+          return _buildOtherMonthDay(dayNumber);
+        } else if (dayOffset > lastDay.day) {
+          // Next month
+          final dayNumber = dayOffset - lastDay.day;
+          return _buildOtherMonthDay(dayNumber);
+        } else {
+          // Current month
+          final currentDate = DateTime(_currentMonth.year, _currentMonth.month, dayOffset);
+          return _buildCurrentMonthDay(currentDate, provider);
+        }
+      },
+    );
+  }
+
+  Widget _buildOtherMonthDay(int dayNumber) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          dayNumber.toString(),
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentMonthDay(DateTime date, AttendanceHistoryProvider provider) {
+    final isToday = _isSameDate(date, DateTime.now());
     final attendance = provider.getAttendanceForDate(date);
     final isPresent = attendance != null && attendance['is_present'] == true;
+    final isPast = date.isBefore(DateTime.now());
     
-    // Calculate colors
     Color bgColor = Colors.transparent;
-    Color textColor = isCurrentMonth ? Colors.black : Colors.grey[300]!;
+    Color textColor = Colors.black;
+    String? hoursText;
     
     if (isToday) {
-      bgColor = Colors.blue.withOpacity(0.1);
+      bgColor = Colors.blue.withOpacity(0.2);
+      textColor = Colors.blue;
     } else if (isPresent) {
       bgColor = Colors.green;
       textColor = Colors.white;
-    } else if (isCurrentMonth && date.isBefore(DateTime.now())) {
+      hoursText = attendance?['total_hours'];
+    } else if (isPast && attendance == null) {
       // Past date with no attendance = Absent
       bgColor = Colors.red;
       textColor = Colors.white;
     }
     
     return Container(
-      margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: bgColor,
         shape: BoxShape.circle,
         border: isToday ? Border.all(color: Colors.blue, width: 2) : null,
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              date.day.toString(),
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.bold,
-              ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            date.day.toString(),
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
             ),
-            if (attendance != null && attendance['is_present'] && attendance['total_hours'] != '00:00')
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0),
-                child: Text(
-                  attendance['total_hours'],
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: textColor,
-                  ),
+          ),
+          if (hoursText != null && hoursText != '00:00')
+            Padding(
+              padding: const EdgeInsets.only(top: 2.0),
+              child: Text(
+                hoursText!,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: textColor,
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyView() {
+    return Padding(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        children: [
+          Icon(
+            Icons.calendar_month,
+            size: 80,
+            color: Colors.grey[300],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No Attendance Records',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Your attendance records for this month\nwill appear here',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAttendanceList(AttendanceHistoryProvider provider) {
-    if (provider.attendanceRecords.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Center(
-          child: Text(
-            'No attendance records found for this month',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-      );
-    }
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.only(left: 16.0, top: 16.0, bottom: 8.0),
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(
-            'Daily Attendance',
+            'Daily Records',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -304,6 +472,8 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             return _buildAttendanceListItem(record);
           },
         ),
+        
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -316,15 +486,27 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     final totalHours = record['total_hours'] as String;
     
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      elevation: 2,
       color: isPresent ? Colors.green[50] : Colors.red[50],
       child: ListTile(
         onTap: () => _showDetails(record),
-        leading: CircleAvatar(
-          backgroundColor: isPresent ? Colors.green : Colors.red,
-          child: Text(
-            date.day.toString(),
-            style: const TextStyle(color: Colors.white),
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: isPresent ? Colors.green : Colors.red,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              date.day.toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
           ),
         ),
         title: Text(
@@ -337,7 +519,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         subtitle: isPresent
             ? Text(
                 '${_formatTime(punchIn)} - ${_formatTime(punchOut)}',
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 13),
               )
             : const Text('Absent'),
         trailing: Column(
@@ -367,96 +549,107 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   void _showDetails(Map<String, dynamic> record) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) {
         final isPresent = record['is_present'] as bool;
         final punches = record['punches'] as List<dynamic>;
         
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                DateFormat('EEEE, dd MMMM yyyy').format(record['date']),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              if (isPresent) ...[
-                _buildDetailRow('Status', 'Present', Colors.green),
-                _buildDetailRow('Punch In', _formatTime(record['punch_in']), Colors.black),
-                _buildDetailRow('Punch Out', _formatTime(record['punch_out']), Colors.black),
-                _buildDetailRow('Total Hours', record['total_hours'], Colors.blue),
-                
-                const SizedBox(height: 16),
-                const Text(
-                  'Punch Logs:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                
-                ...punches.map((punch) => ListTile(
-                  leading: Icon(
-                    punch['log_type'] == 'IN' ? Icons.login : Icons.logout,
-                    color: punch['log_type'] == 'IN' ? Colors.green : Colors.blue,
-                  ),
-                  title: Text(punch['log_type'] == 'IN' ? 'Checked IN' : 'Checked OUT'),
-                  subtitle: Text(DateFormat('hh:mm a').format(punch['time'])),
-                )).toList(),
-              ] else ...[
+        return SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Center(
-                  child: Column(
-                    children: [
-                      const Icon(Icons.cancel, size: 60, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text(
-                        'ABSENT',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red[700],
-                        ),
+                  child: Text(
+                    DateFormat('EEEE, dd MMMM yyyy').format(record['date']),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                if (isPresent) ...[
+                  _buildDetailItem('Status', 'Present', Icons.check_circle, Colors.green),
+                  _buildDetailItem('Punch In', _formatTime(record['punch_in']), Icons.login, Colors.blue),
+                  _buildDetailItem('Punch Out', _formatTime(record['punch_out']), Icons.logout, Colors.blue),
+                  _buildDetailItem('Total Hours', record['total_hours'], Icons.access_time, Colors.orange),
+                  
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Punch Logs:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  
+                  ...punches.map((punch) => Card(
+                    margin: const EdgeInsets.only(top: 8),
+                    child: ListTile(
+                      leading: Icon(
+                        punch['log_type'] == 'IN' ? Icons.login : Icons.logout,
+                        color: punch['log_type'] == 'IN' ? Colors.green : Colors.blue,
                       ),
-                      const SizedBox(height: 8),
-                      const Text('No punches recorded for this day'),
-                    ],
+                      title: Text(punch['log_type'] == 'IN' ? 'Punch IN' : 'Punch OUT'),
+                      subtitle: Text(DateFormat('hh:mm a').format(punch['time'])),
+                    ),
+                  )).toList(),
+                ] else ...[
+                  Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.cancel, size: 80, color: Colors.red[300]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'ABSENT',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red[700],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('No punches recorded for this day'),
+                      ],
+                    ),
+                  ),
+                ],
+                
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Close'),
                   ),
                 ),
               ],
-              
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close'),
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildDetailRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+  Widget _buildDetailItem(String label, String value, IconData icon, Color color) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(icon, color: color),
+        title: Text(label, style: const TextStyle(color: Colors.grey)),
+        trailing: Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontSize: 16,
           ),
-        ],
+        ),
       ),
     );
   }
