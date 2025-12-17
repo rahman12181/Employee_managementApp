@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:management_app/screen/HomeMain_Screen.dart';
-import 'package:management_app/screen/attendence_screen.dart';
+import 'package:management_app/screen/attendance_history_screen.dart';
 import 'package:management_app/screen/dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,7 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static final List<Widget> _bottomNavigationScreens = [
     HomemainScreen(),
     DashboardScreen(),
-    AttendenceScreen(),
+    AttendanceHistoryScreen()
   ];
 
   void _onItemTapped(int index) {

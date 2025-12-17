@@ -23,7 +23,7 @@ class CheckinService {
       Uri.parse(_url),
       headers: {
         "Content-Type": "application/json",
-        "Cookie": cookies.join("; "), // 🔥 THIS IS KEY
+        "Cookie": cookies.join("; "), 
       },
       body: jsonEncode({
         "employee": employeeId,

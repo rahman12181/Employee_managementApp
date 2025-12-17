@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
+import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/services/checkin_service.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
 class HomemainScreen extends StatefulWidget {
@@ -22,8 +22,6 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
   final CheckinService _checkinService = CheckinService();
 
-  DateTime? punchInTime;
-  DateTime? punchOutTime;
   bool isPunching = false;
   bool showSuccess = false;
   String successText = "";
@@ -39,7 +37,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
       await Provider.of<ProfileProvider>(context, listen: false).loadProfile();
       await Provider.of<EmployeeProvider>(context, listen: false)
           .loadEmployeeIdFromLocal();
-      await _loadDailyPunches(); // Load daily punches from local storage
+      await Provider.of<PunchProvider>(context, listen: false).loadDailyPunches();
     });
   }
 
@@ -58,63 +56,28 @@ class _HomemainScreenState extends State<HomemainScreen> {
     super.dispose();
   }
 
-  /// Local Storage Helpers
-  Future<void> _savePunch(String type, DateTime time) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = "${type}_${DateFormat('yyyy-MM-dd').format(DateTime.now())}";
-    await prefs.setString(key, time.toIso8601String());
-  }
-
-  Future<DateTime?> _getPunch(String type) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = "${type}_${DateFormat('yyyy-MM-dd').format(DateTime.now())}";
-    final timeStr = prefs.getString(key);
-    if (timeStr != null) return DateTime.parse(timeStr);
-    return null;
-  }
-
-  Future<void> _loadDailyPunches() async {
-    punchInTime = await _getPunch("IN");
-    punchOutTime = await _getPunch("OUT");
-    setState(() {});
-  }
-
-  String punchText() {
-    if (punchInTime == null) return "PUNCH IN";
-    if (punchOutTime == null) return "PUNCH OUT";
+  String punchText(PunchProvider punchProvider) {
+    if (punchProvider.punchInTime == null) return "PUNCH IN";
+    if (punchProvider.punchOutTime == null) return "PUNCH OUT";
     return "DONE";
-  }
-
-  String totalHours() {
-    if (punchInTime == null) return "00:00";
-    final end = punchOutTime ?? DateTime.now();
-    final diff = end.difference(punchInTime!);
-    return "${diff.inHours.toString().padLeft(2, '0')}:"
-        "${(diff.inMinutes % 60).toString().padLeft(2, '0')}";
-  }
-
-  double progressValue() {
-    if (punchInTime == null) return 0;
-    final end = punchOutTime ?? DateTime.now();
-    return end.difference(punchInTime!).inSeconds /
-        const Duration(hours: 12).inSeconds;
   }
 
   Future<void> onPunchTap() async {
     final employeeId =
         Provider.of<EmployeeProvider>(context, listen: false).employeeId;
+    final punchProvider = Provider.of<PunchProvider>(context, listen: false);
 
     if (employeeId == null || isPunching) return;
 
-    String logType = punchInTime == null ? "IN" : "OUT";
+    String logType = punchProvider.punchInTime == null ? "IN" : "OUT";
 
     // Daily punch check
-    if (logType == "IN" && punchInTime != null) {
+    if (logType == "IN" && punchProvider.punchInTime != null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("You have already checked in today!")));
       return;
     }
-    if (logType == "OUT" && punchOutTime != null) {
+    if (logType == "OUT" && punchProvider.punchOutTime != null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("You have already checked out today!")));
       return;
@@ -123,7 +86,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
     try {
       setState(() => isPunching = true);
 
-      HapticFeedback.lightImpact(); // subtle vibration
+      HapticFeedback.lightImpact();
 
       await _checkinService.checkIn(
         employeeId: employeeId,
@@ -131,20 +94,18 @@ class _HomemainScreenState extends State<HomemainScreen> {
       );
 
       final now = DateTime.now();
-      await _savePunch(logType, now);
 
       setState(() {
         if (logType == "IN") {
-          punchInTime = now;
+          punchProvider.setPunchIn(now);
           successText = "Checked in at ${DateFormat('hh:mm a').format(now)}";
         } else {
-          punchOutTime = now;
+          punchProvider.setPunchOut(now);
           successText = "Checked out at ${DateFormat('hh:mm a').format(now)}";
         }
         showSuccess = true;
       });
 
-      // Hide success after 2 sec
       Timer(const Duration(seconds: 2), () {
         if (mounted) setState(() => showSuccess = false);
       });
@@ -160,6 +121,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final punchProvider = Provider.of<PunchProvider>(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -219,9 +181,9 @@ class _HomemainScreenState extends State<HomemainScreen> {
                   width: screenWidth * 0.48,
                   height: screenWidth * 0.48,
                   child: CircularProgressIndicator(
-                    value: progressValue().clamp(0.0, 1.0),
+                    value: punchProvider.progressValue().clamp(0.0, 1.0),
                     strokeWidth: 6,
-                    color: punchOutTime != null
+                    color: punchProvider.punchOutTime != null
                         ? Colors.grey
                         : Colors.green,
                     backgroundColor: Colors.grey.shade300,
@@ -268,7 +230,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                                   Icon(Icons.fingerprint,
                                       size: 55, color: Colors.red.shade600),
                                   const SizedBox(height: 8),
-                                  Text(punchText(),
+                                  Text(punchText(punchProvider),
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: Colors.red.shade600)),
@@ -288,16 +250,17 @@ class _HomemainScreenState extends State<HomemainScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _smallInfo(Icons.login,
-                    punchInTime == null
+                    punchProvider.punchInTime == null
                         ? "00:00 AM"
-                        : DateFormat('hh:mm a').format(punchInTime!),
+                        : DateFormat('hh:mm a').format(punchProvider.punchInTime!),
                     "Punch In"),
                 _smallInfo(Icons.logout,
-                    punchOutTime == null
+                    punchProvider.punchOutTime == null
                         ? "00:00 PM"
-                        : DateFormat('hh:mm a').format(punchOutTime!),
+                        : DateFormat('hh:mm a').format(punchProvider.punchOutTime!),
                     "Punch Out"),
-                _smallInfo(Icons.av_timer, totalHours(), "Total Hours"),
+                _smallInfo(Icons.av_timer,
+                    punchProvider.totalHours(), "Total Hours"),
               ],
             ),
           ],

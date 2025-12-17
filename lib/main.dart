@@ -7,10 +7,12 @@ import 'package:management_app/card_screen/leaverequest.dart';
 import 'package:management_app/card_screen/leaverequestdetail.dart';
 import 'package:management_app/card_screen/regularization_approval.dart';
 import 'package:management_app/card_screen/regularization_lsiting.dart';
+import 'package:management_app/providers/attendance_history_provider.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
+import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/screen/HomeMain_Screen.dart';
-import 'package:management_app/screen/attendence_screen.dart';
+import 'package:management_app/screen/attendance_history_screen.dart';
 import 'package:management_app/screen/forgotPassword_screen.dart';
 import 'package:management_app/screen/home_screen.dart';
 import 'package:management_app/screen/login_screen.dart';
@@ -31,6 +33,8 @@ void main() async{
       providers: [
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => EmployeeProvider()),
+        ChangeNotifierProvider(create: (_) => PunchProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceHistoryProvider()),
       ],
       child: const MyApp(),
     ),
@@ -86,7 +90,7 @@ class MyApp extends StatelessWidget {
         '/homeMainScreen': (context) => HomemainScreen(),
         '/homeScreen': (context) => HomeScreen(),
         '/settingScreen': (context) => SettingsScreen(),
-        '/attendanceScreen': (context) => AttendenceScreen(),
+        '/attendanceScreen': (context) => AttendanceHistoryScreen(),
         '/notificationScreen': (context) => NotificationScreen(),
         '/profileScreen': (context) => Profilescreen(),
 
