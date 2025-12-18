@@ -4,6 +4,8 @@ import 'auth_service.dart';
 
 class CheckinHistoryService {
   Future<List<dynamic>> fetchLogs(String employeeId) async {
+    if (employeeId.isEmpty) return [];
+
     final url =
         "https://ppecon.erpnext.com/api/resource/Employee%20Checkin"
         "?filters=[[\"employee\",\"=\",\"$employeeId\"]]"
@@ -19,10 +21,10 @@ class CheckinHistoryService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception("Failed to load history");
+      throw Exception("History API failed");
     }
 
     final body = jsonDecode(response.body);
-    return body["data"];
+    return body["data"] ?? [];
   }
 }

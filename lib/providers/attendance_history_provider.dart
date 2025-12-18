@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:management_app/services/checkin_history_service.dart';
+import '../services/checkin_history_service.dart';
 
 class AttendanceHistoryProvider extends ChangeNotifier {
   final CheckinHistoryService _service = CheckinHistoryService();
@@ -8,6 +8,8 @@ class AttendanceHistoryProvider extends ChangeNotifier {
   List<dynamic> logs = [];
 
   Future<void> loadHistory(String employeeId) async {
+    if (employeeId.isEmpty) return;
+
     loading = true;
     notifyListeners();
 
@@ -21,19 +23,22 @@ class AttendanceHistoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Map<DateTime, Map<String, DateTime>> groupedLogs() {
-    final Map<DateTime, Map<String, DateTime>> map = {};
+  /// DATE KEY = yyyy-mm-dd (SAFE)
+  Map<String, Map<String, DateTime>> groupedLogs() {
+    final Map<String, Map<String, DateTime>> map = {};
 
     for (var log in logs) {
-      final time = DateTime.parse(log["time"]);
-      final date = DateTime(time.year, time.month, time.day);
+      if (log["time"] == null || log["log_type"] == null) continue;
 
-      map.putIfAbsent(date, () => {});
+      final time = DateTime.parse(log["time"]);
+      final key = "${time.year}-${time.month}-${time.day}";
+
+      map.putIfAbsent(key, () => {});
 
       if (log["log_type"] == "IN") {
-        map[date]!["in"] ??= time;
+        map[key]!["in"] ??= time;
       } else {
-        map[date]!["out"] = time;
+        map[key]!["out"] = time;
       }
     }
     return map;
