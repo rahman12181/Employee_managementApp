@@ -16,7 +16,6 @@ class AttendanceHistoryScreen extends StatefulWidget {
 
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   DateTime focusedDay = DateTime.now();
-  DateTime? selectedDay;
 
   @override
   void initState() {
@@ -32,7 +31,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     });
   }
 
-
+ 
   Color? _getCalendarColor(
     DateTime date,
     Map<String, Map<String, DateTime>> grouped,
@@ -48,7 +47,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
       return null;
     }
 
-    final key = "${date.year}-${date.month}-${date.day}";
+    final key =
+        "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
     final data = grouped[key];
 
     if (data == null) return Colors.red;
@@ -56,6 +57,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     return Colors.orange;
   }
 
+ 
   Map<String, int> calculateMonthlySummary(
     DateTime month,
     Map<String, Map<String, DateTime>> grouped,
@@ -82,7 +84,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
       if (dayOnly.isBefore(startDate) || dayOnly.isAfter(todayOnly)) continue;
 
-      final key = "${day.year}-${day.month}-${day.day}";
+      final key =
+          "${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}";
+
       final data = grouped[key];
 
       if (data == null) {
@@ -111,14 +115,17 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         calculateMonthlySummary(focusedDay, grouped, startDate);
 
     return Scaffold(
+      appBar: AppBar(title: const Text("Attendance History")),
       body: provider.loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-
+                /// 📊 SUMMARY
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 40, 10, 10),
+                  padding: const EdgeInsets.all(12),
                   child: Card(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     child: Padding(
                       padding: const EdgeInsets.all(14),
                       child: Row(
@@ -133,13 +140,10 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                         ],
                       ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadiusGeometry.circular(15)
-                    ),
                   ),
                 ),
 
-              
+             
                 TableCalendar(
                   firstDay: DateTime.utc(2023, 1, 1),
                   lastDay: DateTime.now(),
@@ -155,7 +159,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                         margin: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: color.withAlpha( 50)
+                          color: color.withAlpha(50),
                         ),
                         child: Center(
                           child: Text(
@@ -173,12 +177,15 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
                 const Divider(),
 
-                /// 📜 LOG LIST
                 Expanded(
                   child: ListView(
                     children: grouped.entries.map((entry) {
-                      final date =
-                          DateTime.parse("${entry.key} 00:00:00");
+                      final parts = entry.key.split("-");
+                      final date = DateTime(
+                        int.parse(parts[0]),
+                        int.parse(parts[1]),
+                        int.parse(parts[2]),
+                      );
 
                       final inTime = entry.value["in"];
                       final outTime = entry.value["out"];
@@ -189,8 +196,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
                       return ListTile(
                         leading: const Icon(Icons.access_time),
-                        title:
-                            Text(DateFormat('dd MMM yyyy (EEE)').format(date)),
+                        title: Text(
+                          DateFormat('dd MMM yyyy (EEE)').format(date),
+                        ),
                         subtitle: Text(
                           inTime == null
                               ? "Absent"
@@ -212,9 +220,11 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   Widget _summary(String label, int value, Color color) {
     return Column(
       children: [
-        Text("$value",
-            style: TextStyle(
-                fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          "$value",
+          style: TextStyle(
+              fontSize: 22, fontWeight: FontWeight.bold, color: color),
+        ),
         Text(label),
       ],
     );

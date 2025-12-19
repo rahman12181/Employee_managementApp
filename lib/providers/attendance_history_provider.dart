@@ -7,6 +7,7 @@ class AttendanceHistoryProvider extends ChangeNotifier {
   bool loading = false;
   List<dynamic> logs = [];
 
+  
   DateTime? firstCheckInDate;
 
   Future<void> loadHistory(String employeeId) async {
@@ -21,7 +22,9 @@ class AttendanceHistoryProvider extends ChangeNotifier {
       if (logs.isNotEmpty) {
         final dates = logs
             .where((e) => e["time"] != null)
-            .map<DateTime>((e) => DateTime.parse(e["time"]))
+            .map<DateTime>(
+              (e) => DateTime.parse(e["time"]).toLocal(), 
+            )
             .toList()
           ..sort();
 
@@ -40,23 +43,26 @@ class AttendanceHistoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+ 
   Map<String, Map<String, DateTime>> groupedLogs() {
     final Map<String, Map<String, DateTime>> map = {};
 
     for (var log in logs) {
       if (log["time"] == null || log["log_type"] == null) continue;
 
-      final time = DateTime.parse(log["time"]);
-      final key = "${time.year}-${time.month}-${time.day}";
+      final time = DateTime.parse(log["time"]).toLocal(); // 🔥 FIX
+      final key =
+          "${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')}";
 
       map.putIfAbsent(key, () => {});
 
       if (log["log_type"] == "IN") {
-        map[key]!["in"] ??= time;
+        map[key]!["in"] ??= time; 
       } else {
-        map[key]!["out"] = time;
+        map[key]!["out"] = time; 
       }
     }
+
     return map;
   }
 }
