@@ -115,14 +115,14 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         calculateMonthlySummary(focusedDay, grouped, startDate);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Attendance History")),
+      
       body: provider.loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                /// 📊 SUMMARY
+               
                 Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.fromLTRB(10, 40, 10, 10),
                   child: Card(
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
