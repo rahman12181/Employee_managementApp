@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:management_app/providers/attendance_history_provider.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
@@ -63,59 +64,70 @@ class _HomemainScreenState extends State<HomemainScreen> {
   }
 
   Future<void> onPunchTap() async {
-    final employeeId =
-        Provider.of<EmployeeProvider>(context, listen: false).employeeId;
-    final punchProvider = Provider.of<PunchProvider>(context, listen: false);
+  final employeeId =
+      Provider.of<EmployeeProvider>(context, listen: false).employeeId;
+  final punchProvider = Provider.of<PunchProvider>(context, listen: false);
 
-    if (employeeId == null || isPunching) return;
+  if (employeeId == null || isPunching) return;
 
-    String logType = punchProvider.punchInTime == null ? "IN" : "OUT";
+  String logType = punchProvider.punchInTime == null ? "IN" : "OUT";
 
-    // Daily punch check
-    if (logType == "IN" && punchProvider.punchInTime != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("You have already checked in today!")));
-      return;
-    }
-    if (logType == "OUT" && punchProvider.punchOutTime != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("You have already checked out today!")));
-      return;
-    }
-
-    try {
-      setState(() => isPunching = true);
-
-      HapticFeedback.lightImpact();
-
-      await _checkinService.checkIn(
-        employeeId: employeeId,
-        logType: logType,
-      );
-
-      final now = DateTime.now();
-
-      setState(() {
-        if (logType == "IN") {
-          punchProvider.setPunchIn(now);
-          successText = "Checked in at ${DateFormat('hh:mm a').format(now)}";
-        } else {
-          punchProvider.setPunchOut(now);
-          successText = "Checked out at ${DateFormat('hh:mm a').format(now)}";
-        }
-        showSuccess = true;
-      });
-
-      Timer(const Duration(seconds: 2), () {
-        if (mounted) setState(() => showSuccess = false);
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Punch failed: $e")));
-    } finally {
-      setState(() => isPunching = false);
-    }
+  // Daily punch check
+  if (logType == "IN" && punchProvider.punchInTime != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("You have already checked in today!")),
+    );
+    return;
   }
+  if (logType == "OUT" && punchProvider.punchOutTime != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("You have already checked out today!")),
+    );
+    return;
+  }
+
+  try {
+    setState(() => isPunching = true);
+
+    HapticFeedback.lightImpact();
+
+  
+    await _checkinService.checkIn(
+      employeeId: employeeId,
+      logType: logType,
+    );
+
+    final now = DateTime.now();
+
+    if (logType == "IN") {
+      await punchProvider.setPunchIn(now);
+      successText = "Checked in at ${DateFormat('hh:mm a').format(now)}";
+    } else {
+      await punchProvider.setPunchOut(now);
+      successText = "Checked out at ${DateFormat('hh:mm a').format(now)}";
+    }
+
+    await Provider.of<AttendanceHistoryProvider>(
+      context,
+      listen: false,
+    ).loadHistory(employeeId);
+
+    setState(() {
+      showSuccess = true;
+    });
+
+    Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => showSuccess = false);
+    });
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Punch failed: $e")),
+    );
+  } finally {
+    setState(() => isPunching = false);
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +143,6 @@ class _HomemainScreenState extends State<HomemainScreen> {
           children: [
             SizedBox(height: screenHeight * 0.04),
 
-            /// PROFILE
             Consumer<ProfileProvider>(
               builder: (_, provider, __) {
                 final user = provider.profileData;
@@ -245,7 +256,6 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
             SizedBox(height: screenHeight * 0.08),
 
-            /// INFO ROW
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [

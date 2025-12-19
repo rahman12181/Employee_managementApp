@@ -7,6 +7,8 @@ class AttendanceHistoryProvider extends ChangeNotifier {
   bool loading = false;
   List<dynamic> logs = [];
 
+  DateTime? firstCheckInDate;
+
   Future<void> loadHistory(String employeeId) async {
     if (employeeId.isEmpty) return;
 
@@ -15,15 +17,29 @@ class AttendanceHistoryProvider extends ChangeNotifier {
 
     try {
       logs = await _service.fetchLogs(employeeId);
+
+      if (logs.isNotEmpty) {
+        final dates = logs
+            .where((e) => e["time"] != null)
+            .map<DateTime>((e) => DateTime.parse(e["time"]))
+            .toList()
+          ..sort();
+
+        firstCheckInDate = DateTime(
+          dates.first.year,
+          dates.first.month,
+          dates.first.day,
+        );
+      }
     } catch (e) {
       logs = [];
+      firstCheckInDate = null;
     }
 
     loading = false;
     notifyListeners();
   }
 
-  /// DATE KEY = yyyy-mm-dd (SAFE)
   Map<String, Map<String, DateTime>> groupedLogs() {
     final Map<String, Map<String, DateTime>> map = {};
 

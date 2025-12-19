@@ -27,4 +27,5 @@ class CheckinHistoryService {
     final body = jsonDecode(response.body);
     return body["data"] ?? [];
   }
+  
 }
