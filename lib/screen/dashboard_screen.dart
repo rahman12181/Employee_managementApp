@@ -10,7 +10,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   final List<String> bannerImages = [
     'assets/images/banner1.png',
@@ -74,21 +74,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
 
     Future.doWhile(() async {
-      await Future.delayed(Duration(seconds: 7));
+      await Future.delayed(const Duration(seconds: 7));   
       if (!mounted) return false;
 
       setState(() {
         currentIndex = (currentIndex + 1) % bannerImages.length;
       });
-
       return true;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
+    final w = MediaQuery.of(context).size.width;
+    final h = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -104,29 +104,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   final user = provider.profileData;
-
-                  String? img = user?['user_image'];
-
-                 return CircleAvatar(
-                      radius: 22,
-                      backgroundImage:
-                          (user != null &&
-                              user['user_image'] != null &&
-                              user['user_image'] != "")
-                          ? NetworkImage(
-                              "https://ppecon.erpnext.com${user['user_image']}",
-                            )
-                          : const AssetImage("assets/images/app_icon.png")
-                                as ImageProvider,
-                    );
+                  return CircleAvatar(
+                    radius: w * 0.055,
+                    backgroundImage:
+                        (user != null &&
+                                user['user_image'] != null &&
+                                user['user_image'] != "")
+                            ? NetworkImage(
+                                "https://ppecon.erpnext.com${user['user_image']}",
+                              )
+                            : const AssetImage(
+                                "assets/images/app_icon.png",
+                              ) as ImageProvider,
+                  );
                 },
               ),
             ),
-
             Row(
               children: [
-                Image.asset("assets/images/app_icon.png", width: 40),
-                SizedBox(width: 6),
+                Image.asset(
+                  "assets/images/app_icon.png",
+                  width: w * 0.10,
+                ),
+                SizedBox(width: w * 0.015),
                 RichText(
                   text: TextSpan(
                     children: [
@@ -134,17 +134,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         text: "PIONEER\n",
                         style: TextStyle(
                           height: 1,
-                          fontFamily: "poppins",
-                          fontSize: 18,
+                          fontSize: w * 0.045,
                           color: Colors.black,
                         ),
                       ),
                       TextSpan(
                         text: "TECH",
                         style: TextStyle(
-                          fontFamily: "poppins",
                           height: 1,
-                          fontSize: 18,
+                          fontSize: w * 0.045,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
@@ -154,20 +152,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(50),
-                onTap: () {
-                  Navigator.pushNamed(context, "/notificationScreen");
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Icon(
-                    Icons.notifications_none,
-                    size: 30,
-                    color: Colors.black,
-                  ),
+            InkWell(
+              borderRadius: BorderRadius.circular(50),
+              onTap: () {
+                Navigator.pushNamed(context, "/notificationScreen");
+              },
+              child: Padding(
+                padding: EdgeInsets.all(w * 0.02),
+                child: Icon(
+                  Icons.notifications_none,
+                  size: w * 0.08,
+                  color: Colors.black,
                 ),
               ),
             ),
@@ -175,188 +170,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: Colors.black,
-                strokeWidth: 2,
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
           : SingleChildScrollView(
               child: SafeArea(
                 child: Column(
                   children: [
-                    SizedBox(height: 10),
-                    Center(
-                      child: Container(
-                        width: screenWidth * 0.90,
-                        height: screenHeight * 0.20,
-                        clipBehavior: Clip.hardEdge,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-
-                        child: AnimatedSwitcher(
-                          duration: Duration(milliseconds: 1500),
-                          switchInCurve: Curves.easeInOut,
-                          switchOutCurve: Curves.easeInOut,
-
-                          child: Image.asset(
-                            bannerImages[currentIndex],
-                            key: ValueKey(currentIndex),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
+                    SizedBox(height: h * 0.015),
+                    Container(
+                      width: w * 0.90,
+                      height: h * 0.20,
+                      clipBehavior: Clip.hardEdge,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(w * 0.06),
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 1500),
+                        child: Image.asset(
+                          bannerImages[currentIndex],
+                          key: ValueKey(currentIndex),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
                         ),
                       ),
                     ),
-
-                    SizedBox(height: 20),
+                    SizedBox(height: h * 0.025),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-
+                      padding: EdgeInsets.symmetric(horizontal: w * 0.03),
                       child: GridView.builder(
                         shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: modules.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           childAspectRatio: 0.9,
-                          crossAxisSpacing: 13,
-                          mainAxisSpacing: 13,
+                          crossAxisSpacing: w * 0.03,
+                          mainAxisSpacing: w * 0.03,
                         ),
                         itemBuilder: (context, index) {
                           final module = modules[index];
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isLoading = true;
-                              });
-                              if (module['type'] == 'Leave_Request') {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/leaveRequest",
-                                ).then((_) {
-                                  setState(() {
-                                    _isLoading = false;
-                                  });
-                                });
-                              } else if (module['type'] ==
-                                  'Leave_requestDetail') {
-                                Navigator.pushNamed(
-                                  context,
-                                  '/leaveRequestDetail',
-                                ).then((_) {
-                                  setState(() {
-                                    _isLoading = false;
-                                  });
-                                });
-                              } else if (module['type'] == 'Leave_Approval') {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/leaveApproval",
-                                ).then((_) {
-                                  setState(() {
-                                    _isLoading = false;
-                                  });
-                                });
-                              } else if (module['type'] ==
-                                  'Attendance_Redularization') {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/attendanceRegularization",
-                                ).then((_) {
-                                  setState(() {
-                                    _isLoading = false;
-                                  });
-                                });
-                              } else if (module['type'] ==
-                                  'Regularization_Approval') {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/regularizationApproval",
-                                ).then((_) {
-                                  setState(() {
-                                    _isLoading = false;
-                                  });
-                                });
-                              } else if (module['type'] ==
-                                  'Regularization_Listing') {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/regularizationListing",
-                                ).then((_) {
-                                  setState(() {
-                                    _isLoading = false;
-                                  });
-                                });
-                              } else if (module['type'] == 'Check_More') {
-                                Navigator.pushNamed(context, "/checkMore").then(
-                                  (_) {
-                                    setState(() {
-                                      _isLoading = false;
-                                    });
-                                  },
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                      "internal issue",
-                                      style: TextStyle(
-                                        fontFamily: "poppins",
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    duration: Duration(microseconds: 1500),
+                          return Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(w * 0.04),
+                            ),
+                            elevation: 3,
+                            child: Padding(
+                              padding: EdgeInsets.all(w * 0.03),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image.asset(
+                                    module['image'],
+                                    height: h * 0.06,
                                   ),
-                                );
-                              }
-                            },
-                            child: Card(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              shadowColor: const Color.fromARGB(
-                                255,
-                                220,
-                                210,
-                                209,
-                              ),
-                              elevation: 3,
-                              child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.asset(
-                                        module['image'],
-                                        height: 50,
-                                        fit: BoxFit.cover,
-                                      ),
+                                  SizedBox(height: h * 0.01),
+                                  Text(
+                                    module['title'],
+                                    style: TextStyle(
+                                      fontSize: w * 0.032,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      module['title'],
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: "poppins",
-                                      ),
+                                  ),
+                                  SizedBox(height: h * 0.005),
+                                  Text(
+                                    module['subtitle'],
+                                    style: TextStyle(
+                                      fontSize: w * 0.025,
+                                      color: Colors.grey[600],
                                     ),
-                                    SizedBox(height: 5),
-                                    Text(
-                                      module['subtitle'],
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey[600],
-                                        fontFamily: "poppins",
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
                           );
