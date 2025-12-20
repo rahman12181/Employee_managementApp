@@ -24,14 +24,36 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // MediaQuery values
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
+    EdgeInsets screenPadding = MediaQuery.of(context).padding;
+    
+   
+   
+    
+    double responsiveFontSize(double baseSize) {
+      return baseSize * (screenWidth / 375); 
+    }
+    
+    double responsiveHeight(double percentage) {
+      return screenHeight * percentage;
+    }
+    
+    double responsiveWidth(double percentage) {
+      return screenWidth * percentage;
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(20, 35, 20, 20),
+          padding: EdgeInsets.fromLTRB(
+            responsiveWidth(0.053), 
+            screenPadding.top + 15, 
+            responsiveWidth(0.053),
+            20,
+          ),
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
@@ -54,57 +76,68 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                             child: Image.asset(
                               "assets/images/app_icon.png",
-                              width: 100,
+                              width: responsiveWidth(0.267), 
                             ),
                           ),
                         ),
 
-                        SizedBox(height: screenHeight * 0.07),
+                        SizedBox(height: responsiveHeight(0.07)),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             "Welcome back!",
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: responsiveFontSize(20),
                               fontFamily: "poppins",
                             ),
                           ),
                         ),
-                        SizedBox(height: 8),
+                        SizedBox(height: responsiveHeight(0.01)),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             "Enter your Login Credentials",
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: responsiveFontSize(13),
                               fontFamily: "poppins",
                               color: const Color.fromARGB(255, 96, 93, 93),
                             ),
                           ),
                         ),
 
-                        SizedBox(height: 70),
+                        SizedBox(height: responsiveHeight(0.085)),
                         TextFormField(
                           controller: _emailController,
                           decoration: InputDecoration(
                             contentPadding: EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 12,
+                              horizontal: responsiveWidth(0.04),
+                              vertical: responsiveHeight(0.015),
                             ),
                             labelText: "Email address",
-                            prefixIcon: Icon(Icons.email_rounded, size: 17),
-                            labelStyle: TextStyle(fontSize: 14),
-                            floatingLabelStyle: TextStyle(color: Colors.black),
+                            prefixIcon: Icon(
+                              Icons.email_rounded, 
+                              size: responsiveFontSize(17)
+                            ),
+                            labelStyle: TextStyle(
+                              fontSize: responsiveFontSize(14)
+                            ),
+                            floatingLabelStyle: const TextStyle(color: Colors.black),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
+                              borderRadius: BorderRadius.circular(
+                                responsiveWidth(0.04)
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide(color: Colors.black),
+                              borderRadius: BorderRadius.circular(
+                                responsiveWidth(0.04)
+                              ),
+                              borderSide: const BorderSide(color: Colors.black),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide(
+                              borderRadius: BorderRadius.circular(
+                                responsiveWidth(0.04)
+                              ),
+                              borderSide: const BorderSide(
                                 color: Color.fromARGB(255, 52, 169, 232),
                               ),
                             ),
@@ -117,17 +150,20 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? "invalid email address"
                               : null,
                         ),
-                        SizedBox(height: 35),
+                        SizedBox(height: responsiveHeight(0.042)),
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
                             contentPadding: EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 12,
+                              horizontal: responsiveWidth(0.04),
+                              vertical: responsiveHeight(0.015),
                             ),
                             labelText: "Password",
-                            prefixIcon: Icon(Icons.lock, size: 18),
+                            prefixIcon: Icon(
+                              Icons.lock, 
+                              size: responsiveFontSize(18)
+                            ),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isPasswordVisible
@@ -140,18 +176,26 @@ class _LoginScreenState extends State<LoginScreen> {
                                 });
                               },
                             ),
-                            labelStyle: TextStyle(fontSize: 14),
-                            floatingLabelStyle: TextStyle(color: Colors.black),
+                            labelStyle: TextStyle(
+                              fontSize: responsiveFontSize(14)
+                            ),
+                            floatingLabelStyle: const TextStyle(color: Colors.black),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
+                              borderRadius: BorderRadius.circular(
+                                responsiveWidth(0.04)
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide(color: Colors.black),
+                              borderRadius: BorderRadius.circular(
+                                responsiveWidth(0.04)
+                              ),
+                              borderSide: const BorderSide(color: Colors.black),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide(
+                              borderRadius: BorderRadius.circular(
+                                responsiveWidth(0.04)
+                              ),
+                              borderSide: const BorderSide(
                                 color: Color.fromARGB(255, 52, 169, 232),
                               ),
                             ),
@@ -160,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? "password required"
                               : null,
                         ),
-                        SizedBox(height: 17),
+                        SizedBox(height: responsiveHeight(0.02)),
                         GestureDetector(
                           onTap: () {
                             setState(() {
@@ -176,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Text(
                               "Forgot password?",
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: responsiveFontSize(15),
                                 fontWeight: FontWeight.bold,
                                 fontFamily: "poppins",
                                 color: _isColorChanged
@@ -187,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 17),
+                        SizedBox(height: responsiveHeight(0.02)),
                         ElevatedButton(
                           onPressed: _isloading
                               ? null
@@ -251,9 +295,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                               Future.delayed(
                                                 const Duration(seconds: 1),
                                                 () {
+                                                  // ignore: use_build_context_synchronously
                                                   Navigator.pop(dialogContext);
                                                   if (mounted) {
                                                     Navigator.pushReplacementNamed(
+                                                      // ignore: use_build_context_synchronously
                                                       context,
                                                       route,
                                                     );
@@ -267,68 +313,69 @@ class _LoginScreenState extends State<LoginScreen> {
                                               backgroundColor: Colors.white,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(20),
+                                                    BorderRadius.circular(
+                                                      responsiveWidth(0.053)
+                                                    ),
                                               ),
                                               child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 28,
-                                                      horizontal: 24,
-                                                    ),
+                                                padding: EdgeInsets.symmetric(
+                                                  vertical: responsiveHeight(0.034),
+                                                  horizontal: responsiveWidth(0.064),
+                                                ),
                                                 child: Column(
                                                   mainAxisSize:
                                                       MainAxisSize.min,
                                                   children: [
                                                     Container(
-                                                      height: 60,
-                                                      width: 60,
+                                                      height: responsiveHeight(0.074),
+                                                      width: responsiveHeight(0.074),
                                                       decoration: BoxDecoration(
                                                         color: Colors.green
                                                             .withAlpha(30),
                                                         shape: BoxShape.circle,
                                                       ),
-                                                      child: const Icon(
+                                                      child: Icon(
                                                         Icons
                                                             .check_circle_rounded,
                                                         color: Colors.green,
-                                                        size: 42,
+                                                        size: responsiveFontSize(42),
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 18),
+                                                    SizedBox(height: responsiveHeight(0.022)),
                                                     Text(
                                                       title,
-                                                      style: const TextStyle(
-                                                        fontSize: 18,
+                                                      style: TextStyle(
+                                                        fontSize: responsiveFontSize(18),
                                                         fontWeight:
                                                             FontWeight.w600,
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 8),
+                                                    SizedBox(height: responsiveHeight(0.01)),
                                                     Text(
                                                       content,
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
-                                                        fontSize: 14,
+                                                        fontSize: responsiveFontSize(14),
                                                         color: Colors
                                                             .grey
                                                             .shade700,
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 20),
-                                                    const SizedBox(
-                                                      height: 18,
-                                                      width: 18,
+                                                    SizedBox(height: responsiveHeight(0.024)),
+                                                    SizedBox(
+                                                      height: responsiveHeight(0.022),
+                                                      width: responsiveHeight(0.022),
                                                       child:
-                                                          CircularProgressIndicator(
+                                                          const CircularProgressIndicator(
                                                             strokeWidth: 2,
                                                           ),
                                                     ),
-                                                    const SizedBox(height: 12),
+                                                    SizedBox(height: responsiveHeight(0.015)),
                                                     Text(
                                                       "Signing you in...",
                                                       style: TextStyle(
-                                                        fontSize: 12,
+                                                        fontSize: responsiveFontSize(12),
                                                         color: Colors
                                                             .grey
                                                             .shade500,
@@ -365,13 +412,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                             showDialog(
                                               context: context,
                                               builder: (_) => AlertDialog(
-                                                title: Text(title),
-                                                content: Text(content),
+                                                title: Text(
+                                                  title,
+                                                  style: TextStyle(
+                                                    fontSize: responsiveFontSize(16),
+                                                  ),
+                                                ),
+                                                content: Text(
+                                                  content,
+                                                  style: TextStyle(
+                                                    fontSize: responsiveFontSize(14),
+                                                  ),
+                                                ),
                                                 actions: [
                                                   TextButton(
                                                     onPressed: () =>
                                                         Navigator.pop(context),
-                                                    child: const Text("OK"),
+                                                    child: Text(
+                                                      "OK",
+                                                      style: TextStyle(
+                                                        fontSize: responsiveFontSize(14),
+                                                      ),
+                                                    ),
                                                   ),
                                                 ],
                                               ),
@@ -385,15 +447,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                           showDialog(
                                             context: context,
                                             builder: (_) => AlertDialog(
-                                              title: const Text(
+                                              title: Text(
                                                 "Network Error",
+                                                style: TextStyle(
+                                                  fontSize: responsiveFontSize(16),
+                                                ),
                                               ),
-                                              content: Text("$e"),
+                                              content: Text(
+                                                "$e",
+                                                style: TextStyle(
+                                                  fontSize: responsiveFontSize(14),
+                                                ),
+                                              ),
                                               actions: [
                                                 TextButton(
                                                   onPressed: () =>
                                                       Navigator.pop(context),
-                                                  child: const Text("OK"),
+                                                  child: Text(
+                                                    "OK",
+                                                    style: TextStyle(
+                                                      fontSize: responsiveFontSize(14),
+                                                    ),
+                                                  ),
                                                 ),
                                               ],
                                             ),
@@ -409,51 +484,53 @@ class _LoginScreenState extends State<LoginScreen> {
                               227,
                             ),
                             minimumSize: Size(
-                              screenWidth * 0.9,
-                              screenHeight * 0.05,
+                              responsiveWidth(0.9),
+                              responsiveHeight(0.05),
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
+                              borderRadius: BorderRadius.circular(
+                                responsiveWidth(0.04)
+                              ),
                             ),
                           ),
                           child: _isloading
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
+                              ? SizedBox(
+                                  height: responsiveHeight(0.027),
+                                  width: responsiveHeight(0.027),
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   "Login",
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: responsiveFontSize(16),
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
                                   ),
                                 ),
                         ),
 
-                        SizedBox(height: screenHeight * 0.08),
+                        SizedBox(height: responsiveHeight(0.08)),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Flexible(
                               child: Container(
                                 height: 1,
-                                width: 50,
+                                width: responsiveWidth(0.133),
                                 color: Colors.grey.shade400,
                               ),
                             ),
 
                             Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: responsiveWidth(0.032),
                               ),
                               child: Text(
                                 "Powered by",
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: responsiveFontSize(12),
                                   letterSpacing: 0.5,
                                   color: Colors.grey.shade700,
                                 ),
@@ -463,20 +540,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             Flexible(
                               child: Container(
                                 height: 1,
-                                width: 50,
+                                width: responsiveWidth(0.133),
                                 color: Colors.grey.shade400,
                               ),
                             ),
                           ],
                         ),
-                        SizedBox(height: screenHeight * 0.02),
+                        SizedBox(height: responsiveHeight(0.02)),
                         RichText(
                           text: TextSpan(
                             children: [
                               TextSpan(
                                 text: "Pioneer.",
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: responsiveFontSize(15),
                                   fontFamily: "poppins",
                                   color: const Color.fromARGB(255, 36, 35, 35),
                                 ),
@@ -484,7 +561,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               TextSpan(
                                 text: "Tech",
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: responsiveFontSize(15),
                                   color: Colors.black,
                                   fontFamily: "poppins",
                                   fontWeight: FontWeight.w600,

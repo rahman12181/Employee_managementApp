@@ -76,7 +76,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Leave Type
-              Text(
+              const Text(
                 "Leave Type",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
@@ -162,7 +162,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
               SizedBox(height: screenHeight * 0.02),
 
               // Reason
-              Text(
+              const Text(
                 "Reason for leave",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
@@ -187,7 +187,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
               SizedBox(height: screenHeight * 0.02),
 
               // Comp Off
-              Text(
+              const Text(
                 "Is it a Comp Off?",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
@@ -229,7 +229,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
               SizedBox(height: screenHeight * 0.02),
 
               // Incharge Replacement
-              Text(
+              const Text(
                 "Incharge Replacement",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,

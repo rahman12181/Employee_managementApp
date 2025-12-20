@@ -7,12 +7,12 @@ import 'package:management_app/card_screen/leaverequest.dart';
 import 'package:management_app/card_screen/leaverequestdetail.dart';
 import 'package:management_app/card_screen/regularization_approval.dart';
 import 'package:management_app/card_screen/regularization_lsiting.dart';
-import 'package:management_app/providers/attendance_history_provider.dart';
+import 'package:management_app/providers/attendance_provider.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/screen/HomeMain_Screen.dart';
-import 'package:management_app/screen/attendance_history_screen.dart';
+import 'package:management_app/screen/attendance_screen.dart';
 import 'package:management_app/screen/forgotPassword_screen.dart';
 import 'package:management_app/screen/home_screen.dart';
 import 'package:management_app/screen/login_screen.dart';
@@ -34,7 +34,7 @@ void main() async{
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => EmployeeProvider()),
         ChangeNotifierProvider(create: (_) => PunchProvider()),
-        ChangeNotifierProvider(create: (_) => AttendanceHistoryProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceProvider()),
       ],
       child: const MyApp(),
     ),
@@ -80,28 +80,28 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      home: SplashScreen(),
+      home: const SplashScreen(),
       initialRoute: '/splashScreen',
 
       routes: {
-        '/splashScreen': (context) => SplashScreen(),
-        '/loginScreen': (context) => LoginScreen(),
-        '/forgotpasswordScreen': (context) => ForgotpasswordScreen(),
-        '/homeMainScreen': (context) => HomemainScreen(),
-        '/homeScreen': (context) => HomeScreen(),
-        '/settingScreen': (context) => SettingsScreen(),
-        '/attendanceScreen': (context) => AttendanceHistoryScreen(),
-        '/notificationScreen': (context) => NotificationScreen(),
-        '/profileScreen': (context) => Profilescreen(),
+        '/splashScreen': (context) => const SplashScreen(),
+        '/loginScreen': (context) => const LoginScreen(),
+        '/forgotpasswordScreen': (context) => const ForgotpasswordScreen(),
+        '/homeMainScreen': (context) => const HomemainScreen(),
+        '/homeScreen': (context) => const HomeScreen(),
+        '/settingScreen': (context) => const SettingsScreen(),
+        '/notificationScreen': (context) => const NotificationScreen(),
+        '/profileScreen': (context) => const Profilescreen(),
+        '/attendanceScreen': (context) => const AttendanceScreen(),
 
         // card screens
-        '/leaveRequest': (context) => LeaveRequest(),
-        '/leaveRequestDetail': (context) => LeaveRequestdetail(),
-        '/leaveApproval': (context) => LeaveApproval(),
-        '/attendanceRegularization': (context) => AttendanceRegularization(),
-        '/regularizationApproval': (context) => RegularizationApproval(),
-        '/regularizationListing': (context) => RegularizationLsiting(),
-        '/checkMore': (context) => CheckMore(),
+        '/leaveRequest': (context) => const LeaveRequest(),
+        '/leaveRequestDetail': (context) => const LeaveRequestdetail(),
+        '/leaveApproval': (context) => const LeaveApproval(),
+        '/attendanceRegularization': (context) => const AttendanceRegularization(),
+        '/regularizationApproval': (context) => const RegularizationApproval(),
+        '/regularizationListing': (context) => const RegularizationLsiting(),
+        '/checkMore': (context) => const CheckMore(),
       },
     );
   }

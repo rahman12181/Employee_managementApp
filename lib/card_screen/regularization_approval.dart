@@ -10,7 +10,7 @@ class RegularizationApproval  extends StatefulWidget{
 class _RegularizationApprovalState  extends State<RegularizationApproval>{
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child: Text("Regularization approval",style: TextStyle(fontSize: 30),),
       ),

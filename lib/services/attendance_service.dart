@@ -1,31 +1,47 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
-class CheckinHistoryService {
-  Future<List<dynamic>> fetchLogs(String employeeId) async {
-    if (employeeId.isEmpty) return [];
+class AttendanceService {
+  static const String baseUrl =
+      "https://ppecon.erpnext.com/api/resource/Employee%20Checkin";
+
+  Future<List<dynamic>> fetchLogs({
+    required String employeeId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cookies = prefs.getStringList("cookies");
+
+    if (cookies == null || cookies.isEmpty) {
+      throw Exception("Session expired");
+    }
+
+    final df = DateFormat("yyyy-MM-dd HH:mm:ss");
 
     final url =
-        "https://ppecon.erpnext.com/api/resource/Employee%20Checkin"
-        "?filters=[[\"employee\",\"=\",\"$employeeId\"]]"
-        "&order_by=time desc"
-        "&limit_page_length=500";
+        "$baseUrl"
+        "?filters=[[\"employee\",\"=\",\"$employeeId\"],"
+        "[\"time\",\">=\",\"${df.format(start)}\"],"
+        "[\"time\",\"<=\",\"${df.format(end)}\"]]"
+        "&fields=[\"log_type\",\"time\"]"
+        "&order_by=time asc";
 
-    final response = await AuthService.client.get(
+    final response = await http.get(
       Uri.parse(url),
       headers: {
         "Content-Type": "application/json",
-        "Cookie": AuthService.cookies.join("; "),
+        "Accept": "application/json",
+        "Cookie": cookies.join("; "),
       },
     );
 
     if (response.statusCode != 200) {
-      throw Exception("History API failed");
+      throw Exception("Failed to fetch attendance");
     }
 
-    final body = jsonDecode(response.body);
-    return body["data"] ?? [];
+    return jsonDecode(response.body)["data"];
   }
-  
 }

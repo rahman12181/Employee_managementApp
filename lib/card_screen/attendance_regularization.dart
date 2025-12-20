@@ -10,7 +10,7 @@ class AttendanceRegularization  extends StatefulWidget{
 class _AttendanceRegularizationState  extends State<AttendanceRegularization>{
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child:  Text("Attendance Screen",style: TextStyle(fontSize: 30),),
       ),

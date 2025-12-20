@@ -4,11 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class CheckinService {
   static const String _url =
-      "https://ppecon.erpnext.com/api/resource/Employee Checkin";
+      "https://ppecon.erpnext.com/api/resource/Employee%20Checkin";
 
   Future<void> checkIn({
     required String employeeId,
-    required String logType,
+    required String logType, 
     double latitude = 0,
     double longitude = 0,
   }) async {
@@ -23,11 +23,12 @@ class CheckinService {
       Uri.parse(_url),
       headers: {
         "Content-Type": "application/json",
-        "Cookie": cookies.join("; "), 
+        "Accept": "application/json",
+        "Cookie": cookies.join("; "),
       },
       body: jsonEncode({
         "employee": employeeId,
-        "log_type": logType,
+        "log_type": logType, // MUST be "IN" or "OUT"
         "latitude": latitude,
         "longitude": longitude,
       }),
@@ -35,7 +36,7 @@ class CheckinService {
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception(
-        "Punch failed: ${response.statusCode} ${response.body}",
+        "Punch failed (${response.statusCode}): ${response.body}",
       );
     }
   }

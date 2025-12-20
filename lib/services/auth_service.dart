@@ -105,7 +105,7 @@ class AuthService {
   }
 
   Future<String> forgotPassword(String email) async {
-    final url =
+    const url =
         "$baseUrl/api/method/frappe.core.doctype.user.user.reset_password";
 
     final response = await http.post(

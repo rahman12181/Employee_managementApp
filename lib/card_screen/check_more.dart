@@ -10,7 +10,7 @@ class CheckMore extends StatefulWidget {
 class _CheckMore extends State<CheckMore>{
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child: Text("see more screen",style:  TextStyle(fontSize: 30),),
       ),

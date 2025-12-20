@@ -15,13 +15,29 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
+    
+    
+    double responsiveFontSize(double baseSize) {
+      return baseSize * (screenWidth / 375); 
+    }
+    
+    double responsiveHeight(double percentage) {
+      return screenHeight * percentage;
+    }
+    
+    double responsiveWidth(double percentage) {
+      return screenWidth * percentage;
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.all(responsiveWidth(0.053)), // 20 for 375 width
             child: Column(
               children: [
                 Consumer<ProfileProvider>(
@@ -35,14 +51,14 @@ class SettingsScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => Profilescreen(),
+                                builder: (_) => const Profilescreen(),
                               ),
                             );
                           },
                           child: Hero(
                             tag: 'profile-hero',
                             child: CircleAvatar(
-                              radius: 25,
+                              radius: responsiveWidth(0.067),
                               backgroundImage:
                                   (user != null &&
                                       user['user_image'] != null &&
@@ -58,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
                           ),
                         ),
 
-                        const SizedBox(width: 12),
+                        SizedBox(width: responsiveWidth(0.032)),
 
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,8 +83,8 @@ class SettingsScreen extends StatelessWidget {
                               user != null && user['full_name'] != null
                                   ? user['full_name']
                                   : "Loading...",
-                              style: const TextStyle(
-                                fontSize: 18,
+                              style: TextStyle(
+                                fontSize: responsiveFontSize(18),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -77,8 +93,8 @@ class SettingsScreen extends StatelessWidget {
                               user != null && user['email'] != null
                                   ? user['email']
                                   : "",
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: responsiveFontSize(14),
                                 color: Colors.grey,
                               ),
                             ),
@@ -89,6 +105,7 @@ class SettingsScreen extends StatelessWidget {
                   },
                 ),
 
+                SizedBox(height: responsiveHeight(0.015)), 
                 const Divider(thickness: 1),
 
                 buildMenuItem(
@@ -96,6 +113,7 @@ class SettingsScreen extends StatelessWidget {
                   Icons.privacy_tip_outlined,
                   "Privacy Policy",
                   const PrivacyPolicyScreen(),
+                  screenWidth: screenWidth,
                 ),
 
                 buildMenuItem(
@@ -103,6 +121,7 @@ class SettingsScreen extends StatelessWidget {
                   Icons.info_outline,
                   "About us",
                   const AboutUsScreen(),
+                  screenWidth: screenWidth,
                 ),
 
                 buildMenuItem(
@@ -110,6 +129,7 @@ class SettingsScreen extends StatelessWidget {
                   Icons.show_chart_outlined,
                   "Reports",
                   const ReportsScreen(),
+                  screenWidth: screenWidth,
                 ),
 
                 buildMenuItem(
@@ -117,6 +137,7 @@ class SettingsScreen extends StatelessWidget {
                   Icons.help_outline,
                   "Help & Support",
                   const HelpSupportScreen(),
+                  screenWidth: screenWidth,
                 ),
 
                 buildMenuItem(
@@ -124,6 +145,7 @@ class SettingsScreen extends StatelessWidget {
                   Icons.feedback_outlined,
                   "Feedback",
                   const FeedbackScreen(),
+                  screenWidth: screenWidth,
                 ),
 
                 buildMenuItem(
@@ -131,17 +153,22 @@ class SettingsScreen extends StatelessWidget {
                   Icons.lock_outline,
                   "Change Password",
                   const ChangePasswordScreen(),
+                  screenWidth: screenWidth,
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: responsiveHeight(0.024)), 
 
                 ListTile(
-                  leading: Icon(Icons.logout, color: Colors.red.shade400),
+                  leading: Icon(
+                    Icons.logout, 
+                    color: Colors.red.shade400,
+                    size: responsiveFontSize(28),
+                  ),
                   title: Text(
                     "Logout",
                     style: TextStyle(
                       color: Colors.red.shade400,
-                      fontSize: 18,
+                      fontSize: responsiveFontSize(18),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -151,26 +178,48 @@ class SettingsScreen extends StatelessWidget {
                       builder: (context) {
                         return AlertDialog(
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              responsiveWidth(0.043)
+                            ),
                           ),
-                          title: const Text("Confirm Logout"),
-                          content: const Text(
+                          title: Text(
+                            "Confirm Logout",
+                            style: TextStyle(
+                              fontSize: responsiveFontSize(18),
+                            ),
+                          ),
+                          content: Text(
                             "Are you sure you want to logout?",
+                            style: TextStyle(
+                              fontSize: responsiveFontSize(14),
+                            ),
                           ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
-                              child: const Text("Cancel"),
+                              child: Text(
+                                "Cancel",
+                                style: TextStyle(
+                                  fontSize: responsiveFontSize(14),
+                                ),
+                              ),
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(
+                                    responsiveWidth(0.027)
+                                  ),
                                 ),
                               ),
                               onPressed: () => Navigator.pop(context, true),
-                              child: const Text("Logout"),
+                              child: Text(
+                                "Logout",
+                                style: TextStyle(
+                                  fontSize: responsiveFontSize(14),
+                                ),
+                              ),
                             ),
                           ],
                         );
@@ -190,30 +239,32 @@ class SettingsScreen extends StatelessWidget {
                           child: Material(
                             color: Colors.transparent,
                             child: Container(
-                              width: MediaQuery.of(context).size.width * 0.85,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 28,
-                                horizontal: 24,
+                              width: screenWidth * 0.85,
+                              padding: EdgeInsets.symmetric(
+                                vertical: responsiveHeight(0.034),
+                                horizontal: responsiveWidth(0.064),
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(22),
+                                borderRadius: BorderRadius.circular(
+                                  responsiveWidth(0.058)
+                                ),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                children: const [
+                                children: [
                                   SizedBox(
-                                    height: 22,
-                                    width: 22,
-                                    child: CircularProgressIndicator(
+                                    height: responsiveHeight(0.027),
+                                    width: responsiveHeight(0.027),
+                                    child: const CircularProgressIndicator(
                                       strokeWidth: 2,
                                     ),
                                   ),
-                                  SizedBox(height: 16),
+                                  SizedBox(height: responsiveHeight(0.019)),
                                   Text(
                                     "Logging you out...",
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: responsiveFontSize(14),
                                       color: Colors.black54,
                                     ),
                                   ),
@@ -262,21 +313,23 @@ class SettingsScreen extends StatelessWidget {
                           child: Material(
                             color: Colors.transparent,
                             child: Container(
-                              width: MediaQuery.of(context).size.width * 0.85,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 28,
-                                horizontal: 24,
+                              width: screenWidth * 0.85,
+                              padding: EdgeInsets.symmetric(
+                                vertical: responsiveHeight(0.034),
+                                horizontal: responsiveWidth(0.064),
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(22),
+                                borderRadius: BorderRadius.circular(
+                                  responsiveWidth(0.058)
+                                ),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
-                                    height: 64,
-                                    width: 64,
+                                    height: responsiveHeight(0.078),
+                                    width: responsiveHeight(0.078),
                                     decoration: BoxDecoration(
                                       color:
                                           (result["success"]
@@ -292,25 +345,25 @@ class SettingsScreen extends StatelessWidget {
                                       color: result["success"]
                                           ? Colors.green
                                           : Colors.red,
-                                      size: 40,
+                                      size: responsiveFontSize(40),
                                     ),
                                   ),
-                                  const SizedBox(height: 18),
+                                  SizedBox(height: responsiveHeight(0.022)),
                                   Text(
                                     result["success"]
                                         ? "Logged out"
                                         : "Logout failed",
-                                    style: const TextStyle(
-                                      fontSize: 18,
+                                    style: TextStyle(
+                                      fontSize: responsiveFontSize(18),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: responsiveHeight(0.01)),
                                   Text(
                                     result["message"] ?? "",
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    style: TextStyle(
+                                      fontSize: responsiveFontSize(14),
                                       color: Colors.black54,
                                     ),
                                   ),
@@ -333,7 +386,7 @@ class SettingsScreen extends StatelessWidget {
                   },
                 ),
 
-                const SizedBox(height: 40),
+                SizedBox(height: responsiveHeight(0.05)), // 40 for 375 height
               ],
             ),
           ),
@@ -346,15 +399,29 @@ class SettingsScreen extends StatelessWidget {
     BuildContext context,
     IconData icon,
     String title,
-    Widget page,
-  ) {
+    Widget page, {
+    required double screenWidth,
+  }) {
+    double responsiveFontSize(double baseSize) {
+      return baseSize * (screenWidth / 375);
+    }
+
     return ListTile(
-      leading: Icon(icon, size: 28, color: Colors.black87),
-
-      title: Text(title, style: const TextStyle(fontSize: 18)),
-
-      trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-
+      leading: Icon(
+        icon, 
+        size: responsiveFontSize(28), 
+        color: Colors.black87
+      ),
+      title: Text(
+        title, 
+        style: TextStyle(
+          fontSize: responsiveFontSize(18)
+        )
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios, 
+        size: responsiveFontSize(18)
+      ),
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder: (_) => page));
       },

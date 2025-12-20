@@ -26,7 +26,7 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 SlideAnimation(
@@ -40,7 +40,7 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.08),
-                      Align(
+                      const Align(
                         alignment: Alignment.center,
                         child: Text(
                           "Forgot Password",
@@ -52,13 +52,13 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.02),
-                      Text(
+                      const Text(
                         textAlign: TextAlign.center,
                         "Enter your email to reset your \naccount password",
                         style: TextStyle(
                           fontSize: 15,
                           fontFamily: "poppins",
-                          color: const Color.fromARGB(255, 134, 133, 133),
+                          color: Color.fromARGB(255, 134, 133, 133),
                         ),
                       ),
 
@@ -70,24 +70,24 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
                             TextFormField(
                           controller: _emailController,
                           decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 15,
                               vertical: 12,
                             ),
                             labelText: "Email address",
-                            prefixIcon: Icon(Icons.email_rounded, size: 17),
-                            labelStyle: TextStyle(fontSize: 14),
-                            floatingLabelStyle: TextStyle(color: Colors.black),
+                            prefixIcon: const Icon(Icons.email_rounded, size: 17),
+                            labelStyle: const TextStyle(fontSize: 14),
+                            floatingLabelStyle: const TextStyle(color: Colors.black),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide(color: Colors.black),
+                              borderSide: const BorderSide(color: Colors.black),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide(
+                              borderSide: const BorderSide(
                                 color: Color.fromARGB(255, 52, 169, 232),
                               ),
                             ),
@@ -209,7 +209,7 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
                               child: RichText(
                                 text: TextSpan(
                                   children: [
-                                    TextSpan(
+                                    const TextSpan(
                                       text: "Remember Password?",
                                       style: TextStyle(
                                         fontSize: 12,
@@ -219,11 +219,11 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
                                     ),
                                     TextSpan(
                                       text: "Log In",
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 15,
                                         fontFamily: "poppins",
                                         fontWeight: FontWeight.bold,
-                                        color: const Color.fromARGB(
+                                        color: Color.fromARGB(
                                           255,
                                           52,
                                           169,

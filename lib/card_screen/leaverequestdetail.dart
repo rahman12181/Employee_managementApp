@@ -10,7 +10,7 @@ class LeaveRequestdetail extends StatefulWidget{
 class _LeaveRequestdetailState extends State<LeaveRequestdetail>{
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Text("Leave detail screen",style: TextStyle(fontSize: 30),),
     );
   }
