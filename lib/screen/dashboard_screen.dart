@@ -74,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
 
     Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 7));   
+      await Future.delayed(const Duration(seconds: 7));
       if (!mounted) return false;
 
       setState(() {
@@ -108,24 +108,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     radius: w * 0.055,
                     backgroundImage:
                         (user != null &&
-                                user['user_image'] != null &&
-                                user['user_image'] != "")
-                            ? NetworkImage(
-                                "https://ppecon.erpnext.com${user['user_image']}",
-                              )
-                            : const AssetImage(
-                                "assets/images/app_icon.png",
-                              ) as ImageProvider,
+                            user['user_image'] != null &&
+                            user['user_image'] != "")
+                        ? NetworkImage(
+                            "https://ppecon.erpnext.com${user['user_image']}",
+                          )
+                        : const AssetImage("assets/images/app_icon.png")
+                              as ImageProvider,
                   );
                 },
               ),
             ),
             Row(
               children: [
-                Image.asset(
-                  "assets/images/app_icon.png",
-                  width: w * 0.10,
-                ),
+                Image.asset("assets/images/app_icon.png", width: w * 0.10),
                 SizedBox(width: w * 0.015),
                 RichText(
                   text: TextSpan(
@@ -200,8 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: modules.length,
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           childAspectRatio: 0.9,
                           crossAxisSpacing: w * 0.03,
@@ -209,39 +204,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         itemBuilder: (context, index) {
                           final module = modules[index];
-                          return Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(w * 0.04),
-                            ),
-                            elevation: 3,
-                            child: Padding(
-                              padding: EdgeInsets.all(w * 0.03),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.asset(
-                                    module['image'],
-                                    height: h * 0.06,
+
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(w * 0.04),
+                              onTap: () {
+                                switch (module['type']) {
+                                  case 'Leave_Request':
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/leaveRequest',
+                                    );
+                                    break;
+
+                                  case 'Leave_requestDetail':
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/leaveRequestDetail',
+                                    );
+                                    break;
+
+                                  case 'Leave_Approval':
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/leaveApproval',
+                                    );
+                                    break;
+
+                                  case 'Attendance_Redularization':
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/attendanceRegularization',
+                                    );
+                                    break;
+
+                                  case 'Regularization_Approval':
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/regularizationApproval',
+                                    );
+                                    break;
+
+                                  case 'Regularization_Listing':
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/regularizationListing',
+                                    );
+                                    break;
+
+                                  case 'Check_More':
+                                    Navigator.pushNamed(context, '/checkMore');
+                                    break;
+
+                                  default:
+                                    debugPrint(
+                                      'No route defined for ${module['type']}',
+                                    );
+                                }
+                              },
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(w * 0.04),
+                                ),
+                                elevation: 3,
+                                child: Padding(
+                                  padding: EdgeInsets.all(w * 0.03),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Image.asset(
+                                        module['image'],
+                                        height: h * 0.06,
+                                      ),
+                                      SizedBox(height: h * 0.01),
+                                      Text(
+                                        module['title'],
+                                        style: TextStyle(
+                                          fontSize: w * 0.032,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: h * 0.005),
+                                      Text(
+                                        module['subtitle'],
+                                        style: TextStyle(
+                                          fontSize: w * 0.025,
+                                          color: Colors.grey[600],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
                                   ),
-                                  SizedBox(height: h * 0.01),
-                                  Text(
-                                    module['title'],
-                                    style: TextStyle(
-                                      fontSize: w * 0.032,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: h * 0.005),
-                                  Text(
-                                    module['subtitle'],
-                                    style: TextStyle(
-                                      fontSize: w * 0.025,
-                                      color: Colors.grey[600],
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           );

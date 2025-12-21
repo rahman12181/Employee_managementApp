@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
-import 'package:management_app/providers/attendance_provider.dart'; // ✅ ADDED
 import 'package:management_app/services/checkin_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
@@ -64,9 +63,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
     return "DONE";
   }
 
-  // =========================
-  // 🔥 UPDATED PUNCH HANDLER
-  // =========================
+ 
   Future<void> onPunchTap() async {
     final employeeId =
         Provider.of<EmployeeProvider>(context, listen: false).employeeId;
