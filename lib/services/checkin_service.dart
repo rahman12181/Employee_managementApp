@@ -28,7 +28,7 @@ class CheckinService {
       },
       body: jsonEncode({
         "employee": employeeId,
-        "log_type": logType, // MUST be "IN" or "OUT"
+        "log_type": logType, 
         "latitude": latitude,
         "longitude": longitude,
       }),

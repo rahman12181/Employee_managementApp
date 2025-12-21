@@ -25,7 +25,9 @@ class AttendanceProvider extends ChangeNotifier {
     attendanceMap.clear();
 
     for (var item in data) {
-      final time = DateTime.parse(item["time"]);
+      final time = DateFormat(
+        "yyyy-MM-dd HH:mm:ss",
+      ).parse(item["time"], true).toLocal();
 
       final dateOnly = item["time"].toString().substring(0, 10);
       final dateKey = DateTime.parse(dateOnly);
