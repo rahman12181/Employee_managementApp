@@ -17,9 +17,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'assets/images/banner2.jpg',
     'assets/images/banner3.jpg',
     'assets/images/banner4.jpg',
-    //'assets/images/banner5.png',
-    //'assets/images/banner6.png',
-    //'assets/images/banner7.png',
+    'assets/images/banner5.jpg',
+    'assets/images/banner6.jpg',
+    'assets/images/banner7.jpg',
   ];
 
   final List<Map<String, dynamic>> modules = [
