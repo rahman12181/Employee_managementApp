@@ -54,10 +54,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding:const EdgeInsets.fromLTRB(10, 30, 10, 10),
             child: Column(
               children: [
-                // ================= MONTH HEADER =================
+             
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -99,7 +99,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                 const SizedBox(height: 10),
 
-                // ================= CALENDAR =================
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),

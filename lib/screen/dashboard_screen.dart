@@ -13,13 +13,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final bool _isLoading = false;
 
   final List<String> bannerImages = [
-    'assets/images/banner1.png',
-    'assets/images/banner2.png',
-    'assets/images/banner3.png',
-    'assets/images/banner4.png',
-    'assets/images/banner5.png',
-    'assets/images/banner6.png',
-    'assets/images/banner7.png',
+    'assets/images/banner1.jpg',
+    'assets/images/banner2.jpg',
+    'assets/images/banner3.jpg',
+    'assets/images/banner4.jpg',
+    //'assets/images/banner5.png',
+    //'assets/images/banner6.png',
+    //'assets/images/banner7.png',
   ];
 
   final List<Map<String, dynamic>> modules = [
