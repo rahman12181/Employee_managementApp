@@ -171,9 +171,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: SafeArea(
                 child: Column(
                   children: [
+                    SizedBox(height: h * 0.010),
+                    Text(
+                      "Modules",
+                      style: TextStyle(
+                        fontSize: w * 0.05,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: "poppins",
+                      ),
+                    ),
                     SizedBox(height: h * 0.015),
                     Container(
-                      width: w * 0.90,
+                      width: w * 0.95,
                       height: h * 0.20,
                       clipBehavior: Clip.hardEdge,
                       decoration: BoxDecoration(
