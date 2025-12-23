@@ -18,10 +18,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Future<void> _refreshAttendance() async {
     final employeeId = context.read<EmployeeProvider>().employeeId;
     if (employeeId != null) {
-      await context.read<AttendanceProvider>().loadMonthAttendance(
-        employeeId,
-        currentMonth,
-      );
+      await context
+          .read<AttendanceProvider>()
+          .loadMonthAttendance(employeeId, currentMonth);
     }
   }
 
@@ -29,6 +28,36 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   void initState() {
     super.initState();
     Future.microtask(() => _refreshAttendance());
+  }
+
+  Color getStatusColor(AttendanceStatus status) {
+    switch (status) {
+      case AttendanceStatus.completed:
+        return Colors.green;
+      case AttendanceStatus.overtime:
+        return Colors.blue;
+      case AttendanceStatus.shortage:
+        return Colors.orange;
+      case AttendanceStatus.checkedIn:
+        return Colors.yellow.shade700;
+      case AttendanceStatus.absent:
+        return Colors.red;
+    }
+  }
+
+  String getStatusText(AttendanceStatus status) {
+    switch (status) {
+      case AttendanceStatus.completed:
+        return "Completed (8–9 hrs)";
+      case AttendanceStatus.overtime:
+        return "Overtime (9+ hrs)";
+      case AttendanceStatus.shortage:
+        return "Shortage (< 8 hrs)";
+      case AttendanceStatus.checkedIn:
+        return "Checked In";
+      case AttendanceStatus.absent:
+        return "Absent";
+    }
   }
 
   @override
@@ -43,7 +72,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     bool canGoNext =
         currentMonth.year < now.year ||
-        (currentMonth.year == now.year && currentMonth.month < now.month);
+        (currentMonth.year == now.year &&
+            currentMonth.month < now.month);
 
     final monthlyLogs = provider.getMonthlyLogs(currentMonth);
 
@@ -54,10 +84,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
-            padding:const EdgeInsets.fromLTRB(10, 30, 10, 10),
+            padding: const EdgeInsets.fromLTRB(10, 30, 10, 10),
             child: Column(
               children: [
-             
+               
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -103,7 +133,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: daysInMonth,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 7,
                     crossAxisSpacing: 6,
                     mainAxisSpacing: 6,
@@ -117,76 +148,68 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     );
 
                     final log = provider.attendanceMap[date];
-                    final today = DateTime(now.year, now.month, now.day);
+                    final status =
+                        log?.status ?? AttendanceStatus.absent;
 
-                    Color bgColor = Colors.grey.shade300;
-
-                    if (date.isBefore(today) || date.isAtSameMomentAs(today)) {
-                      bgColor = Colors.red;
-                      if (log != null && log.checkIn != null) {
-                        bgColor = Colors.green;
-                      }
-                    }
+                    final bgColor = getStatusColor(status);
 
                     return Container(
                       decoration: BoxDecoration(
                         color: bgColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Center(
-                        child: Text(
-                          "$day",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "$day",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
+                          Text(
+                            DateFormat('E').format(date), // M T W
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    _legend(Colors.green, "Completed"),
+                    _legend(Colors.blue, "Overtime"),
+                    _legend(Colors.orange, "Shortage"),
+                    _legend(Colors.yellow.shade700, "Checked In"),
+                    _legend(Colors.red, "Absent"),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+                
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: monthlyLogs.length,
                   itemBuilder: (_, index) {
-                    final AttendanceLog log = monthlyLogs[index];
-
-                    Color getAttendanceColor(AttendanceLog log) {
-                      switch (log.status) {
-                        case AttendanceStatus.presentCheckedIn:
-                          return Colors.blue; 
-                        case AttendanceStatus.presentCompleted:
-                          return Colors.green; 
-                        case AttendanceStatus.absent:
-                          return Colors.red;
-                      }
-                    }
-
-                    final statusColor = getAttendanceColor(log);
-
-                    String statusText;
-                    switch (log.status) {
-                      case AttendanceStatus.presentCheckedIn:
-                        statusText = "Present (Checked In)";
-                        break;
-                      case AttendanceStatus.presentCompleted:
-                        statusText = "Present (Completed)";
-                        break;
-                      case AttendanceStatus.absent:
-                        statusText = "Absent";
-                        break;
-                    }
+                    final log = monthlyLogs[index];
+                    final statusColor = getStatusColor(log.status);
 
                     String formatDuration(Duration duration) {
-                      final hours = duration.inHours.toString().padLeft(2, '0');
-                      final minutes = (duration.inMinutes % 60)
-                          .toString()
-                          .padLeft(2, '0');
-                      return "$hours:$minutes";
+                      final h = duration.inHours.toString().padLeft(2, '0');
+                      final m =
+                          (duration.inMinutes % 60).toString().padLeft(2, '0');
+                      return "$h:$m";
                     }
 
                     return Card(
@@ -195,7 +218,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
-                            // DATE BOX
                             Container(
                               width: 50,
                               height: 50,
@@ -225,26 +247,23 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 ),
                               ),
                             ),
-
                             const SizedBox(width: 12),
-
-                            // INFO
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    statusText,
+                                    getStatusText(log.status),
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: statusColor,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text("Punch In  : ${log.checkIn ?? '--'}"),
-                                  Text("Punch Out : ${log.checkOut ?? '--'}"),
+                                  Text("In  : ${log.checkIn ?? '--'}"),
+                                  Text("Out : ${log.checkOut ?? '--'}"),
                                   Text(
-                                    "Total     : ${formatDuration(log.totalHours)}",
+                                    "Total : ${formatDuration(log.totalHours)}",
                                   ),
                                 ],
                               ),
@@ -260,6 +279,24 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _legend(Color color, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(text, style: const TextStyle(fontSize: 12)),
+      ],
     );
   }
 }

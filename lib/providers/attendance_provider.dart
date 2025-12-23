@@ -13,7 +13,7 @@ class AttendanceProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    final start = DateTime(month.year, month.month, 1, 0, 0, 0);
+    final start = DateTime(month.year, month.month, 1);
     final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
 
     final data = await service.fetchLogs(
@@ -25,36 +25,57 @@ class AttendanceProvider extends ChangeNotifier {
     attendanceMap.clear();
 
     for (var item in data) {
-      final time = DateFormat(
+      final DateTime time = DateFormat(
         "yyyy-MM-dd HH:mm:ss",
       ).parse(item["time"], true).toLocal();
 
-      final dateOnly = item["time"].toString().substring(0, 10);
-      final dateKey = DateTime.parse(dateOnly);
+      final dateKey = DateTime(time.year, time.month, time.day);
 
-      attendanceMap.putIfAbsent(dateKey, () => AttendanceLog(date: dateKey));
+      attendanceMap.putIfAbsent(
+        dateKey,
+        () => AttendanceLog(
+          date: dateKey,
+          totalHours: Duration.zero,
+          status: AttendanceStatus.absent,
+        ),
+      );
+
+      final log = attendanceMap[dateKey]!;
 
       if (item["log_type"] == "IN") {
-        attendanceMap[dateKey]!.checkIn = _formatTime(time);
-        attendanceMap[dateKey]!.status = AttendanceStatus.presentCheckedIn;
-      } else {
-        attendanceMap[dateKey]!.checkOut = _formatTime(time);
+        log.checkIn = _formatTime(time);
+        log.status = AttendanceStatus.checkedIn;
+      }
 
-        final inStr = attendanceMap[dateKey]!.checkIn;
-        if (inStr != null) {
+      else if (item["log_type"] == "OUT") {
+        log.checkOut = _formatTime(time);
+
+        if (log.checkIn != null) {
           final inTime = DateFormat(
             "yyyy-MM-dd HH:mm:ss",
-          ).parse("$dateOnly $inStr:00");
+          ).parse("${DateFormat('yyyy-MM-dd').format(dateKey)} ${log.checkIn}:00");
 
-          attendanceMap[dateKey]!.totalHours = time.difference(inTime);
+          log.totalHours = time.difference(inTime);
+
+          _applyWorkingHourStatus(log);
         }
-
-        attendanceMap[dateKey]!.status = AttendanceStatus.presentCompleted;
       }
     }
 
     isLoading = false;
     notifyListeners();
+  }
+
+  void _applyWorkingHourStatus(AttendanceLog log) {
+    final hours = log.totalHours.inMinutes / 60;
+
+    if (hours >= 9) {
+      log.status = AttendanceStatus.overtime; 
+    } else if (hours >= 8) {
+      log.status = AttendanceStatus.completed; 
+    } else {
+      log.status = AttendanceStatus.shortage; 
+    }
   }
 
   List<AttendanceLog> getMonthlyLogs(DateTime month) {
@@ -67,7 +88,6 @@ class AttendanceProvider extends ChangeNotifier {
         month.year == today.year && month.month == today.month;
 
     final lastDayOfMonth = DateTime(month.year, month.month + 1, 0);
-
     final int maxDay = isCurrentMonth ? today.day : lastDayOfMonth.day;
 
     for (int day = 1; day <= maxDay; day++) {
@@ -75,18 +95,14 @@ class AttendanceProvider extends ChangeNotifier {
 
       if (attendanceMap.containsKey(date)) {
         logs.add(attendanceMap[date]!);
-      } else {
-        if (date.isBefore(today) || date.isAtSameMomentAs(today)) {
-          logs.add(
-            AttendanceLog(
-              date: date,
-              checkIn: null,
-              checkOut: null,
-              totalHours: Duration.zero,
-              status: AttendanceStatus.absent,
-            ),
-          );
-        }
+      } else if (date.isBefore(today) || date.isAtSameMomentAs(today)) {
+        logs.add(
+          AttendanceLog(
+            date: date,
+            totalHours: Duration.zero,
+            status: AttendanceStatus.absent,
+          ),
+        );
       }
     }
 

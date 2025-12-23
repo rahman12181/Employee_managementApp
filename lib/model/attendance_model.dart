@@ -1,7 +1,9 @@
 enum AttendanceStatus {
-  absent,               
-  presentCheckedIn,     
-  presentCompleted,    
+  absent,
+  checkedIn,
+  completed,
+  overtime,
+  shortage,
 }
 
 class AttendanceLog {
