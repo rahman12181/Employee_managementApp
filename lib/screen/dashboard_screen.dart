@@ -189,17 +189,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    SizedBox(height: h * 0.010),
-                    Text(
-                      "Modules",
-                      style: TextStyle(
-                        fontSize: w * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: "poppins",
-                      ),
-                      textAlign: TextAlign.left,
-                    ),
                     SizedBox(height: h * 0.025),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 10.0,
+                      ), 
+                      child: Align(
+                        alignment:Alignment.centerLeft,
+                        child: Text(
+                          "Modules",
+                          style: TextStyle(
+                            fontSize: w * 0.05,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: "poppins",
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: h * 0.010),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: w * 0.01),
                       child: GridView.builder(

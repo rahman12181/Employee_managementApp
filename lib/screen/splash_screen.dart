@@ -12,7 +12,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  String fullText = "Management_App";
+  String fullText = "Pioneer_Tech";
   String displayedText = "";
   int index = 0;
 
@@ -30,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 3),
+      duration: const Duration(seconds: 3),
     );
 
     positionAnimation = Tween<double>(

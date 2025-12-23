@@ -35,7 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: _bottomNavigationScreens[_selectedIndex],
       ),
 
-      bottomNavigationBar: Container(
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child:Container(
         margin: const EdgeInsets.all(20),
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 14),
         decoration: BoxDecoration(
@@ -58,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
             navButton(Icons.calendar_today, "HISTORY", 2),
           ],
         ),
+      ),
       ),
     );
   }
