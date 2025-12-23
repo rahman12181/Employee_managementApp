@@ -175,23 +175,23 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
             Text(_currentTime,
                 style: const TextStyle(
-                    fontSize: 38, fontWeight: FontWeight.bold)),
+                    fontSize: 32, fontWeight: FontWeight.bold)),
             Text(_currentDate,
                 style: const TextStyle(
                     fontSize: 14, color: Colors.black54)),
 
-            SizedBox(height: screenHeight * 0.08),
+            SizedBox(height: screenHeight * 0.07),
 
             Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: screenWidth * 0.48,
-                  height: screenWidth * 0.48,
+                  width: screenWidth * 0.50,
+                  height: screenWidth * 0.50,
                   child: CircularProgressIndicator(
                     value:
                         punchProvider.progressValue().clamp(0.0, 1.0),
-                    strokeWidth: 6,
+                    strokeWidth: 7,
                     color: punchProvider.punchOutTime != null
                         ? Colors.grey
                         : Colors.green,
@@ -204,8 +204,8 @@ class _HomemainScreenState extends State<HomemainScreen> {
                       BorderRadius.circular(screenWidth * 0.45 / 2),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    width: screenWidth * 0.45,
-                    height: screenWidth * 0.45,
+                    width: screenWidth * 0.48,
+                    height: screenWidth * 0.48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isPunching
@@ -261,7 +261,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
               ],
             ),
 
-            SizedBox(height: screenHeight * 0.08),
+            SizedBox(height: screenHeight * 0.07),
 
             Row(
               mainAxisAlignment:
@@ -294,7 +294,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
   Widget _smallInfo(IconData icon, String time, String label) {
     return Column(
       children: [
-        Icon(icon, size: 30, color: Colors.red.shade600),
+        Icon(icon, size: 27, color: Colors.red.shade600),
         const SizedBox(height: 4),
         Text(time,
             style: const TextStyle(fontWeight: FontWeight.bold)),

@@ -75,14 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Icon(
             icon,
-            size: active ? 30 : 26,
+            size: active ? 27 : 22,
             color: active ? Colors.white : Colors.white70,
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: active ? 13 : 12,
+              fontSize: active ? 11 : 10,
               fontWeight: active ? FontWeight.bold : FontWeight.normal,
               color: active ? Colors.white : Colors.white70,
             ),
