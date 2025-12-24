@@ -5,7 +5,6 @@ import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/services/checkin_service.dart';
-import 'package:management_app/widgets/analog_clock_widget.dart'; 
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 
@@ -20,11 +19,8 @@ class _HomemainScreenState extends State<HomemainScreen> {
   String _currentTime = '';
   String _currentDate = '';
   Timer? _timer;
-  String _greeting = 'Welcome,'; 
+  String _greeting = 'Welcome,'; // Greeting variable
   Timer? _greetingTimer;
-  
-  bool showClock = false;
-  DateTime? clockStartTime;
 
   final CheckinService _checkinService = CheckinService();
 
@@ -57,14 +53,6 @@ class _HomemainScreenState extends State<HomemainScreen> {
         context,
         listen: false,
       ).loadDailyPunches();
-    
-      final punchProvider = Provider.of<PunchProvider>(context, listen: false);
-      if (punchProvider.punchInTime != null && punchProvider.punchOutTime == null) {
-        setState(() {
-          showClock = true;
-          clockStartTime = punchProvider.punchInTime;
-        });
-      }
     });
   }
 
@@ -175,16 +163,9 @@ class _HomemainScreenState extends State<HomemainScreen> {
       if (logType == "IN") {
         await punchProvider.setPunchIn(now);
         successText = "Checked in at ${DateFormat('hh:mm a').format(now)}";
-        setState(() {
-          showClock = true;
-          clockStartTime = now;
-        });
       } else {
         await punchProvider.setPunchOut(now);
         successText = "Checked out at ${DateFormat('hh:mm a').format(now)}";
-        setState(() {
-          showClock = false;
-        });
       }
 
       setState(() {
@@ -237,6 +218,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+            
                         Text(
                           _greeting,
                           style: TextStyle(
@@ -246,6 +228,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                           ),
                         ),
                         const SizedBox(height: 2),
+                   
                         Text(
                           user?['full_name'] ?? "",
                           style: const TextStyle(
@@ -271,16 +254,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
               style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
 
-            if (showClock && clockStartTime != null) ...[
-              const SizedBox(height: 15),
-              AnalogClockWidget(
-                startTime: clockStartTime,
-                isRunning: showClock,
-                size: screenWidth * 0.6, 
-              ),
-            ],
-
-            SizedBox(height: showClock ? screenHeight * 0.03 : screenHeight * 0.07),
+            SizedBox(height: screenHeight * 0.07),
 
             Stack(
               alignment: Alignment.center,
