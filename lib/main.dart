@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:management_app/card_screen/attendance_regularization.dart';
 import 'package:management_app/card_screen/check_more.dart';
 import 'package:management_app/card_screen/leave_approval.dart';
 import 'package:management_app/card_screen/leaverequest.dart';
@@ -12,6 +11,7 @@ import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/screen/HomeMain_Screen.dart';
+import 'package:management_app/screen/attendance_request_screen.dart';
 import 'package:management_app/screen/attendance_screen.dart';
 import 'package:management_app/screen/forgotPassword_screen.dart';
 import 'package:management_app/screen/home_screen.dart';
@@ -100,7 +100,7 @@ class MyApp extends StatelessWidget {
         '/leaveRequest': (context) => const LeaveRequest(),
         '/leaveRequestDetail': (context) => const LeaveRequestdetail(),
         '/leaveApproval': (context) => const LeaveApproval(),
-        '/attendanceRegularization': (context) => const AttendanceRegularization(),
+        '/attendanceRequest': (context) => const AttendanceRequestScreen(),
         '/regularizationApproval': (context) => const RegularizationApproval(),
         '/regularizationListing': (context) => const RegularizationLsiting(),
         '/checkMore': (context) => const CheckMore(),

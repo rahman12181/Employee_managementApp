@@ -42,10 +42,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'type': 'Leave_Approval',
     },
     {
-      'title': 'Attendance Regularization',
+      'title': 'Attendance Request',
       'subtitle': 'your logs..',
       'image': 'assets/images/attendanceicon.png',
-      'type': 'Attendance_Redularization',
+      'type': 'Attendance_request',
     },
     {
       'title': 'Regularization Approval',
@@ -250,10 +250,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     );
                                     break;
 
-                                  case 'Attendance_Redularization':
+                                  case 'Attendance_request':
                                     Navigator.pushNamed(
                                       context,
-                                      '/attendanceRegularization',
+                                      '/attendanceRequest',
                                     );
                                     break;
 

@@ -5,6 +5,7 @@ import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/services/checkin_service.dart';
+import 'package:management_app/widgets/animated_clock.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 
@@ -19,6 +20,11 @@ class _HomemainScreenState extends State<HomemainScreen> {
   String _currentTime = '';
   String _currentDate = '';
   Timer? _timer;
+  String _greeting = 'Welcome,'; 
+  Timer? _greetingTimer;
+  
+  bool showClock = false;
+  DateTime? clockStartTime;
 
   final CheckinService _checkinService = CheckinService();
 
@@ -33,13 +39,48 @@ class _HomemainScreenState extends State<HomemainScreen> {
     _updateTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
 
+    _greetingTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted) {
+        setState(() {
+          _greeting = _getTimeBasedGreeting();
+        });
+      }
+    });
+
     Future.microtask(() async {
       await Provider.of<ProfileProvider>(context, listen: false).loadProfile();
-      await Provider.of<EmployeeProvider>(context, listen: false)
-          .loadEmployeeIdFromLocal();
-      await Provider.of<PunchProvider>(context, listen: false)
-          .loadDailyPunches();
+      await Provider.of<EmployeeProvider>(
+        context,
+        listen: false,
+      ).loadEmployeeIdFromLocal();
+      await Provider.of<PunchProvider>(
+        context,
+        listen: false,
+      ).loadDailyPunches();
+    
+      final punchProvider = Provider.of<PunchProvider>(context, listen: false);
+      if (punchProvider.punchInTime != null && punchProvider.punchOutTime == null) {
+        setState(() {
+          showClock = true;
+          clockStartTime = punchProvider.punchInTime;
+        });
+      }
     });
+  }
+
+  String _getTimeBasedGreeting() {
+    final saudiTime = DateTime.now().toUtc().add(const Duration(hours: 3));
+    final hour = saudiTime.hour;
+
+    if (hour >= 5 && hour < 12) {
+      return 'Good Morning,';
+    } else if (hour >= 12 && hour < 17) {
+      return 'Good Afternoon,';
+    } else if (hour >= 17 && hour < 21) {
+      return 'Good Evening,';
+    } else {
+      return 'Good Night,';
+    }
   }
 
   void _updateTime() {
@@ -54,6 +95,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _greetingTimer?.cancel();
     super.dispose();
   }
 
@@ -63,12 +105,12 @@ class _HomemainScreenState extends State<HomemainScreen> {
     return "DONE";
   }
 
- 
   Future<void> onPunchTap() async {
-    final employeeId =
-        Provider.of<EmployeeProvider>(context, listen: false).employeeId;
-    final punchProvider =
-        Provider.of<PunchProvider>(context, listen: false);
+    final employeeId = Provider.of<EmployeeProvider>(
+      context,
+      listen: false,
+    ).employeeId;
+    final punchProvider = Provider.of<PunchProvider>(context, listen: false);
 
     if (employeeId == null || isPunching) return;
 
@@ -76,7 +118,41 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
     if (logType == "IN" && punchProvider.punchInTime != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You have already checked in today!")),
+        SnackBar(
+          content: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade300, width: 1),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.orange.shade800,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "You have already checked in today!",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(20),
+          duration: const Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -92,21 +168,24 @@ class _HomemainScreenState extends State<HomemainScreen> {
       setState(() => isPunching = true);
       HapticFeedback.lightImpact();
 
-      await _checkinService.checkIn(
-        employeeId: employeeId,
-        logType: logType,
-      );
+      await _checkinService.checkIn(employeeId: employeeId, logType: logType);
 
       final now = DateTime.now();
 
       if (logType == "IN") {
         await punchProvider.setPunchIn(now);
         successText = "Checked in at ${DateFormat('hh:mm a').format(now)}";
+        setState(() {
+          showClock = true;
+          clockStartTime = now;
+        });
       } else {
         await punchProvider.setPunchOut(now);
         successText = "Checked out at ${DateFormat('hh:mm a').format(now)}";
+        setState(() {
+          showClock = false;
+        });
       }
-
 
       setState(() {
         showSuccess = true;
@@ -116,9 +195,9 @@ class _HomemainScreenState extends State<HomemainScreen> {
         if (mounted) setState(() => showSuccess = false);
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Punch failed: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Punch failed: $e")));
     } finally {
       setState(() => isPunching = false);
     }
@@ -147,23 +226,33 @@ class _HomemainScreenState extends State<HomemainScreen> {
                       radius: 25,
                       backgroundImage:
                           (user?['user_image'] != null &&
-                                  user!['user_image'] != "")
-                              ? NetworkImage(
-                                  "https://ppecon.erpnext.com${user['user_image']}")
-                              : const AssetImage("assets/images/app_icon.png")
-                                  as ImageProvider,
+                              user!['user_image'] != "")
+                          ? NetworkImage(
+                              "https://ppecon.erpnext.com${user['user_image']}",
+                            )
+                          : const AssetImage("assets/images/app_icon.png")
+                                as ImageProvider,
                     ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(user?['full_name'] ?? "",
-                            style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold)),
-                        Text(user?['email'] ?? "",
-                            style:
-                                const TextStyle(color: Colors.grey)),
+                        Text(
+                          _greeting,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          user?['full_name'] ?? "",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -173,14 +262,25 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
             SizedBox(height: screenHeight * 0.07),
 
-            Text(_currentTime,
-                style: const TextStyle(
-                    fontSize: 32, fontWeight: FontWeight.bold)),
-            Text(_currentDate,
-                style: const TextStyle(
-                    fontSize: 14, color: Colors.black54)),
+            Text(
+              _currentTime,
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              _currentDate,
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
 
-            SizedBox(height: screenHeight * 0.07),
+           
+            if (showClock && clockStartTime != null) ...[
+              const SizedBox(height: 15),
+              LiveClockWidget(
+                startTime: clockStartTime,
+                isRunning: showClock,
+              ),
+            ],
+
+            SizedBox(height: showClock ? screenHeight * 0.04 : screenHeight * 0.07),
 
             Stack(
               alignment: Alignment.center,
@@ -189,8 +289,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                   width: screenWidth * 0.50,
                   height: screenWidth * 0.50,
                   child: CircularProgressIndicator(
-                    value:
-                        punchProvider.progressValue().clamp(0.0, 1.0),
+                    value: punchProvider.progressValue().clamp(0.0, 1.0),
                     strokeWidth: 7,
                     color: punchProvider.punchOutTime != null
                         ? Colors.grey
@@ -200,8 +299,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                 ),
                 InkWell(
                   onTap: isPunching ? null : onPunchTap,
-                  borderRadius:
-                      BorderRadius.circular(screenWidth * 0.45 / 2),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.45 / 2),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     width: screenWidth * 0.48,
@@ -215,43 +313,49 @@ class _HomemainScreenState extends State<HomemainScreen> {
                           ? []
                           : const [
                               BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 20,
-                                  offset: Offset(0, 6)),
+                                color: Colors.black12,
+                                blurRadius: 20,
+                                offset: Offset(0, 6),
+                              ),
                             ],
                     ),
                     child: Center(
                       child: AnimatedSwitcher(
-                        duration:
-                            const Duration(milliseconds: 800),
+                        duration: const Duration(milliseconds: 800),
                         child: showSuccess
                             ? Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.check_circle,
-                                      color: Colors.green, size: 60),
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: 60,
+                                  ),
                                   const SizedBox(height: 6),
-                                  Text(successText,
-                                      style: const TextStyle(
-                                          fontWeight:
-                                              FontWeight.bold)),
+                                  Text(
+                                    successText,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ],
                               )
                             : Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.fingerprint,
-                                      size: 55,
-                                      color: Colors.red.shade600),
+                                  Icon(
+                                    Icons.fingerprint,
+                                    size: 55,
+                                    color: Colors.red.shade600,
+                                  ),
                                   const SizedBox(height: 8),
-                                  Text(punchText(punchProvider),
-                                      style: TextStyle(
-                                          fontWeight:
-                                              FontWeight.bold,
-                                          color:
-                                              Colors.red.shade600)),
+                                  Text(
+                                    punchText(punchProvider),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red.shade600,
+                                    ),
+                                  ),
                                 ],
                               ),
                       ),
@@ -264,25 +368,31 @@ class _HomemainScreenState extends State<HomemainScreen> {
             SizedBox(height: screenHeight * 0.07),
 
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _smallInfo(
-                    Icons.login,
-                    punchProvider.punchInTime == null
-                        ? "00:00 AM"
-                        : DateFormat('hh:mm a')
-                            .format(punchProvider.punchInTime!),
-                    "Punch In"),
+                  Icons.login,
+                  punchProvider.punchInTime == null
+                      ? "00:00 AM"
+                      : DateFormat(
+                          'hh:mm a',
+                        ).format(punchProvider.punchInTime!),
+                  "Punch In",
+                ),
                 _smallInfo(
-                    Icons.logout,
-                    punchProvider.punchOutTime == null
-                        ? "00:00 PM"
-                        : DateFormat('hh:mm a')
-                            .format(punchProvider.punchOutTime!),
-                    "Punch Out"),
-                _smallInfo(Icons.av_timer,
-                    punchProvider.totalHours(), "Total Hours"),
+                  Icons.logout,
+                  punchProvider.punchOutTime == null
+                      ? "00:00 PM"
+                      : DateFormat(
+                          'hh:mm a',
+                        ).format(punchProvider.punchOutTime!),
+                  "Punch Out",
+                ),
+                _smallInfo(
+                  Icons.av_timer,
+                  punchProvider.totalHours(),
+                  "Total Hours",
+                ),
               ],
             ),
           ],
@@ -296,11 +406,11 @@ class _HomemainScreenState extends State<HomemainScreen> {
       children: [
         Icon(icon, size: 27, color: Colors.red.shade600),
         const SizedBox(height: 4),
-        Text(time,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12, color: Colors.black54)),
+        Text(time, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
       ],
     );
   }
