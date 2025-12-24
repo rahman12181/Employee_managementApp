@@ -5,7 +5,7 @@ import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/services/checkin_service.dart';
-import 'package:management_app/widgets/animated_clock.dart';
+import 'package:management_app/widgets/analog_clock_widget.dart'; 
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 
@@ -271,16 +271,16 @@ class _HomemainScreenState extends State<HomemainScreen> {
               style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
 
-           
             if (showClock && clockStartTime != null) ...[
               const SizedBox(height: 15),
-              LiveClockWidget(
+              AnalogClockWidget(
                 startTime: clockStartTime,
                 isRunning: showClock,
+                size: screenWidth * 0.6, 
               ),
             ],
 
-            SizedBox(height: showClock ? screenHeight * 0.04 : screenHeight * 0.07),
+            SizedBox(height: showClock ? screenHeight * 0.03 : screenHeight * 0.07),
 
             Stack(
               alignment: Alignment.center,
