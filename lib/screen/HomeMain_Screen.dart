@@ -19,7 +19,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
   String _currentTime = '';
   String _currentDate = '';
   Timer? _timer;
-  String _greeting = 'Welcome,'; // Greeting variable
+  String _greeting = 'Welcome,'; 
   Timer? _greetingTimer;
 
   final CheckinService _checkinService = CheckinService();
@@ -146,9 +146,65 @@ class _HomemainScreenState extends State<HomemainScreen> {
     }
 
     if (logType == "OUT" && punchProvider.punchOutTime != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You have already checked out today!")),
-      );
+      // Replace your existing snackbar with:
+ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(
+    content: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.access_time_filled,
+              color: Colors.orange.shade800,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Already Checked In",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.orange.shade900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "You have already checked in today!",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    behavior: SnackBarBehavior.floating,
+    margin: const EdgeInsets.all(20),
+    duration: const Duration(seconds: 3),
+  ),
+);
       return;
     }
 

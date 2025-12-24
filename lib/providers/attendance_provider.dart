@@ -45,15 +45,13 @@ class AttendanceProvider extends ChangeNotifier {
       if (item["log_type"] == "IN") {
         log.checkIn = _formatTime(time);
         log.status = AttendanceStatus.checkedIn;
-      }
-
-      else if (item["log_type"] == "OUT") {
+      } else if (item["log_type"] == "OUT") {
         log.checkOut = _formatTime(time);
 
         if (log.checkIn != null) {
-          final inTime = DateFormat(
-            "yyyy-MM-dd HH:mm:ss",
-          ).parse("${DateFormat('yyyy-MM-dd').format(dateKey)} ${log.checkIn}:00");
+          final inTime = DateFormat("yyyy-MM-dd HH:mm:ss").parse(
+            "${DateFormat('yyyy-MM-dd').format(dateKey)} ${log.checkIn}:00",
+          );
 
           log.totalHours = time.difference(inTime);
 
@@ -70,11 +68,11 @@ class AttendanceProvider extends ChangeNotifier {
     final hours = log.totalHours.inMinutes / 60;
 
     if (hours >= 9) {
-      log.status = AttendanceStatus.overtime; 
+      log.status = AttendanceStatus.overtime;
     } else if (hours >= 8) {
-      log.status = AttendanceStatus.completed; 
+      log.status = AttendanceStatus.completed;
     } else {
-      log.status = AttendanceStatus.shortage; 
+      log.status = AttendanceStatus.shortage;
     }
   }
 
@@ -106,7 +104,7 @@ class AttendanceProvider extends ChangeNotifier {
       }
     }
 
-    return logs;
+    return logs.reversed.toList();
   }
 
   String _formatTime(DateTime t) => DateFormat("HH:mm").format(t);

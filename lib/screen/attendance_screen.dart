@@ -18,9 +18,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Future<void> _refreshAttendance() async {
     final employeeId = context.read<EmployeeProvider>().employeeId;
     if (employeeId != null) {
-      await context
-          .read<AttendanceProvider>()
-          .loadMonthAttendance(employeeId, currentMonth);
+      await context.read<AttendanceProvider>().loadMonthAttendance(
+        employeeId,
+        currentMonth,
+      );
     }
   }
 
@@ -64,6 +65,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<AttendanceProvider>();
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
     final daysInMonth = DateUtils.getDaysInMonth(
       currentMonth.year,
@@ -72,8 +74,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     bool canGoNext =
         currentMonth.year < now.year ||
-        (currentMonth.year == now.year &&
-            currentMonth.month < now.month);
+        (currentMonth.year == now.year && currentMonth.month < now.month);
 
     final monthlyLogs = provider.getMonthlyLogs(currentMonth);
 
@@ -87,7 +88,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             padding: const EdgeInsets.fromLTRB(10, 30, 10, 10),
             child: Column(
               children: [
-               
+                /// HEADER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -129,12 +130,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                 const SizedBox(height: 10),
 
+                /// CALENDAR
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: daysInMonth,
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 7,
                     crossAxisSpacing: 6,
                     mainAxisSpacing: 6,
@@ -147,15 +148,31 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       day,
                     );
 
-                    final log = provider.attendanceMap[date];
-                    final status =
-                        log?.status ?? AttendanceStatus.absent;
+                    Color? bgColor;
+                    Border? border;
 
-                    final bgColor = getStatusColor(status);
+                    final log = provider.attendanceMap[date];
+
+                    if (date.isAfter(today)) {
+                      bgColor = null;
+                      border = Border.all(color: Colors.grey.shade300);
+                    } else if (date == today) {
+                      if (log != null) {
+                        bgColor = getStatusColor(log.status);
+                      } else {
+                        bgColor = null;
+                      }
+
+                      border = Border.all(color: Colors.blue, width: 2);
+                    } else {
+                      final status = log?.status ?? AttendanceStatus.absent;
+                      bgColor = getStatusColor(status);
+                    }
 
                     return Container(
                       decoration: BoxDecoration(
                         color: bgColor,
+                        border: border,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
@@ -163,16 +180,20 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         children: [
                           Text(
                             "$day",
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: bgColor == null
+                                  ? Colors.black
+                                  : Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            DateFormat('E').format(date), // M T W
-                            style: const TextStyle(
-                              color: Colors.white,
+                            DateFormat('E').format(date),
+                            style: TextStyle(
                               fontSize: 10,
+                              color: bgColor == null
+                                  ? Colors.black54
+                                  : Colors.white,
                             ),
                           ),
                         ],
@@ -183,6 +204,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                 const SizedBox(height: 16),
 
+                /// LEGEND
                 Wrap(
                   spacing: 12,
                   runSpacing: 8,
@@ -192,11 +214,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     _legend(Colors.orange, "Shortage"),
                     _legend(Colors.yellow.shade700, "Checked In"),
                     _legend(Colors.red, "Absent"),
+                    _legendBorder("Today"),
                   ],
                 ),
 
                 const SizedBox(height: 20),
-                
+
+                /// LIST
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -205,10 +229,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     final log = monthlyLogs[index];
                     final statusColor = getStatusColor(log.status);
 
-                    String formatDuration(Duration duration) {
-                      final h = duration.inHours.toString().padLeft(2, '0');
-                      final m =
-                          (duration.inMinutes % 60).toString().padLeft(2, '0');
+                    String formatDuration(Duration d) {
+                      final h = d.inHours.toString().padLeft(2, '0');
+                      final m = (d.inMinutes % 60).toString().padLeft(2, '0');
                       return "$h:$m";
                     }
 
@@ -291,6 +314,24 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           height: 12,
           decoration: BoxDecoration(
             color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(text, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _legendBorder(String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.blue, width: 2),
             borderRadius: BorderRadius.circular(3),
           ),
         ),
