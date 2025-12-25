@@ -15,14 +15,20 @@ class AttendanceRequestService {
     final prefs = await SharedPreferences.getInstance();
 
     final employeeId = prefs.getString("employeeId");
+    final cookies = prefs.getStringList("cookies");
+    final authToken = prefs.getString("authToken");
 
     if (employeeId == null || employeeId.isEmpty) {
-      throw Exception("Employee not logged in");
+      throw Exception("Session expired. Please login again.");
     }
 
-    final url =
-         Uri.parse("$baseUrl/api/resource/Attendance%20Request");
+    if (cookies == null || cookies.isEmpty) {
+      throw Exception("Authentication failed. Please login again.");
+    }
 
+    final url = Uri.parse(
+      "$baseUrl/api/resource/Attendance%20Request",
+    );
 
     final body = {
       "employee": employeeId,
@@ -39,6 +45,9 @@ class AttendanceRequestService {
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json",
+              "Cookie": cookies.join("; "),
+              if (authToken != null)
+                "Authorization": authToken, 
             },
             body: jsonEncode(body),
           )
@@ -47,14 +56,27 @@ class AttendanceRequestService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       }
+      String errorMessage = "Request failed";
 
-      final decoded = jsonDecode(response.body);
-      final message =
-          decoded["message"] ?? decoded["exception"] ?? "Request failed";
+      try {
+        final decoded = jsonDecode(response.body);
 
-      throw Exception(message);
+        if (decoded is Map) {
+          errorMessage =
+              decoded["message"] ??
+              decoded["exception"] ??
+              decoded["_server_messages"]?.toString() ??
+              errorMessage;
+        }
+      } catch (_) {}
+
+      throw Exception(
+        "(${response.statusCode}) $errorMessage",
+      );
     } on SocketException {
       throw Exception("No internet connection");
+    } on HttpException {
+      throw Exception("Server error");
     } on FormatException {
       throw Exception("Invalid server response");
     }

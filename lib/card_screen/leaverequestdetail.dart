@@ -11,7 +11,9 @@ class _LeaveRequestdetailState extends State<LeaveRequestdetail>{
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Text("Leave detail screen",style: TextStyle(fontSize: 30),),
+      body: Center(
+       child:  Text("Leave detail screen",style: TextStyle(fontSize: 30),),
+      )
     );
   }
 }

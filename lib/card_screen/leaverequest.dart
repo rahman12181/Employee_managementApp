@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LeaveRequest extends StatefulWidget {
   const LeaveRequest({super.key});
-
   @override
   State<LeaveRequest> createState() => _LeaveRequestState();
 }
@@ -63,11 +62,24 @@ class _LeaveRequestState extends State<LeaveRequest> {
     return Scaffold(
       backgroundColor: const Color(0xffF5F6FA),
       appBar: AppBar(
-        title: const Text("Leave Request"),
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
+        title: const Text(
+          "Leave Request",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
         elevation: 0,
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
+
       body: SingleChildScrollView(
         padding: EdgeInsets.all(screenWidth * 0.04),
         child: Form(
@@ -84,14 +96,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 ),
               ),
               DropdownButtonFormField<String>(
-                dropdownColor: Colors.white.withAlpha(230), 
-                style: const TextStyle(
-             
-                  color: Colors.black,
-                  fontSize: 15,
-                ),
+                dropdownColor: Colors.white.withAlpha(230),
+                style: const TextStyle(color: Colors.black, fontSize: 15),
                 icon: const Icon(
-              
                   Icons.keyboard_arrow_down_rounded,
                   color: Colors.black54,
                 ),
@@ -208,15 +215,15 @@ class _LeaveRequestState extends State<LeaveRequest> {
                           horizontal: screenWidth * 0.01,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.red : Colors.transparent,
-                          border: Border.all(color: Colors.red),
+                          color: isSelected ? Colors.blue : Colors.transparent,
+                          border: Border.all(color: Colors.blue),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Center(
                           child: Text(
                             e,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.red,
+                              color: isSelected ? Colors.white : Colors.blue,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -257,7 +264,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 height: screenHeight * 0.06,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: Colors.blue,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
@@ -310,7 +317,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: result["success"] == true ? Colors.green : Colors.red,
+        backgroundColor: result["success"] == true ? Colors.green : Colors.blue,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         duration: const Duration(seconds: 2),

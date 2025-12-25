@@ -48,13 +48,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'type': 'Attendance_request',
     },
     {
-      'title': 'Regularization Approval',
-      'subtitle': 'Check your Approval',
-      'image': 'assets/images/regapproval.png',
-      'type': 'Regularization_Approval',
+      'title': 'Travel Request',
+      'subtitle': 'manage your request',
+      'image': 'assets/images/travel.png',
+      'type': 'Travel_request',
     },
     {
-      'title': 'Regularization Listing',
+      'title': 'Regularization Listing',     
       'subtitle': 'Reg..list',
       'image': 'assets/images/regularizationlisting.png',
       'type': 'Regularization_Listing',
@@ -257,10 +257,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     );
                                     break;
 
-                                  case 'Regularization_Approval':
+                                  case 'Travel_request':
                                     Navigator.pushNamed(
                                       context,
-                                      '/regularizationApproval',
+                                      '/travelRequest',
                                     );
                                     break;
 

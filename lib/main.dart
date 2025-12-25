@@ -4,7 +4,6 @@ import 'package:management_app/card_screen/check_more.dart';
 import 'package:management_app/card_screen/leave_approval.dart';
 import 'package:management_app/card_screen/leaverequest.dart';
 import 'package:management_app/card_screen/leaverequestdetail.dart';
-import 'package:management_app/card_screen/regularization_approval.dart';
 import 'package:management_app/card_screen/regularization_lsiting.dart';
 import 'package:management_app/providers/attendance_provider.dart';
 import 'package:management_app/providers/employee_provider.dart';
@@ -20,6 +19,7 @@ import 'package:management_app/screen/notification_screen.dart';
 import 'package:management_app/screen/profilescreen.dart';
 import 'package:management_app/screen/setting_screen.dart';
 import 'package:management_app/screen/splash_screen.dart';
+import 'package:management_app/screen/travel_request_screen.dart';
 import 'package:management_app/services/auth_service.dart';
 import 'package:provider/provider.dart';
 
@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Management_App',
+      title: 'Pioneer',
       themeMode: ThemeMode.system,
 
       theme: ThemeData(
@@ -101,7 +101,7 @@ class MyApp extends StatelessWidget {
         '/leaveRequestDetail': (context) => const LeaveRequestdetail(),
         '/leaveApproval': (context) => const LeaveApproval(),
         '/attendanceRequest': (context) => const AttendanceRequestScreen(),
-        '/regularizationApproval': (context) => const RegularizationApproval(),
+        '/travelRequest' : (context) => const TravelRequestScreen(),
         '/regularizationListing': (context) => const RegularizationLsiting(),
         '/checkMore': (context) => const CheckMore(),
       },

@@ -19,8 +19,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
   String reason = "On Duty";
   bool isSubmitting = false;
 
-  double responsiveWidth(double v) =>
-      MediaQuery.of(context).size.width * v;
+  double responsiveWidth(double v) => MediaQuery.of(context).size.width * v;
 
   double responsiveFontSize(double v) =>
       MediaQuery.of(context).size.width * (v / 375);
@@ -30,8 +29,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
       labelText: label,
       labelStyle: TextStyle(fontSize: responsiveFontSize(14)),
       floatingLabelStyle: const TextStyle(color: Colors.black),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
       ),
@@ -41,15 +39,14 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
-        borderSide: const BorderSide(
-          color: Color.fromARGB(255, 52, 169, 232),
-        ),
+        borderSide:
+            const BorderSide(color: Color.fromARGB(255, 52, 169, 232)),
       ),
     );
   }
 
   Future<void> submitRequest() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || isSubmitting) return;
 
     setState(() => isSubmitting = true);
 
@@ -64,21 +61,27 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Request submitted successfully"),
+          content: Text("Attendance request submitted successfully"),
           backgroundColor: Colors.green,
         ),
       );
 
       Navigator.pop(context);
     } catch (e) {
+      if (!mounted) return;
+
+      final message = e.toString().replaceAll("Exception:", "").trim();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString()),
+          content: Text(message.isEmpty ? "Request failed" : message),
           backgroundColor: Colors.red,
         ),
       );
     } finally {
-      setState(() => isSubmitting = false);
+      if (mounted) {
+        setState(() => isSubmitting = false);
+      }
     }
   }
 
@@ -87,10 +90,22 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
-        title: const Text("Attendance Request"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
+        title: const Text(
+          "Leave Request",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -98,8 +113,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
           child: Card(
             elevation: 4,
             shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(responsiveWidth(0.05)),
+              borderRadius: BorderRadius.circular(responsiveWidth(0.05)),
             ),
             child: Padding(
               padding: const EdgeInsets.all(18),
@@ -108,13 +122,12 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    /// DATE
                     InkWell(
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
-                          firstDate: DateTime.now()
-                              .subtract(const Duration(days: 30)),
+                          firstDate:
+                              DateTime.now().subtract(const Duration(days: 30)),
                           lastDate: DateTime.now(),
                           initialDate: selectedDate,
                         );
@@ -125,8 +138,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
                       child: InputDecorator(
                         decoration: inputDecoration("Date"),
                         child: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               DateFormat('dd MMM yyyy')
@@ -143,7 +155,6 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
 
                     const SizedBox(height: 16),
 
-                    /// REASON
                     DropdownButtonFormField<String>(
                       initialValue: reason,
                       decoration: inputDecoration("Reason"),
@@ -157,12 +168,12 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
                             value: "System Issue",
                             child: Text("System Issue")),
                       ],
-                      onChanged: (val) => setState(() => reason = val!),
+                      onChanged: (val) =>
+                          setState(() => reason = val!),
                     ),
 
                     const SizedBox(height: 16),
 
-                    /// EXPLANATION
                     TextFormField(
                       controller: explanationCtrl,
                       maxLines: 4,
@@ -180,15 +191,14 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
 
                     const SizedBox(height: 24),
 
-                    /// SUBMIT BUTTON
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: isSubmitting ? null : submitRequest,
+                        onPressed:
+                            isSubmitting ? null : submitRequest,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 52, 169, 232),
+                          backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
                                 responsiveWidth(0.04)),

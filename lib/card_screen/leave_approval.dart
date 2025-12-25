@@ -11,7 +11,9 @@ class _LeaveApprovalState extends State<LeaveApproval>{
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-       body: Text("Leave Request Screen",style: TextStyle(fontSize: 30),)
+       body: Center(
+        child: Text("Leave approval Screen",style: TextStyle(fontSize: 30),)
+       )
     );
   }
 }
