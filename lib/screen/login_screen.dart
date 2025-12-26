@@ -24,7 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // MediaQuery values
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
     EdgeInsets screenPadding = MediaQuery.of(context).padding;
@@ -70,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => SettingsScreen(),
+                                  builder: (context) => const SettingsScreen(),
                                 ),
                               );
                             },
@@ -81,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        SizedBox(height: responsiveHeight(0.07)),
+                        SizedBox(height: responsiveHeight(0.05)),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -105,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        SizedBox(height: responsiveHeight(0.085)),
+                        SizedBox(height: responsiveHeight(0.07)),
                         TextFormField(
                           controller: _emailController,
                           decoration: InputDecoration(
@@ -196,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 responsiveWidth(0.04)
                               ),
                               borderSide: const BorderSide(
-                                color: Color.fromARGB(255, 52, 169, 232),
+                                color: Colors.blue
                               ),
                             ),
                           ),
@@ -224,8 +223,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontWeight: FontWeight.bold,
                                 fontFamily: "poppins",
                                 color: _isColorChanged
-                                    ? const Color.fromARGB(255, 52, 169, 232)
-                                    : Colors.black,
+                                    ? Colors.black
+                                    : Colors.blue,
                                 decoration: TextDecoration.underline,
                               ),
                             ),
@@ -477,12 +476,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(
-                              255,
-                              38,
-                              161,
-                              227,
-                            ),
+                            backgroundColor:  Colors.blue,
                             minimumSize: Size(
                               responsiveWidth(0.9),
                               responsiveHeight(0.05),

@@ -19,7 +19,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
   String _currentTime = '';
   String _currentDate = '';
   Timer? _timer;
-  String _greeting = 'Welcome,'; 
+  String _greeting = 'Welcome,';
   Timer? _greetingTimer;
 
   final CheckinService _checkinService = CheckinService();
@@ -69,6 +69,20 @@ class _HomemainScreenState extends State<HomemainScreen> {
     } else {
       return 'Good Night,';
     }
+  }
+
+  Color fingerprintColor(PunchProvider punchProvider) {
+    if (isPunching) return Colors.red.shade600;
+
+    if (punchProvider.punchInTime == null) {
+      return Colors.blue.shade600;
+    }
+
+    if (punchProvider.punchOutTime == null) {
+      return Colors.red.shade600;
+    }
+
+    return Colors.blue.shade600;
   }
 
   void _updateTime() {
@@ -146,65 +160,64 @@ class _HomemainScreenState extends State<HomemainScreen> {
     }
 
     if (logType == "OUT" && punchProvider.punchOutTime != null) {
-      // Replace your existing snackbar with:
-ScaffoldMessenger.of(context).showSnackBar(
-  SnackBar(
-    content: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.shade200),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              shape: BoxShape.circle,
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.orange.shade200),
             ),
-            child: Icon(
-              Icons.access_time_filled,
-              color: Colors.orange.shade800,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
               children: [
-                Text(
-                  "Already Checked In",
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.orange.shade900,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.access_time_filled,
+                    color: Colors.orange.shade800,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  "You have already checked in today!",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.orange.shade700,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Already Checked In",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "You have already checked in today!",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    ),
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    behavior: SnackBarBehavior.floating,
-    margin: const EdgeInsets.all(20),
-    duration: const Duration(seconds: 3),
-  ),
-);
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(20),
+          duration: const Duration(seconds: 3),
+        ),
+      );
       return;
     }
 
@@ -274,7 +287,6 @@ ScaffoldMessenger.of(context).showSnackBar(
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-            
                         Text(
                           _greeting,
                           style: TextStyle(
@@ -284,7 +296,7 @@ ScaffoldMessenger.of(context).showSnackBar(
                           ),
                         ),
                         const SizedBox(height: 2),
-                   
+
                         Text(
                           user?['full_name'] ?? "",
                           style: const TextStyle(
@@ -322,8 +334,8 @@ ScaffoldMessenger.of(context).showSnackBar(
                     value: punchProvider.progressValue().clamp(0.0, 1.0),
                     strokeWidth: 7,
                     color: punchProvider.punchOutTime != null
-                        ? Colors.grey
-                        : Colors.green,
+                        ? const Color.fromARGB(255, 159, 152, 152)
+                        : const Color.fromARGB(255, 55, 160, 246),
                     backgroundColor: Colors.grey.shade300,
                   ),
                 ),
@@ -376,14 +388,15 @@ ScaffoldMessenger.of(context).showSnackBar(
                                   Icon(
                                     Icons.fingerprint,
                                     size: 55,
-                                    color: Colors.red.shade600,
+                                    color: fingerprintColor(punchProvider),
                                   ),
+
                                   const SizedBox(height: 8),
                                   Text(
                                     punchText(punchProvider),
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.red.shade600,
+                                      color: fingerprintColor(punchProvider),
                                     ),
                                   ),
                                 ],
@@ -408,6 +421,7 @@ ScaffoldMessenger.of(context).showSnackBar(
                           'hh:mm a',
                         ).format(punchProvider.punchInTime!),
                   "Punch In",
+                  iconColor: Colors.blue.shade600, 
                 ),
                 _smallInfo(
                   Icons.logout,
@@ -417,11 +431,13 @@ ScaffoldMessenger.of(context).showSnackBar(
                           'hh:mm a',
                         ).format(punchProvider.punchOutTime!),
                   "Punch Out",
+                  iconColor: Colors.red.shade600, // 🔴 Logout = Red
                 ),
                 _smallInfo(
                   Icons.av_timer,
                   punchProvider.totalHours(),
                   "Total Hours",
+                  iconColor: Colors.grey.shade600, // ⚪ Timer = Grey
                 ),
               ],
             ),
@@ -431,10 +447,16 @@ ScaffoldMessenger.of(context).showSnackBar(
     );
   }
 
-  Widget _smallInfo(IconData icon, String time, String label) {
+  Widget _smallInfo(
+    IconData icon,
+    String time,
+    String label, {
+    required Color iconColor,
+  }) {
+    
     return Column(
       children: [
-        Icon(icon, size: 27, color: Colors.red.shade600),
+        Icon(icon, size: 27, color: iconColor),
         const SizedBox(height: 4),
         Text(time, style: const TextStyle(fontWeight: FontWeight.bold)),
         Text(

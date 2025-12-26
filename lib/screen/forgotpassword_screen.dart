@@ -175,12 +175,7 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
                                       }
                                     },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(
-                                  255,
-                                  52,
-                                  169,
-                                  232,
-                                ),
+                                backgroundColor: Colors.blue,
                                 minimumSize: Size(
                                   screenWidth * 0.9,
                                   screenHeight * 0.05,
@@ -223,19 +218,14 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
                                         fontSize: 15,
                                         fontFamily: "poppins",
                                         fontWeight: FontWeight.bold,
-                                        color: Color.fromARGB(
-                                          255,
-                                          52,
-                                          169,
-                                          232,
-                                        ),
+                                        color: Colors.blue,
                                       ),
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
                                           Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (context) =>LoginScreen(),
+                                              builder: (context) =>const LoginScreen(),
                                             ),
                                           );
                                         },

@@ -80,7 +80,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: RefreshIndicator(
+      body: SafeArea(child:  RefreshIndicator(
         onRefresh: _refreshAttendance,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -88,7 +88,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             padding: const EdgeInsets.fromLTRB(10, 30, 10, 10),
             child: Column(
               children: [
-                /// HEADER
+              
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -129,8 +129,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ),
 
                 const SizedBox(height: 10),
-
-                /// CALENDAR
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -204,7 +202,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                 const SizedBox(height: 16),
 
-                /// LEGEND
                 Wrap(
                   spacing: 12,
                   runSpacing: 8,
@@ -220,7 +217,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                 const SizedBox(height: 20),
 
-                /// LIST
+                
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -302,6 +299,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           ),
         ),
       ),
+      )
     );
   }
 

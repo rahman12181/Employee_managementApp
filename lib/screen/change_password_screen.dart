@@ -93,7 +93,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     );
   }
 
-  // ================= ERROR DIALOG =================
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -257,8 +256,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ElevatedButton(
                           onPressed: _isLoading ? null : _submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color(0xFF34A9E8),
+                            backgroundColor: Colors.blue,
                             minimumSize: Size(
                               screenWidth * 0.9,
                               screenHeight * 0.05,

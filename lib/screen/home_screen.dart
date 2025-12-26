@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.all(20),
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.red.shade600,
+          color: Colors.blue,
           borderRadius: BorderRadius.circular(40),
           boxShadow: const [
             BoxShadow(
