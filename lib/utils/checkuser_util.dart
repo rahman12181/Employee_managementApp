@@ -18,56 +18,52 @@ class CheckuserUtils {
       Navigator.pushReplacementNamed(context, "/loginScreen");
       return;
     }
+    if (isLoggedIn && savedRoute != null && savedRoute.isNotEmpty) {
+  
+      switch (savedRoute) {
+        case "/app/home":
+        case "/app":
+        case "/desk":
+        case "/app/overview": // ERP unexpected route
+          savedRoute = "/homeScreen";
+          break;
+        default:
+          if (savedRoute.isEmpty) savedRoute = "/homeScreen";
+      }
 
-    if (isLoggedIn && savedRoute != null) {
       Navigator.pushReplacementNamed(context, savedRoute);
       return;
     }
-
     Navigator.pushReplacementNamed(context, "/loginScreen");
   }
 
   static Future<void> saveloginStatus({
-  required String route,
-  String? employeeId,
-  String? userName,
-  String? authToken,
-  List<String>? cookies,
-}) async {
-  final prefs = await SharedPreferences.getInstance();
+    required String route,
+    String? employeeId,
+    String? userName,
+    String? authToken,
+    List<String>? cookies,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
 
-  await prefs.setBool("isLoggedIn", true);
-  await prefs.setString("home_page", route);
+    await prefs.setBool("isLoggedIn", true);
+    await prefs.setString("home_page", route);
 
-  if (employeeId != null) {
-    await prefs.setString("employeeId", employeeId);
+    if (employeeId != null) {
+      await prefs.setString("employeeId", employeeId);
+    }
+
+    if (userName != null) {
+      await prefs.setString("userName", userName);
+    }
+
+    if (authToken != null) {
+      await prefs.setString("authToken", authToken);
+    }
+
+    if (cookies != null) {
+      await prefs.setStringList("cookies", cookies);
+    }
   }
-
-  if (userName != null) {
-    await prefs.setString("userName", userName);
-  }
-
-  if (authToken != null) {
-    await prefs.setString("authToken", authToken);
-  }
-
-  if (cookies != null) {
-    await prefs.setStringList("cookies", cookies);
-  }
-}
-
-/* Future<void> checkSharedPrefs() async {
-  final prefs = await SharedPreferences.getInstance();
-
-  print("======= SHARED PREFERENCES DATA =======");
-
-  for (String key in prefs.getKeys()) {
-    print("$key => ${prefs.get(key)}");                 // this method is only used for chekck sharedpreference data 
-  }
-
-  print("======================================");
-}
-*/
-
 
 }

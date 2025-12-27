@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:management_app/screen/HomeMain_Screen.dart';
 import 'package:management_app/screen/attendance_screen.dart';
 import 'package:management_app/screen/dashboard_screen.dart';
+import 'package:management_app/screen/setting_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const HomemainScreen(),
     const DashboardScreen(),
     const AttendanceScreen(),
+    const SettingsScreen()
   ];
 
   void _onItemTapped(int index) {
@@ -58,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
             navButton(Icons.home, "Home", 0),
             navButton(Icons.dashboard_customize, "DASHBOARD", 1),
             navButton(Icons.calendar_today, "HISTORY", 2),
+            navButton(Icons.account_box, "PROFILE", 3),
           ],
         ),
       ),

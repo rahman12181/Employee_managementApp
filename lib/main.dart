@@ -23,15 +23,14 @@ import 'package:management_app/screen/travel_request_screen.dart';
 import 'package:management_app/services/auth_service.dart';
 import 'package:provider/provider.dart';
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.edgeToEdge,
-  );
-  
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
   await AuthService.loadCookies();
   final authService = AuthService();
   final initialRoute = await authService.getInitialRoute();
+
   runApp(
     MultiProvider(
       providers: [
@@ -44,8 +43,11 @@ void main() async{
     ),
   );
 }
+
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required String initialRoute});
+  final String initialRoute; 
+
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -53,39 +55,18 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Pioneer',
       themeMode: ThemeMode.system,
-
       theme: ThemeData(
-        useMaterial3: false, 
+        useMaterial3: false,
         fontFamily: 'poppins',
         brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            systemNavigationBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark,
-            systemNavigationBarIconBrightness: Brightness.dark,
-          ),
-        ),
       ),
-
-     
       darkTheme: ThemeData(
-        useMaterial3: false, 
+        useMaterial3: false,
         brightness: Brightness.dark,
-        appBarTheme: const AppBarTheme(
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            systemNavigationBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.light,
-            systemNavigationBarIconBrightness: Brightness.light,
-          ),
-        ),
       ),
 
-      home: const SplashScreen(),
-      initialRoute: '/splashScreen',
+      initialRoute: initialRoute,
 
       routes: {
         '/splashScreen': (context) => const SplashScreen(),
@@ -97,15 +78,18 @@ class MyApp extends StatelessWidget {
         '/notificationScreen': (context) => const NotificationScreen(),
         '/profileScreen': (context) => const Profilescreen(),
         '/attendanceScreen': (context) => const AttendanceScreen(),
-
-        // card screens
         '/leaveRequest': (context) => const LeaveRequest(),
         '/leaveRequestDetail': (context) => const LeaveRequestdetail(),
         '/leaveApproval': (context) => const LeaveApproval(),
         '/attendanceRequest': (context) => const AttendanceRequestScreen(),
-        '/travelRequest' : (context) => const TravelRequestScreen(),
+        '/travelRequest': (context) => const TravelRequestScreen(),
         '/regularizationListing': (context) => const RegularizationLsiting(),
         '/checkMore': (context) => const CheckMore(),
+      },
+
+      // ← Safety net for unknown routes
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(builder: (_) => const HomeScreen());
       },
     );
   }

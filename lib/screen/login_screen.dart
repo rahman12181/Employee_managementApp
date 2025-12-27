@@ -283,12 +283,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                       String route =
                                           response["home_page"] ??
                                           "/homeScreen";
-
-                                      if (route == "/app/home" ||
-                                          route == "/app" ||
-                                          route == "/desk" ||
-                                          route.isEmpty) {
-                                        route = "/homeScreen";
+                                      switch (route) {
+                                        case "/app/home":
+                                        case "/app":
+                                        case "/desk":
+                                        case "/app/overview": 
+                                          route = "/homeScreen";
+                                          break;
+                                        default:
+                                          if (route.isEmpty) {
+                                            route = "/homeScreen";
+                                          }
                                       }
                                       await CheckuserUtils.saveloginStatus(
                                         route: route,
