@@ -30,6 +30,8 @@ void main() async{
   );
   
   await AuthService.loadCookies();
+  final authService = AuthService();
+  final initialRoute = await authService.getInitialRoute();
   runApp(
     MultiProvider(
       providers: [
@@ -38,12 +40,12 @@ void main() async{
         ChangeNotifierProvider(create: (_) => PunchProvider()),
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(initialRoute: initialRoute),
     ),
   );
 }
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required String initialRoute});
 
   @override
   Widget build(BuildContext context) {

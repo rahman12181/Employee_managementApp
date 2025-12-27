@@ -86,6 +86,17 @@ class AuthService {
     }
   }
 
+  Future<String> getInitialRoute() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
+    final route = prefs.getString("home_page");
+
+    if (isLoggedIn && route != null && route.isNotEmpty) {
+      return route; 
+    }
+    return '/loginScreen';
+  }
+
   Future<Map<String, dynamic>> logoutUser() async {
     final url = Uri.parse("$baseUrl/api/method/logout");
 
@@ -156,25 +167,24 @@ class AuthService {
   }
 
   Future<bool> employeeCheckOut({
-  required String employeeId,
-  double latitude = 0,
-  double longitude = 0,
-}) async {
-  final response = await AuthService.client.post(
-    Uri.parse("https://ppecon.erpnext.com/api/resource/Employee Checkin"),
-    headers: {
-      "Content-Type": "application/json",
-      "Cookie": AuthService.cookies.join(";"),
-    },
-    body: jsonEncode({
-      "employee": employeeId,
-      "log_type": "OUT",
-      "latitude": latitude,
-      "longitude": longitude,
-    }),
-  );
+    required String employeeId,
+    double latitude = 0,
+    double longitude = 0,
+  }) async {
+    final response = await AuthService.client.post(
+      Uri.parse("https://ppecon.erpnext.com/api/resource/Employee Checkin"),
+      headers: {
+        "Content-Type": "application/json",
+        "Cookie": AuthService.cookies.join(";"),
+      },
+      body: jsonEncode({
+        "employee": employeeId,
+        "log_type": "OUT",
+        "latitude": latitude,
+        "longitude": longitude,
+      }),
+    );
 
-  return response.statusCode == 200 || response.statusCode == 201;
-}
-
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
 }

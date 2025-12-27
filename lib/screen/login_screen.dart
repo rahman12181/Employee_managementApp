@@ -27,18 +27,15 @@ class _LoginScreenState extends State<LoginScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
     EdgeInsets screenPadding = MediaQuery.of(context).padding;
-    
-   
-   
-    
+
     double responsiveFontSize(double baseSize) {
-      return baseSize * (screenWidth / 375); 
+      return baseSize * (screenWidth / 375);
     }
-    
+
     double responsiveHeight(double percentage) {
       return screenHeight * percentage;
     }
-    
+
     double responsiveWidth(double percentage) {
       return screenWidth * percentage;
     }
@@ -48,8 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(
-            responsiveWidth(0.053), 
-            screenPadding.top + 15, 
+            responsiveWidth(0.053),
+            screenPadding.top + 15,
             responsiveWidth(0.053),
             20,
           ),
@@ -75,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                             child: Image.asset(
                               "assets/images/app_icon.png",
-                              width: responsiveWidth(0.267), 
+                              width: responsiveWidth(0.267),
                             ),
                           ),
                         ),
@@ -114,40 +111,50 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             labelText: "Email address",
                             prefixIcon: Icon(
-                              Icons.email_rounded, 
-                              size: responsiveFontSize(17)
+                              Icons.email_rounded,
+                              size: responsiveFontSize(17),
                             ),
                             labelStyle: TextStyle(
-                              fontSize: responsiveFontSize(14)
+                              fontSize: responsiveFontSize(14),
                             ),
-                            floatingLabelStyle: const TextStyle(color: Colors.black),
+                            floatingLabelStyle: const TextStyle(
+                              color: Colors.black,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
-                                responsiveWidth(0.04)
+                                responsiveWidth(0.04),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
-                                responsiveWidth(0.04)
+                                responsiveWidth(0.04),
                               ),
                               borderSide: const BorderSide(color: Colors.black),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
-                                responsiveWidth(0.04)
+                                responsiveWidth(0.04),
                               ),
                               borderSide: const BorderSide(
                                 color: Color.fromARGB(255, 52, 169, 232),
                               ),
                             ),
                           ),
-                          validator: (value) => (value == null || value.isEmpty)
-                              ? "email required"
-                              : (!RegExp(
-                                  r'^[a-zA-Z0-9._%+-]+@ppecon\.com$',
-                                ).hasMatch(value))
-                              ? "invalid email address"
-                              : null,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "email required";
+                            }
+
+                            final emailRegex = RegExp(
+                              r'^[a-zA-Z0-9._%+-]+@(ppecon\.com|gmail\.com)$',
+                            );
+
+                            if (!emailRegex.hasMatch(value)) {
+                              return "Only ppecon.com or gmail.com emails are allowed";
+                            }
+
+                            return null;
+                          },
                         ),
                         SizedBox(height: responsiveHeight(0.042)),
                         TextFormField(
@@ -160,8 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             labelText: "Password",
                             prefixIcon: Icon(
-                              Icons.lock, 
-                              size: responsiveFontSize(18)
+                              Icons.lock,
+                              size: responsiveFontSize(18),
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -176,27 +183,27 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             labelStyle: TextStyle(
-                              fontSize: responsiveFontSize(14)
+                              fontSize: responsiveFontSize(14),
                             ),
-                            floatingLabelStyle: const TextStyle(color: Colors.black),
+                            floatingLabelStyle: const TextStyle(
+                              color: Colors.black,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
-                                responsiveWidth(0.04)
+                                responsiveWidth(0.04),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
-                                responsiveWidth(0.04)
+                                responsiveWidth(0.04),
                               ),
                               borderSide: const BorderSide(color: Colors.black),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
-                                responsiveWidth(0.04)
+                                responsiveWidth(0.04),
                               ),
-                              borderSide: const BorderSide(
-                                color: Colors.blue
-                              ),
+                              borderSide: const BorderSide(color: Colors.blue),
                             ),
                           ),
                           validator: (value) => (value == null || value.isEmpty)
@@ -273,11 +280,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ).fetchAndSaveEmployeeId(email);
                                       }
 
-                                      String route = response["home_page"];
-                                      if (route == "/app/home") {
+                                      String route =
+                                          response["home_page"] ??
+                                          "/homeScreen";
+
+                                      if (route == "/app/home" ||
+                                          route == "/app" ||
+                                          route == "/desk" ||
+                                          route.isEmpty) {
                                         route = "/homeScreen";
                                       }
-
                                       await CheckuserUtils.saveloginStatus(
                                         route: route,
                                         cookies: AuthService.cookies,
@@ -285,7 +297,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                       setState(() => _isloading = false);
 
-                                      WidgetsBinding.instance.addPostFrameCallback((_,) {
+                                      WidgetsBinding.instance.addPostFrameCallback((
+                                        _,
+                                      ) {
                                         showDialog(
                                           context: context,
                                           barrierDismissible: false,
@@ -307,27 +321,34 @@ class _LoginScreenState extends State<LoginScreen> {
                                               );
                                             }
 
-                                            
                                             return Dialog(
                                               backgroundColor: Colors.white,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(
-                                                      responsiveWidth(0.053)
+                                                      responsiveWidth(0.053),
                                                     ),
                                               ),
                                               child: Padding(
                                                 padding: EdgeInsets.symmetric(
-                                                  vertical: responsiveHeight(0.034),
-                                                  horizontal: responsiveWidth(0.064),
+                                                  vertical: responsiveHeight(
+                                                    0.034,
+                                                  ),
+                                                  horizontal: responsiveWidth(
+                                                    0.064,
+                                                  ),
                                                 ),
                                                 child: Column(
                                                   mainAxisSize:
                                                       MainAxisSize.min,
                                                   children: [
                                                     Container(
-                                                      height: responsiveHeight(0.074),
-                                                      width: responsiveHeight(0.074),
+                                                      height: responsiveHeight(
+                                                        0.074,
+                                                      ),
+                                                      width: responsiveHeight(
+                                                        0.074,
+                                                      ),
                                                       decoration: BoxDecoration(
                                                         color: Colors.green
                                                             .withAlpha(30),
@@ -337,44 +358,76 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         Icons
                                                             .check_circle_rounded,
                                                         color: Colors.green,
-                                                        size: responsiveFontSize(42),
+                                                        size:
+                                                            responsiveFontSize(
+                                                              42,
+                                                            ),
                                                       ),
                                                     ),
-                                                    SizedBox(height: responsiveHeight(0.022)),
+                                                    SizedBox(
+                                                      height: responsiveHeight(
+                                                        0.022,
+                                                      ),
+                                                    ),
                                                     Text(
                                                       title,
                                                       style: TextStyle(
-                                                        fontSize: responsiveFontSize(18),
+                                                        fontSize:
+                                                            responsiveFontSize(
+                                                              18,
+                                                            ),
                                                         fontWeight:
                                                             FontWeight.w600,
                                                       ),
                                                     ),
-                                                    SizedBox(height: responsiveHeight(0.01)),
+                                                    SizedBox(
+                                                      height: responsiveHeight(
+                                                        0.01,
+                                                      ),
+                                                    ),
                                                     Text(
                                                       content,
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
-                                                        fontSize: responsiveFontSize(14),
+                                                        fontSize:
+                                                            responsiveFontSize(
+                                                              14,
+                                                            ),
                                                         color: Colors
                                                             .grey
                                                             .shade700,
                                                       ),
                                                     ),
-                                                    SizedBox(height: responsiveHeight(0.024)),
                                                     SizedBox(
-                                                      height: responsiveHeight(0.022),
-                                                      width: responsiveHeight(0.022),
+                                                      height: responsiveHeight(
+                                                        0.024,
+                                                      ),
+                                                    ),
+                                                    SizedBox(
+                                                      height: responsiveHeight(
+                                                        0.022,
+                                                      ),
+                                                      width: responsiveHeight(
+                                                        0.022,
+                                                      ),
                                                       child:
                                                           const CircularProgressIndicator(
                                                             strokeWidth: 2,
                                                           ),
                                                     ),
-                                                    SizedBox(height: responsiveHeight(0.015)),
+                                                    SizedBox(
+                                                      height: responsiveHeight(
+                                                        0.015,
+                                                      ),
+                                                    ),
                                                     Text(
                                                       "Signing you in...",
                                                       style: TextStyle(
-                                                        fontSize: responsiveFontSize(12),
+                                                        fontSize:
+                                                            responsiveFontSize(
+                                                              12,
+                                                            ),
                                                         color: Colors
                                                             .grey
                                                             .shade500,
@@ -414,13 +467,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 title: Text(
                                                   title,
                                                   style: TextStyle(
-                                                    fontSize: responsiveFontSize(16),
+                                                    fontSize:
+                                                        responsiveFontSize(16),
                                                   ),
                                                 ),
                                                 content: Text(
                                                   content,
                                                   style: TextStyle(
-                                                    fontSize: responsiveFontSize(14),
+                                                    fontSize:
+                                                        responsiveFontSize(14),
                                                   ),
                                                 ),
                                                 actions: [
@@ -430,7 +485,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     child: Text(
                                                       "OK",
                                                       style: TextStyle(
-                                                        fontSize: responsiveFontSize(14),
+                                                        fontSize:
+                                                            responsiveFontSize(
+                                                              14,
+                                                            ),
                                                       ),
                                                     ),
                                                   ),
@@ -449,13 +507,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                               title: Text(
                                                 "Network Error",
                                                 style: TextStyle(
-                                                  fontSize: responsiveFontSize(16),
+                                                  fontSize: responsiveFontSize(
+                                                    16,
+                                                  ),
                                                 ),
                                               ),
                                               content: Text(
                                                 "$e",
                                                 style: TextStyle(
-                                                  fontSize: responsiveFontSize(14),
+                                                  fontSize: responsiveFontSize(
+                                                    14,
+                                                  ),
                                                 ),
                                               ),
                                               actions: [
@@ -465,7 +527,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   child: Text(
                                                     "OK",
                                                     style: TextStyle(
-                                                      fontSize: responsiveFontSize(14),
+                                                      fontSize:
+                                                          responsiveFontSize(
+                                                            14,
+                                                          ),
                                                     ),
                                                   ),
                                                 ),
@@ -476,14 +541,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:  Colors.blue,
+                            backgroundColor: Colors.blue,
                             minimumSize: Size(
                               responsiveWidth(0.9),
                               responsiveHeight(0.05),
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
-                                responsiveWidth(0.04)
+                                responsiveWidth(0.04),
                               ),
                             ),
                           ),
