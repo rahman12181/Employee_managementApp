@@ -1,30 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:management_app/providers/profile_provider.dart';
+import 'package:management_app/screen/change_password_screen.dart';
 import 'package:management_app/screen/profilescreen.dart';
 import 'package:management_app/services/auth_service.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool voiceEnabled = false;
+  bool faceIdEnabled = false;
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    double rf(double size) => size * (screenWidth / 375);
-
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FA),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Consumer<ProfileProvider>(
           builder: (context, provider, _) {
             final user = provider.profileData;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -38,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       IconButton(
                         icon: const Icon(Icons.logout, color: Colors.red),
-                        onPressed: () => _logout(context, rf),
+                        onPressed: () => _logout(context),
                       ),
                     ],
                   ),
@@ -53,18 +57,17 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    child: Hero(
-                      tag: "profile-hero",
-                      child: CircleAvatar(
-                        radius: 45,
-                        backgroundImage:
-                            (user != null && user['user_image'] != null)
-                            ? NetworkImage(
-                                "https://ppecon.erpnext.com${user['user_image']}",
-                              )
-                            : const AssetImage("assets/images/app_icon.png")
-                                  as ImageProvider,
-                      ),
+                    child: CircleAvatar(
+                      radius: 45,
+                      backgroundImage:
+                          (user != null &&
+                              user['user_image'] != null &&
+                              user['user_image'] != "")
+                          ? NetworkImage(
+                              "https://ppecon.erpnext.com${user['user_image']}",
+                            )
+                          : const AssetImage("assets/images/app_icon.png")
+                                as ImageProvider,
                     ),
                   ),
 
@@ -77,47 +80,76 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 4),
-                  Text(
-                    user?['company_name'] ?? "",
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-
                   const SizedBox(height: 24),
-                  _card([
+                  _box(
                     _row(
                       icon: Icons.send_outlined,
                       title: "User Name",
                       subtitle: user?['email'] ?? "",
                     ),
-                    _row(icon: Icons.lock_outline, title: "Change Password"),
+                  ),
+
+                  _box(
+                    _row(
+                      icon: Icons.lock_outline,
+                      title: "Change Password",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ChangePasswordScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  _box(
                     _row(
                       icon: Icons.email_outlined,
                       title: "Notification E-Mail",
                       subtitle: user?['email'] ?? "",
                     ),
+                  ),
+
+                  _box(
                     _switchRow(
                       icon: Icons.mic_none,
                       title: "Activate voice recognition",
+                      value: voiceEnabled,
+                      onChanged: (v) {
+                        setState(() => voiceEnabled = v);
+                      },
                     ),
+                  ),
+
+                  _box(
                     _dropdownRow(
                       icon: Icons.translate,
                       title: "Languages",
                       value: "English",
                     ),
+                  ),
+
+                  _box(
                     _dropdownRow(
                       icon: Icons.dark_mode_outlined,
                       title: "Theme",
                       value: "Light",
                     ),
+                  ),
+
+                  _box(
                     _switchRow(
                       icon: Icons.face_retouching_natural,
                       title: "Login by Face ID",
-                      value: false,
+                      subtitle: faceIdEnabled ? "Enable" : "Disable",
+                      value: faceIdEnabled,
+                      onChanged: (v) {
+                        setState(() => faceIdEnabled = v);
+                      },
                     ),
-                  ]),
-
-                  const SizedBox(height: 30),
+                  ),
                 ],
               ),
             );
@@ -126,9 +158,8 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-
-  Future<void> _logout(BuildContext context, Function rf) async {
-    bool? confirm = await showDialog<bool>(
+  Future<void> _logout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -150,7 +181,6 @@ class SettingsScreen extends StatelessWidget {
 
     if (confirm != true) return;
 
-    /// 🔹 LOADING DIALOG
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -161,8 +191,8 @@ class SettingsScreen extends StatelessWidget {
     final result = await auth.logoutUser();
 
     Navigator.pop(context);
+
     showDialog(
-      // ignore: use_build_context_synchronously
       context: context,
       barrierDismissible: false,
       builder: (_) {
@@ -174,7 +204,6 @@ class SettingsScreen extends StatelessWidget {
               (route) => false,
             );
           } else {
-            // ignore: use_build_context_synchronously
             Navigator.pop(context);
           }
         });
@@ -186,17 +215,12 @@ class SettingsScreen extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: (result["success"] ? Colors.green : Colors.red)
-                    .withAlpha(15),
-                child: Icon(
-                  result["success"] ? Icons.check_circle : Icons.error,
-                  color: result["success"] ? Colors.green : Colors.red,
-                  size: 40,
-                ),
+              Icon(
+                result["success"] ? Icons.check_circle : Icons.error,
+                size: 48,
+                color: result["success"] ? Colors.green : Colors.red,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 result["success"] ? "Logged out" : "Logout failed",
                 style: const TextStyle(
@@ -204,7 +228,7 @@ class SettingsScreen extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 result["message"] ?? "",
                 textAlign: TextAlign.center,
@@ -217,13 +241,22 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _card(List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+  Widget _box(Widget child) {
+    return Align(
+      alignment: Alignment.center,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.95, 
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.lightBlue.shade100,
+            width: 1, // 
+          ),
+        ),
+        child: child,
       ),
-      child: Column(children: children),
     );
   }
 
@@ -231,6 +264,7 @@ class SettingsScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     String? subtitle,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       leading: _icon(icon),
@@ -239,19 +273,25 @@ class SettingsScreen extends StatelessWidget {
           ? Text(subtitle, style: const TextStyle(color: Colors.grey))
           : null,
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
     );
   }
 
   Widget _switchRow({
     required IconData icon,
     required String title,
-    bool value = true,
+    required bool value,
+    String? subtitle,
+    required ValueChanged<bool> onChanged,
   }) {
     return SwitchListTile(
       secondary: _icon(icon),
       title: Text(title),
+      subtitle: subtitle != null
+          ? Text(subtitle, style: const TextStyle(color: Colors.grey))
+          : null,
       value: value,
-      onChanged: (_) {},
+      onChanged: onChanged,
     );
   }
 

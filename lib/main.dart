@@ -21,6 +21,7 @@ import 'package:management_app/screen/setting_screen.dart';
 import 'package:management_app/screen/splash_screen.dart';
 import 'package:management_app/screen/travel_request_screen.dart';
 import 'package:management_app/services/auth_service.dart';
+import 'package:management_app/utils/systembars_utils.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -45,8 +46,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  final String initialRoute; 
-
+  final String initialRoute;
   const MyApp({super.key, required this.initialRoute});
 
   @override
@@ -61,36 +61,41 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.white,
       ),
+
       darkTheme: ThemeData(
         useMaterial3: false,
         brightness: Brightness.dark,
+        scaffoldBackgroundColor: Colors.black,
       ),
+
+      builder: (context, child) {
+        SystembarUtil.setSystemBar(context);
+        return child!;
+      },
 
       initialRoute: initialRoute,
 
       routes: {
-        '/splashScreen': (context) => const SplashScreen(),
-        '/loginScreen': (context) => const LoginScreen(),
-        '/forgotpasswordScreen': (context) => const ForgotpasswordScreen(),
-        '/homeMainScreen': (context) => const HomemainScreen(),
-        '/homeScreen': (context) => const HomeScreen(),
-        '/settingScreen': (context) => const SettingsScreen(),
-        '/notificationScreen': (context) => const NotificationScreen(),
-        '/profileScreen': (context) => const Profilescreen(),
-        '/attendanceScreen': (context) => const AttendanceScreen(),
-        '/leaveRequest': (context) => const LeaveRequest(),
-        '/leaveRequestDetail': (context) => const LeaveRequestdetail(),
-        '/leaveApproval': (context) => const LeaveApproval(),
-        '/attendanceRequest': (context) => const AttendanceRequestScreen(),
-        '/travelRequest': (context) => const TravelRequestScreen(),
-        '/regularizationListing': (context) => const RegularizationLsiting(),
-        '/checkMore': (context) => const CheckMore(),
+        '/splashScreen': (_) => const SplashScreen(),
+        '/loginScreen': (_) => const LoginScreen(),
+        '/forgotpasswordScreen': (_) => const ForgotpasswordScreen(),
+        '/homeMainScreen': (_) => const HomemainScreen(),
+        '/homeScreen': (_) => const HomeScreen(),
+        '/settingScreen': (_) => const SettingsScreen(),
+        '/notificationScreen': (_) => const NotificationScreen(),
+        '/profileScreen': (_) => const Profilescreen(),
+        '/attendanceScreen': (_) => const AttendanceScreen(),
+        '/leaveRequest': (_) => const LeaveRequest(),
+        '/leaveRequestDetail': (_) => const LeaveRequestdetail(),
+        '/leaveApproval': (_) => const LeaveApproval(),
+        '/attendanceRequest': (_) => const AttendanceRequestScreen(),
+        '/travelRequest': (_) => const TravelRequestScreen(),
+        '/regularizationListing': (_) => const RegularizationLsiting(),
+        '/checkMore': (_) => const CheckMore(),
       },
 
-      // ← Safety net for unknown routes
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
-      },
+      onUnknownRoute: (_) =>
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 }

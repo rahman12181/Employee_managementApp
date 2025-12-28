@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const HomemainScreen(),
     const DashboardScreen(),
     const AttendanceScreen(),
-    const SettingsScreen()
+    const SettingsScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -30,6 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       backgroundColor: Colors.white,
 
       body: Padding(
@@ -39,31 +41,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
       bottomNavigationBar: SafeArea(
         top: false,
-        child:Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.blue,
-          borderRadius: BorderRadius.circular(40),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
+        child: Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
 
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            navButton(Icons.home, "Home", 0),
-            navButton(Icons.dashboard_customize, "DASHBOARD", 1),
-            navButton(Icons.calendar_today, "HISTORY", 2),
-            navButton(Icons.account_box, "PROFILE", 3),
-          ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              navButton(Icons.home, "Home", 0),
+              navButton(Icons.dashboard_customize, "DASHBOARD", 1),
+              navButton(Icons.calendar_today, "HISTORY", 2),
+              navButton(Icons.account_box, "PROFILE", 3),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -89,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontWeight: active ? FontWeight.bold : FontWeight.normal,
               color: active ? Colors.white : Colors.white70,
             ),
-          )
+          ),
         ],
       ),
     );

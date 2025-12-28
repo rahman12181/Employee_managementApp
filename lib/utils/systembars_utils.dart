@@ -2,21 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class SystembarUtil {
+  static void setSystemBar(BuildContext context) {
+    final isDark =Theme.of(context).brightness == Brightness.dark;
 
-static void setSystemBar(BuildContext context){
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
 
-  final screenColorBrightness=Theme.of(context).brightness;       
-  final isdark = screenColorBrightness == Brightness.dark;
+        statusBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
 
-  SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-      statusBarIconBrightness: isdark ? Brightness.light : Brightness.dark,
-      systemNavigationBarIconBrightness: isdark ?Brightness.light : Brightness.dark,
-      systemNavigationBarDividerColor: Colors.transparent,
-    )
-  );   
-}
-  
+        systemNavigationBarColor:
+            isDark ? Colors.black : Colors.white,
+
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
+
+        systemNavigationBarDividerColor: Colors.transparent,
+      ),
+    );
+  }
 }
