@@ -18,10 +18,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Future<void> _refreshAttendance() async {
     final employeeId = context.read<EmployeeProvider>().employeeId;
     if (employeeId != null) {
-      await context.read<AttendanceProvider>().loadMonthAttendance(
-        employeeId,
-        currentMonth,
-      );
+      await context.read<AttendanceProvider>()
+          .loadMonthAttendance(employeeId, currentMonth);
     }
   }
 
@@ -40,7 +38,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       case AttendanceStatus.shortage:
         return Colors.orange;
       case AttendanceStatus.checkedIn:
-        return Colors.yellow.shade700;
+        return Colors.amber;
       case AttendanceStatus.absent:
         return Colors.red;
     }
@@ -63,243 +61,273 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final provider = context.watch<AttendanceProvider>();
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    final daysInMonth = DateUtils.getDaysInMonth(
-      currentMonth.year,
-      currentMonth.month,
-    );
+    final daysInMonth =
+        DateUtils.getDaysInMonth(currentMonth.year, currentMonth.month);
 
     bool canGoNext =
         currentMonth.year < now.year ||
-        (currentMonth.year == now.year && currentMonth.month < now.month);
+        (currentMonth.year == now.year &&
+            currentMonth.month < now.month);
 
     final monthlyLogs = provider.getMonthlyLogs(currentMonth);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(child:  RefreshIndicator(
-        onRefresh: _refreshAttendance,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 30, 10, 10),
-            child: Column(
-              children: [
-              
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left),
-                      onPressed: () async {
-                        setState(() {
-                          currentMonth = DateTime(
-                            currentMonth.year,
-                            currentMonth.month - 1,
-                          );
-                        });
-                        await _refreshAttendance();
-                      },
-                    ),
-                    Text(
-                      DateFormat('MMMM yyyy').format(currentMonth),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _refreshAttendance,
+          child: SingleChildScrollView(   
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 20, 12, 16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () async {
+                          setState(() {
+                            currentMonth = DateTime(
+                              currentMonth.year,
+                              currentMonth.month - 1,
+                            );
+                          });
+                          await _refreshAttendance();
+                        },
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right),
-                      onPressed: canGoNext
-                          ? () async {
-                              setState(() {
-                                currentMonth = DateTime(
-                                  currentMonth.year,
-                                  currentMonth.month + 1,
-                                );
-                              });
-                              await _refreshAttendance();
-                            }
-                          : null,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: daysInMonth,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    crossAxisSpacing: 6,
-                    mainAxisSpacing: 6,
+                      Text(
+                        DateFormat('MMMM yyyy').format(currentMonth),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: canGoNext
+                            ? () async {
+                                setState(() {
+                                  currentMonth = DateTime(
+                                    currentMonth.year,
+                                    currentMonth.month + 1,
+                                  );
+                                });
+                                await _refreshAttendance();
+                              }
+                            : null,
+                      ),
+                    ],
                   ),
-                  itemBuilder: (_, index) {
-                    final day = index + 1;
-                    final date = DateTime(
-                      currentMonth.year,
-                      currentMonth.month,
-                      day,
-                    );
 
-                    Color? bgColor;
-                    Border? border;
+                  const SizedBox(height: 12),
 
-                    final log = provider.attendanceMap[date];
+                  /// CALENDAR GRID (LOGIC UNCHANGED)
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: daysInMonth,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 7,
+                      crossAxisSpacing: 6,
+                      mainAxisSpacing: 6,
+                    ),
+                    itemBuilder: (_, index) {
+                      final day = index + 1;
+                      final date = DateTime(
+                        currentMonth.year,
+                        currentMonth.month,
+                        day,
+                      );
 
-                    if (date.isAfter(today)) {
-                      bgColor = null;
-                      border = Border.all(color: Colors.grey.shade300);
-                    } else if (date == today) {
-                      if (log != null) {
-                        bgColor = getStatusColor(log.status);
-                      } else {
+                      Color? bgColor;
+                      Border? border;
+
+                      final log = provider.attendanceMap[date];
+
+                      if (date.isAfter(today)) {
                         bgColor = null;
+                        border = Border.all(
+                          color: theme.dividerColor,
+                        );
+                      } else if (date == today) {
+                        bgColor = log != null
+                            ? getStatusColor(log.status)
+                            : null;
+                        border = Border.all(
+                          color: theme.colorScheme.primary,
+                          width: 2,
+                        );
+                      } else {
+                        final status =
+                            log?.status ?? AttendanceStatus.absent;
+                        bgColor = getStatusColor(status);
                       }
 
-                      border = Border.all(color: Colors.blue, width: 2);
-                    } else {
-                      final status = log?.status ?? AttendanceStatus.absent;
-                      bgColor = getStatusColor(status);
-                    }
-
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        border: border,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "$day",
-                            style: TextStyle(
-                              color: bgColor == null
-                                  ? Colors.black
-                                  : Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            DateFormat('E').format(date),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: bgColor == null
-                                  ? Colors.black54
-                                  : Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    _legend(Colors.green, "Completed"),
-                    _legend(Colors.blue, "Overtime"),
-                    _legend(Colors.orange, "Shortage"),
-                    _legend(Colors.yellow.shade700, "Checked In"),
-                    _legend(Colors.red, "Absent"),
-                    _legendBorder("Today"),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: monthlyLogs.length,
-                  itemBuilder: (_, index) {
-                    final log = monthlyLogs[index];
-                    final statusColor = getStatusColor(log.status);
-
-                    String formatDuration(Duration d) {
-                      final h = d.inHours.toString().padLeft(2, '0');
-                      final m = (d.inMinutes % 60).toString().padLeft(2, '0');
-                      return "$h:$m";
-                    }
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          border: border,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: statusColor,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      DateFormat('dd').format(log.date),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      DateFormat('EEE').format(log.date),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            Text(
+                              "$day",
+                              style: TextStyle(
+                                color: bgColor == null
+                                    ? theme.textTheme.bodyMedium?.color
+                                    : Colors.white,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    getStatusText(log.status),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: statusColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text("In  : ${log.checkIn ?? '--'}"),
-                                  Text("Out : ${log.checkOut ?? '--'}"),
-                                  Text(
-                                    "Total : ${formatDuration(log.totalHours)}",
-                                  ),
-                                ],
+                            Text(
+                              DateFormat('E').format(date),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: bgColor == null
+                                    ? theme.hintColor
+                                    : Colors.white70,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ],
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  /// LEGEND
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      _legend(Colors.green, "Completed"),
+                      _legend(Colors.blue, "Overtime"),
+                      _legend(Colors.orange, "Shortage"),
+                      _legend(Colors.amber, "Checked In"),
+                      _legend(Colors.red, "Absent"),
+                      _legendBorder("Today"),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// ATTENDANCE LIST (STYLED)
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: monthlyLogs.length,
+                    itemBuilder: (_, index) {
+                      final log = monthlyLogs[index];
+                      final statusColor = getStatusColor(log.status);
+
+                      String formatDuration(Duration d) {
+                        final h =
+                            d.inHours.toString().padLeft(2, '0');
+                        final m =
+                            (d.inMinutes % 60).toString().padLeft(2, '0');
+                        return "$h:$m";
+                      }
+
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: isDark
+                              ? []
+                              : [
+                                  const BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 6,
+                                    offset: Offset(0, 3),
+                                  )
+                                ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 54,
+                                height: 54,
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  borderRadius:
+                                      BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        DateFormat('dd')
+                                            .format(log.date),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        DateFormat('EEE')
+                                            .format(log.date),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      getStatusText(log.status),
+                                      style: theme
+                                          .textTheme.bodyMedium
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text("In   : ${log.checkIn ?? '--'}"),
+                                    Text("Out : ${log.checkOut ?? '--'}"),
+                                    Text(
+                                      "Total : ${formatDuration(log.totalHours)}",
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-      )
     );
   }
 
@@ -329,7 +357,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           width: 12,
           height: 12,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.blue, width: 2),
+            border: Border.all(
+              color: Colors.blue,
+              width: 2,
+            ),
             borderRadius: BorderRadius.circular(3),
           ),
         ),

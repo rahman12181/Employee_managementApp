@@ -29,12 +29,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.white,
+    final theme = Theme.of(context);
 
-      body: Padding(
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+
+      body: Container(
+        color: theme.scaffoldBackgroundColor,
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
         child: _bottomNavigationScreens[_selectedIndex],
       ),
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.blue,
+            color: theme.colorScheme.primary, // 🔥 theme-based
             borderRadius: BorderRadius.circular(40),
             boxShadow: const [
               BoxShadow(
@@ -55,14 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               navButton(Icons.home, "Home", 0),
-              navButton(Icons.dashboard_customize, "DASHBOARD", 1),
-              navButton(Icons.calendar_today, "HISTORY", 2),
-              navButton(Icons.account_box, "PROFILE", 3),
+              navButton(Icons.dashboard_customize, "Dashboard", 1),
+              navButton(Icons.calendar_today, "History", 2),
+              navButton(Icons.account_box, "Profile", 3),
             ],
           ),
         ),
@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget navButton(IconData icon, String label, int index) {
-    bool active = _selectedIndex == index;
+    final bool active = _selectedIndex == index;
 
     return GestureDetector(
       onTap: () => _onItemTapped(index),

@@ -42,18 +42,17 @@ class _HomemainScreenState extends State<HomemainScreen> {
         });
       }
     });
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await Provider.of<ProfileProvider>(
           context,
           listen: false,
         ).loadProfile();
-
         await Provider.of<EmployeeProvider>(
           context,
           listen: false,
         ).loadEmployeeIdFromLocal();
-
         await Provider.of<PunchProvider>(
           context,
           listen: false,
@@ -74,13 +73,6 @@ class _HomemainScreenState extends State<HomemainScreen> {
     return 'Good Night,';
   }
 
-  Color fingerprintColor(PunchProvider punchProvider) {
-    if (isPunching) return Colors.red.shade600;
-    if (punchProvider.punchInTime == null) return Colors.blue.shade600;
-    if (punchProvider.punchOutTime == null) return Colors.red.shade600;
-    return Colors.blue.shade600;
-  }
-
   void _updateTime() {
     if (!mounted) return;
     final now = DateTime.now();
@@ -95,6 +87,13 @@ class _HomemainScreenState extends State<HomemainScreen> {
     _timer?.cancel();
     _greetingTimer?.cancel();
     super.dispose();
+  }
+
+  Color fingerprintColor(PunchProvider punchProvider) {
+    if (isPunching) return Colors.red.shade600;
+    if (punchProvider.punchInTime == null) return Colors.blue.shade600;
+    if (punchProvider.punchOutTime == null) return Colors.red.shade600;
+    return Colors.blue.shade600;
   }
 
   String punchText(PunchProvider punchProvider) {
@@ -146,17 +145,17 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final size = MediaQuery.of(context).size;
     final punchProvider = Provider.of<PunchProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
-            SizedBox(height: screenHeight * 0.04),
+            SizedBox(height: size.height * 0.04),
+
             Consumer<ProfileProvider>(
               builder: (_, provider, __) {
                 final user = provider.profileData;
@@ -167,7 +166,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                     CircleAvatar(
                       radius: 25,
                       backgroundImage:
-                          (imagePath != null && imagePath.toString().isNotEmpty)
+                          (imagePath != null && imagePath.isNotEmpty)
                           ? NetworkImage("https://ppecon.erpnext.com$imagePath")
                           : const AssetImage("assets/images/app_icon.png")
                                 as ImageProvider,
@@ -180,17 +179,15 @@ class _HomemainScreenState extends State<HomemainScreen> {
                           _greeting,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color?.withAlpha(60),
                           ),
                         ),
-                        const SizedBox(height: 2),
                         Text(
                           user?['full_name'] ?? "",
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -199,132 +196,125 @@ class _HomemainScreenState extends State<HomemainScreen> {
               },
             ),
 
-            SizedBox(height: screenHeight * 0.07),
+            SizedBox(height: size.height * 0.07),
 
             Text(
               _currentTime,
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black),
             ),
             Text(
               _currentDate,
-              style: const TextStyle(fontSize: 14, color: Colors.black54),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color.fromARGB(255, 112, 112, 112)),
             ),
 
-            SizedBox(height: screenHeight * 0.07),
+            SizedBox(height: size.height * 0.07),
 
             Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: screenWidth * 0.50,
-                  height: screenWidth * 0.50,
+                  width: size.width * 0.50,
+                  height: size.width * 0.50,
                   child: CircularProgressIndicator(
                     value: punchProvider.progressValue().clamp(0.0, 1.0),
                     strokeWidth: 7,
-                    color: punchProvider.punchOutTime != null
-                        ? const Color.fromARGB(255, 159, 152, 152)
-                        : const Color.fromARGB(255, 55, 160, 246),
-                    backgroundColor: Colors.grey.shade300,
+                    color: Colors.blue,
+                    backgroundColor: const Color.fromARGB(255, 199, 196, 196),
                   ),
                 ),
                 InkWell(
                   onTap: isPunching ? null : onPunchTap,
-                  borderRadius: BorderRadius.circular(screenWidth * 0.45 / 2),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    width: screenWidth * 0.48,
-                    height: screenWidth * 0.48,
+                    width: size.width * 0.48,
+                    height: size.width * 0.48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isPunching
-                          ? Colors.grey.shade300
-                          : Colors.grey.shade100,
-                      boxShadow: isPunching
-                          ? []
-                          : const [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 20,
-                                offset: Offset(0, 6),
-                              ),
-                            ],
+                      color: Theme.of(context).cardColor,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 20,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: Center(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 800),
-                        child: showSuccess
-                            ? Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                    size: 60,
+                      child: showSuccess
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 60,
+                                ),
+                                Text(
+                                  successText,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    successText,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.fingerprint,
-                                    size: 55,
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.fingerprint,
+                                  size: 55,
+                                  color: fingerprintColor(punchProvider),
+                                ),
+                                Text(
+                                  punchText(punchProvider),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
                                     color: fingerprintColor(punchProvider),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    punchText(punchProvider),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: fingerprintColor(punchProvider),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                 ),
               ],
             ),
 
-            SizedBox(height: screenHeight * 0.07),
+            SizedBox(height: size.height * 0.07),
 
+            /// INFO ROW
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _smallInfo(
                   Icons.login,
                   punchProvider.punchInTime == null
-                      ? "00:00 AM"
+                      ? "--:--"
                       : DateFormat(
                           'hh:mm a',
                         ).format(punchProvider.punchInTime!),
                   "Punch In",
-                  iconColor: Colors.blue.shade600,
+                  iconColor: Colors.blue, // 🔵 Login
                 ),
                 _smallInfo(
                   Icons.logout,
                   punchProvider.punchOutTime == null
-                      ? "00:00 PM"
+                      ? "--:--"
                       : DateFormat(
                           'hh:mm a',
                         ).format(punchProvider.punchOutTime!),
                   "Punch Out",
-                  iconColor: Colors.red.shade600,
+                  iconColor: Colors.red, // 🔴 Logout
                 ),
                 _smallInfo(
                   Icons.av_timer,
                   punchProvider.totalHours(),
-                  "Total Hours",
-                  iconColor: Colors.grey.shade600,
+                  "Total",
+                  iconColor: Colors.green, // 🟢 Total Hours (you can change)
                 ),
               ],
             ),
@@ -336,19 +326,15 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
   Widget _smallInfo(
     IconData icon,
-    String time,
+    String value,
     String label, {
     required Color iconColor,
   }) {
     return Column(
       children: [
-        Icon(icon, size: 27, color: iconColor),
-        const SizedBox(height: 4),
-        Text(time, style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
-        ),
+        Icon(icon, size: 26, color: iconColor),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }

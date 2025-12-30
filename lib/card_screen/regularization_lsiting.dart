@@ -10,7 +10,7 @@ class RegularizationLsiting  extends StatefulWidget{
 class _RegularizationLsitingState extends State<RegularizationLsiting>{
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
        body:  Center(
         child: Text("Approval listing",style: TextStyle(fontSize: 30),)
        ),

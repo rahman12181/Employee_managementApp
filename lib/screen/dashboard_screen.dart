@@ -72,11 +72,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 7));
       if (!mounted) return false;
-
       setState(() {
         currentIndex = (currentIndex + 1) % bannerImages.length;
       });
@@ -88,12 +86,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: theme.appBarTheme.elevation ?? 0,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -128,19 +128,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       TextSpan(
                         text: "PIONEER\n",
-                        style: TextStyle(
-                          height: 1,
+                        style: theme.textTheme.bodyLarge?.copyWith(
                           fontSize: w * 0.045,
-                          color: Colors.black,
                         ),
                       ),
                       TextSpan(
                         text: "TECH",
-                        style: TextStyle(
-                          height: 1,
+                        style: theme.textTheme.bodyLarge?.copyWith(
                           fontSize: w * 0.045,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
                         ),
                       ),
                     ],
@@ -158,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Icon(
                   Icons.notifications_none,
                   size: w * 0.08,
-                  color: Colors.black,
+                  color: theme.iconTheme.color,
                 ),
               ),
             ),
@@ -166,9 +162,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+          ? Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            )
           : SingleChildScrollView(
-              child: SafeArea(
                 child: Column(
                   children: [
                     SizedBox(height: h * 0.015),
@@ -178,6 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       clipBehavior: Clip.hardEdge,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(w * 0.06),
+                        color: theme.cardColor,
                       ),
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 1500),
@@ -191,22 +192,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     SizedBox(height: h * 0.025),
                     Padding(
-                      padding: const EdgeInsets.only(
-                        left: 10.0,
-                      ), 
+                      padding: const EdgeInsets.only(left: 10.0),
                       child: Align(
-                        alignment:Alignment.centerLeft,
+                        alignment: Alignment.centerLeft,
                         child: Text(
                           "Modules",
-                          style: TextStyle(
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: w * 0.05,
                             fontWeight: FontWeight.bold,
-                            fontFamily: "poppins",
                           ),
                         ),
                       ),
                     ),
-
                     SizedBox(height: h * 0.010),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: w * 0.01),
@@ -222,7 +219,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         itemBuilder: (context, index) {
                           final module = modules[index];
-
                           return Material(
                             color: Colors.transparent,
                             child: InkWell(
@@ -230,61 +226,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               onTap: () {
                                 switch (module['type']) {
                                   case 'Leave_Request':
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/leaveRequest',
-                                    );
+                                    Navigator.pushNamed(context, '/leaveRequest');
                                     break;
-
                                   case 'Leave_requestDetail':
                                     Navigator.pushNamed(
-                                      context,
-                                      '/leaveRequestDetail',
-                                    );
+                                        context, '/leaveRequestDetail');
                                     break;
-
                                   case 'Leave_Approval':
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/leaveApproval',
-                                    );
+                                    Navigator.pushNamed(context, '/leaveApproval');
                                     break;
-
                                   case 'Attendance_request':
                                     Navigator.pushNamed(
-                                      context,
-                                      '/attendanceRequest',
-                                    );
+                                        context, '/attendanceRequest');
                                     break;
-
                                   case 'Travel_request':
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/travelRequest',
-                                    );
+                                    Navigator.pushNamed(context, '/travelRequest');
                                     break;
-
                                   case 'Regularization_Listing':
                                     Navigator.pushNamed(
-                                      context,
-                                      '/regularizationListing',
-                                    );
+                                        context, '/regularizationListing');
                                     break;
-
                                   case 'Check_More':
                                     Navigator.pushNamed(context, '/checkMore');
                                     break;
-
                                   default:
                                     debugPrint(
-                                      'No route defined for ${module['type']}',
-                                    );
+                                        'No route defined for ${module['type']}');
                                 }
                               },
                               child: Card(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(w * 0.04),
                                 ),
+                                color: theme.cardColor,
                                 elevation: 3,
                                 child: Padding(
                                   padding: EdgeInsets.all(w * 0.03),
@@ -298,17 +272,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       SizedBox(height: h * 0.01),
                                       Text(
                                         module['title'],
-                                        style: TextStyle(
-                                          fontSize: w * 0.032,
+                                        style: theme.textTheme.bodyMedium?.copyWith(
                                           fontWeight: FontWeight.bold,
+                                          fontSize: w * 0.032,
                                         ),
                                       ),
                                       SizedBox(height: h * 0.005),
                                       Text(
                                         module['subtitle'],
-                                        style: TextStyle(
+                                        style: theme.textTheme.bodySmall?.copyWith(
                                           fontSize: w * 0.025,
-                                          color: Colors.grey[600],
+                                          color: theme.textTheme.bodySmall?.color
+                                              ?.withAlpha(70),
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
@@ -324,7 +299,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-            ),
-    );
+            );
   }
 }

@@ -55,17 +55,77 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Pioneer',
       themeMode: ThemeMode.system,
+
       theme: ThemeData(
         useMaterial3: false,
         fontFamily: 'poppins',
         brightness: Brightness.light,
+
         scaffoldBackgroundColor: Colors.white,
+
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          iconTheme: IconThemeData(color: Colors.black),
+          titleTextStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.black),
+          bodyMedium: TextStyle(color: Colors.black87),
+          bodySmall: TextStyle(color: Colors.black54),
+        ),
+
+        iconTheme: const IconThemeData(color: Colors.black),
+        cardColor: Colors.white,
+        dividerColor: Colors.grey,
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF1976D2),
+          onPrimary: Colors.white,
+          surface: Colors.white,
+          onSurface: Colors.black,
+        ),
       ),
 
       darkTheme: ThemeData(
         useMaterial3: false,
+        fontFamily: 'poppins',
         brightness: Brightness.dark,
+
         scaffoldBackgroundColor: Colors.black,
+
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          iconTheme: IconThemeData(color: Colors.white),
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white70),
+          bodySmall: TextStyle(color: Colors.white60),
+        ),
+
+        iconTheme: const IconThemeData(color: Colors.white),
+        cardColor: const Color(0xFF1E1E1E),
+        dividerColor: Colors.white24,
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF90CAF9),
+          onPrimary: Colors.black,
+          surface: Color(0xFF121212),
+          onSurface: Colors.white,
+        ),
       ),
 
       builder: (context, child) {
