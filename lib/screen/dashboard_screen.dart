@@ -37,7 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     },
     {
       'title': 'Leave Approval',
-      'subtitle': 'Admin..',
+      'subtitle': 'your approved leave..',
       'image': 'assets/images/leaveapproved.png',
       'type': 'Leave_Approval',
     },
@@ -233,7 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         context, '/leaveRequestDetail');
                                     break;
                                   case 'Leave_Approval':
-                                    Navigator.pushNamed(context, '/leaveApproval');
+                                    Navigator.pushNamed(context, '/leaveApprovalScreen');
                                     break;
                                   case 'Attendance_request':
                                     Navigator.pushNamed(

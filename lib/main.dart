@@ -14,6 +14,7 @@ import 'package:management_app/screen/attendance_request_screen.dart';
 import 'package:management_app/screen/attendance_screen.dart';
 import 'package:management_app/screen/forgotPassword_screen.dart';
 import 'package:management_app/screen/home_screen.dart';
+import 'package:management_app/screen/leave_approval_screen.dart';
 import 'package:management_app/screen/login_screen.dart';
 import 'package:management_app/screen/notification_screen.dart';
 import 'package:management_app/screen/profilescreen.dart';
@@ -32,7 +33,7 @@ void main() async {
   final authService = AuthService();
   final initialRoute = await authService.getInitialRoute();
 
-  runApp(
+  runApp( 
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
@@ -149,9 +150,11 @@ class MyApp extends StatelessWidget {
         '/leaveRequestDetail': (_) => const LeaveRequestdetail(),
         '/leaveApproval': (_) => const LeaveApproval(),
         '/attendanceRequest': (_) => const AttendanceRequestScreen(),
-        '/travelRequest': (_) => const TravelRequestScreen(),
+        '/travelRequest': (_) => const TravelRequestScreen(), 
         '/regularizationListing': (_) => const RegularizationLsiting(),
         '/checkMore': (_) => const CheckMore(),
+        '/leaveApprovalScreen':(_) => const LeaveApprovalScreen(),
+        
       },
 
       onUnknownRoute: (_) =>

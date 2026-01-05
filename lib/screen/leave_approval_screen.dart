@@ -7,17 +7,18 @@ class LeaveApprovalScreen extends StatefulWidget {
   const LeaveApprovalScreen({super.key});
 
   @override
-  State<LeaveApprovalScreen> createState() => _LeaveApprovalScreenState();
+  State<LeaveApprovalScreen> createState() =>
+      _LeaveApprovalScreenState();
 }
 
-class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
-  late Future<List<LeaveApprovedModel>> approvedLeaveFuture;
+class _LeaveApprovalScreenState
+    extends State<LeaveApprovalScreen> {
+  late Future<List<LeaveApprovedModel>> leaveFuture;
 
   @override
   void initState() {
     super.initState();
-    approvedLeaveFuture =
-        LeaveApprovedService.fetchApprovedLeaves();
+    leaveFuture = LeaveApprovedService.fetchLeaves();
   }
 
   @override
@@ -29,7 +30,6 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
         leading: const BackButton(),
       ),
 
-      /// ➕ Button (future use)
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         child: const Icon(Icons.add),
@@ -40,7 +40,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
           _searchBar(),
           Expanded(
             child: FutureBuilder<List<LeaveApprovedModel>>(
-              future: approvedLeaveFuture,
+              future: leaveFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState ==
                     ConnectionState.waiting) {
@@ -51,20 +51,25 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                 if (!snapshot.hasData ||
                     snapshot.data!.isEmpty) {
                   return const Center(
-                    child: Text(
-                      "No Approved Leave Found",
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    child: Text("No Leave Found"),
                   );
                 }
 
                 final leaves = snapshot.data!;
 
-                return ListView.builder(
-                  itemCount: leaves.length,
-                  itemBuilder: (context, index) {
-                    return _leaveCard(leaves[index]);
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {
+                      leaveFuture =
+                          LeaveApprovedService.fetchLeaves();
+                    });
                   },
+                  child: ListView.builder(
+                    itemCount: leaves.length,
+                    itemBuilder: (context, index) {
+                      return _leaveCard(leaves[index]);
+                    },
+                  ),
                 );
               },
             ),
@@ -74,7 +79,6 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     );
   }
 
-  /// 🔍 Search UI only
   Widget _searchBar() {
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -93,13 +97,14 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     );
   }
 
-  /// 📄 Leave Card UI
   Widget _leaveCard(LeaveApprovedModel leave) {
+    final statusColor = _statusColor(leave.status);
+    final statusText = leave.status;
+
     return Padding(
       padding: const EdgeInsets.symmetric(
           horizontal: 12, vertical: 6),
       child: Card(
-        elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
         ),
@@ -108,7 +113,6 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// Name + Status
               Row(
                 mainAxisAlignment:
                     MainAxisAlignment.spaceBetween,
@@ -122,18 +126,14 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                         style:
                             TextStyle(color: Colors.grey),
                       ),
-                      const SizedBox(height: 4),
                       Text(
                         leave.employeeName,
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
 
-                  /// Approved Button
                   InkWell(
                     onTap: () {
                       Navigator.push(
@@ -151,14 +151,14 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                               horizontal: 14,
                               vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade100,
+                        color: statusColor.withAlpha(15),
                         borderRadius:
                             BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        "Approved",
+                      child: Text(
+                        statusText,
                         style: TextStyle(
-                          color: Colors.green,
+                          color: statusColor,
                           fontWeight:
                               FontWeight.w600,
                         ),
@@ -189,21 +189,28 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     );
   }
 
+  Color _statusColor(String status) {
+    switch (status) {
+      case "Approved":
+        return Colors.green;
+      case "Rejected":
+        return Colors.red;
+      default:
+        return Colors.orange;
+    }
+  }
+
   Widget _info(String title, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-              color: Colors.grey, fontSize: 13),
-        ),
+        Text(title,
+            style: const TextStyle(
+                color: Colors.grey, fontSize: 13)),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style:
-              const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        Text(value,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold)),
       ],
     );
   }

@@ -1,27 +1,34 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:management_app/model/leave_approved_model.dart';
 
 class LeaveApprovedService {
-  static Future<List<LeaveApprovedModel>> fetchApprovedLeaves() async {
+  static Future<List<LeaveApprovedModel>> fetchLeaves() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cookies = prefs.getStringList("cookies") ?? [];
+
     final response = await http.get(
-      Uri.parse("https://your-api-url.com/leave-list"),
+      Uri.parse(
+        "https://ppecon.erpnext.com/api/resource/Leave Application"
+        "?fields=[\"employee_name\",\"leave_type\",\"from_date\",\"to_date\",\"status\",\"description\"]"
+        "&order_by=creation desc",
+      ),
       headers: {
-        "Authorization": "Bearer YOUR_TOKEN",
         "Content-Type": "application/json",
+        "Cookie": cookies.join("; "),
       },
     );
 
     if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
+      final List data = decoded['data'];
 
-      /// ✅ ONLY APPROVED
       return data
-          .where((e) => e['status'] == "Approved")
           .map((e) => LeaveApprovedModel.fromJson(e))
           .toList();
     } else {
-      throw Exception("Failed to fetch approved leave list");
+      throw Exception("Failed to fetch leave logs");
     }
   }
 }

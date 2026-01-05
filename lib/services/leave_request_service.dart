@@ -6,7 +6,7 @@ class LeaveRequestService {
 
   static String formatDate(String date) {
     final parts = date.split("-");
-    return "${parts[2]}-${parts[1]}-${parts[0]}"; // yyyy-MM-dd
+    return "${parts[2]}-${parts[1]}-${parts[0]}"; 
   }
 
   static String mapLeaveType(String? value) {
@@ -46,7 +46,7 @@ class LeaveRequestService {
       url,
       headers: {
         "Content-Type": "application/json",
-        "Cookie": cookies.join("; "), // important for auth
+        "Cookie": cookies.join("; "), 
       },
       body: jsonEncode(body),
     );
