@@ -6,14 +6,23 @@ import 'package:management_app/model/leave_approved_model.dart';
 class LeaveApprovedService {
   static Future<List<LeaveApprovedModel>> fetchLeaves() async {
     final prefs = await SharedPreferences.getInstance();
+
     final cookies = prefs.getStringList("cookies") ?? [];
+    final employeeId = prefs.getString("employeeId"); // ✅ already saved
+
+    if (employeeId == null || employeeId.isEmpty) {
+      throw Exception("EmployeeId not found");
+    }
+
+    final url = Uri.parse(
+      "https://ppecon.erpnext.com/api/resource/Leave Application"
+      "?filters=[[\"employee\",\"=\",\"$employeeId\"]]"
+      "&fields=[\"employee_name\",\"leave_type\",\"from_date\",\"to_date\",\"status\",\"description\"]"
+      "&order_by=creation desc",
+    );
 
     final response = await http.get(
-      Uri.parse(
-        "https://ppecon.erpnext.com/api/resource/Leave Application"
-        "?fields=[\"employee_name\",\"leave_type\",\"from_date\",\"to_date\",\"status\",\"description\"]"
-        "&order_by=creation desc",
-      ),
+      url,
       headers: {
         "Content-Type": "application/json",
         "Cookie": cookies.join("; "),

@@ -11,26 +11,50 @@ class AuthService {
   static Future<void> saveCookies() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('cookies', cookies);
+    print("Cookies saved successfully: $cookies");
   }
 
   static Future<void> loadCookies() async {
     final prefs = await SharedPreferences.getInstance();
     cookies = prefs.getStringList('cookies') ?? [];
+    print("Cookies loaded: $cookies");
   }
 
   void _updateCookies(http.Response response) {
     String? rawCookie = response.headers['set-cookie'];
     if (rawCookie != null) {
-      cookies = rawCookie.split(',');
+      // FIXED: Properly parse multiple cookies
+      if (rawCookie.contains('Path=/,')) {
+        // Handle multiple cookies format
+        cookies = rawCookie.split('Path=/,').map((c) {
+          String cookie = c.trim();
+          if (cookie.contains(';')) {
+            return cookie.split(';')[0];
+          }
+          return cookie;
+        }).toList();
+      } else {
+        // Handle single cookie
+        if (rawCookie.contains(';')) {
+          cookies = [rawCookie.split(';')[0]];
+        } else {
+          cookies = [rawCookie];
+        }
+      }
       saveCookies();
     }
   }
 
   Map<String, String> _buildHeaders() {
-    return {
+    Map<String, String> headers = {
       "Content-Type": "application/x-www-form-urlencoded",
-      if (cookies.isNotEmpty) "Cookie": cookies.join(';'),
     };
+    
+    if (cookies.isNotEmpty) {
+      headers["Cookie"] = cookies.join('; ');
+    }
+    
+    return headers;
   }
 
   Future<Map<String, dynamic>> loginUser({
@@ -40,6 +64,9 @@ class AuthService {
     final url = Uri.parse("$baseUrl/api/method/login");
 
     try {
+      // Clear old cookies before new login
+      cookies.clear();
+      
       final response = await client.post(
         url,
         headers: _buildHeaders(),
@@ -51,6 +78,13 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data["message"] == "Logged In") {
+        // Save user info in shared preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool("isLoggedIn", true);
+        await prefs.setString("email", email);
+        await prefs.setString("password", password);
+        await prefs.setString("full_name", data["full_name"] ?? "");
+        
         return {
           "success": true,
           "message": data["message"],
@@ -104,6 +138,10 @@ class AuthService {
       final response = await client.get(url, headers: _buildHeaders());
 
       cookies.clear();
+      await saveCookies();
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool("isLoggedIn", false);
 
       if (response.statusCode == 200) {
         return {"success": true, "message": "Logged out successfully"};
@@ -153,7 +191,7 @@ class AuthService {
       Uri.parse("https://ppecon.erpnext.com/api/resource/Employee Checkin"),
       headers: {
         "Content-Type": "application/json",
-        "Cookie": AuthService.cookies.join(";"),
+        "Cookie": AuthService.cookies.join("; "),
       },
       body: jsonEncode({
         "employee": employeeId,
@@ -175,7 +213,7 @@ class AuthService {
       Uri.parse("https://ppecon.erpnext.com/api/resource/Employee Checkin"),
       headers: {
         "Content-Type": "application/json",
-        "Cookie": AuthService.cookies.join(";"),
+        "Cookie": AuthService.cookies.join("; "),
       },
       body: jsonEncode({
         "employee": employeeId,
