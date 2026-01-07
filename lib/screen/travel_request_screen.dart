@@ -64,15 +64,31 @@ class _TravelRequestScreenState extends State<TravelRequestScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text("Success"),
-          content: Text(message),
+          backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+          title: Text(
+            "Success",
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              color: isDarkMode ? Colors.grey[300] : Colors.black,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.pop(context);
               },
-              child: const Text("OK"),
+              child: Text(
+                "OK",
+                style: TextStyle(
+                  color: isDarkMode ? Colors.blue[300] : Colors.blue,
+                ),
+              ),
             )
           ],
         ),
@@ -86,12 +102,28 @@ class _TravelRequestScreenState extends State<TravelRequestScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text("Error"),
-          content: Text(e.toString()),
+          backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+          title: Text(
+            "Error",
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+          content: Text(
+            e.toString(),
+            style: TextStyle(
+              color: isDarkMode ? Colors.grey[300] : Colors.black,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("OK"),
+              child: Text(
+                "OK",
+                style: TextStyle(
+                  color: isDarkMode ? Colors.blue[300] : Colors.blue,
+                ),
+              ),
             )
           ],
         ),
@@ -106,189 +138,289 @@ class _TravelRequestScreenState extends State<TravelRequestScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon),
+      labelStyle: TextStyle(
+        color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+      ),
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: isDarkMode ? Colors.grey[800] : Colors.grey.shade50,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.grey[700]! : Colors.grey.shade300,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: Color(0xFF1E88E5),
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.blue[300]! : const Color(0xFF1E88E5),
           width: 1.5,
         ),
+      ),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical: screenHeight * 0.018,
       ),
     );
   }
 
+  // Media query variables
+  late double screenWidth;
+  late double screenHeight;
+  late bool isDarkMode;
+
   @override
   Widget build(BuildContext context) {
+    screenWidth = MediaQuery.of(context).size.width;
+    screenHeight = MediaQuery.of(context).size.height;
+    isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final padding = MediaQuery.of(context).padding;
+
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final cardColor = isDarkMode ? Colors.grey[800]! : Colors.white;
+    final buttonColor = isDarkMode ? Colors.blue[300]! : const Color(0xFF1E88E5);
+    final appBarGradientStart = isDarkMode ? Colors.grey[800]! : const Color(0xFF1565C0);
+    final appBarGradientEnd = isDarkMode ? Colors.grey[700]! : const Color(0xFF1E88E5);
+
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         appBar: AppBar(
           elevation: 0,
           centerTitle: true,
-          title: const Text(
+          title: Text(
             "Travel Request",
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : Colors.white,
+            ),
           ),
           flexibleSpace: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF1565C0),
-                  Color(0xFF1E88E5),
-                ],
+                colors: [appBarGradientStart, appBarGradientEnd],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
           ),
+          iconTheme: IconThemeData(
+            color: isDarkMode ? Colors.white : Colors.white,
+          ),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              screenWidth * 0.04,
+              padding.top + screenHeight * 0.01,
+              screenWidth * 0.04,
+              screenHeight * 0.02,
+            ),
             child: Card(
-              elevation: 4,
+              elevation: isDarkMode ? 2 : 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(screenWidth * 0.05),
               ),
+              color: cardColor,
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(screenWidth * 0.05),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Travel Details",
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: screenWidth * 0.045,
                           fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: screenHeight * 0.02),
 
                       DropdownButtonFormField<String>(
-                        initialValue: travelType,
-                        decoration:
-                            _inputDecoration("Travel Type", Icons.public),
+                        dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                        icon: Icon(
+                          Icons.arrow_drop_down,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: screenWidth * 0.038,
+                        ),
+                        decoration: _inputDecoration("Travel Type", Icons.public),
                         items: const [
                           DropdownMenuItem(
-                              value: "International",
-                              child: Text("International")),
+                            value: "International",
+                            child: Text("International"),
+                          ),
                           DropdownMenuItem(
-                              value: "Domestic", child: Text("Domestic")),
+                            value: "Domestic",
+                            child: Text("Domestic"),
+                          ),
                         ],
-                        onChanged: (v) => travelType = v!,
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => travelType = v);
+                          }
+                        },
                       ),
 
-                      const SizedBox(height: 14),
+                      SizedBox(height: screenHeight * 0.014),
                       DropdownButtonFormField<String>(
-                        initialValue: travelFunding,
+                        dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                        icon: Icon(
+                          Icons.arrow_drop_down,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: screenWidth * 0.038,
+                        ),
                         decoration: _inputDecoration(
                           "Travel Funding",
                           Icons.account_balance_wallet,
                         ),
                         items: const [
                           DropdownMenuItem(
-                              value: "Fully Sponsored",
-                              child: Text("Fully Sponsored")),
+                            value: "Fully Sponsored",
+                            child: Text("Fully Sponsored"),
+                          ),
                           DropdownMenuItem(
-                              value: "Self Sponsored",
-                              child: Text("Self Sponsored")),
+                            value: "Self Sponsored",
+                            child: Text("Self Sponsored"),
+                          ),
                         ],
-                        onChanged: (v) => travelFunding = v!,
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => travelFunding = v);
+                          }
+                        },
                       ),
 
-                      const SizedBox(height: 14),
+                      SizedBox(height: screenHeight * 0.014),
                       TextFormField(
                         controller: fromCtrl,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: screenWidth * 0.038,
+                        ),
                         decoration: _inputDecoration(
                           "Travel From",
                           Icons.location_on,
                         ),
-                        validator: (v) =>
-                            v!.isEmpty ? "Required" : null,
+                        validator: (v) => v!.isEmpty ? "Required" : null,
                       ),
 
-                      const SizedBox(height: 14),
+                      SizedBox(height: screenHeight * 0.014),
                       TextFormField(
                         controller: toCtrl,
-                        decoration:
-                            _inputDecoration("Travel To", Icons.flag),
-                        validator: (v) =>
-                            v!.isEmpty ? "Required" : null,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: screenWidth * 0.038,
+                        ),
+                        decoration: _inputDecoration("Travel To", Icons.flag),
+                        validator: (v) => v!.isEmpty ? "Required" : null,
                       ),
 
-                      const SizedBox(height: 14),
+                      SizedBox(height: screenHeight * 0.014),
                       DropdownButtonFormField<String>(
-                        initialValue: mode,
+                        dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                        icon: Icon(
+                          Icons.arrow_drop_down,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: screenWidth * 0.038,
+                        ),
                         decoration: _inputDecoration(
                           "Mode of Travel",
                           Icons.directions,
                         ),
                         items: const [
                           DropdownMenuItem(
-                              value: "Flight", child: Text("Flight")),
+                            value: "Flight",
+                            child: Text("Flight"),
+                          ),
                           DropdownMenuItem(
-                              value: "Train", child: Text("Train")),
+                            value: "Train",
+                            child: Text("Train"),
+                          ),
                           DropdownMenuItem(
-                              value: "Bus", child: Text("Bus")),
+                            value: "Bus",
+                            child: Text("Bus"),
+                          ),
                         ],
-                        onChanged: (v) => mode = v!,
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => mode = v);
+                          }
+                        },
                       ),
 
-                      const SizedBox(height: 14),
+                      SizedBox(height: screenHeight * 0.014),
                       TextFormField(
                         controller: dateCtrl,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: screenWidth * 0.038,
+                        ),
                         readOnly: true,
                         onTap: pickDate,
                         decoration: _inputDecoration(
                           "Departure Date",
                           Icons.calendar_month,
                         ),
-                        validator: (v) =>
-                            v!.isEmpty ? "Required" : null,
+                        validator: (v) => v!.isEmpty ? "Required" : null,
                       ),
 
-                      const SizedBox(height: 14),
+                      SizedBox(height: screenHeight * 0.014),
                       TextFormField(
                         controller: descCtrl,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: screenWidth * 0.038,
+                        ),
                         maxLines: 3,
-                        decoration:
-                            _inputDecoration("Description", Icons.notes),
+                        decoration: _inputDecoration("Description", Icons.notes),
                       ),
 
-                      const SizedBox(height: 30),
+                      SizedBox(height: screenHeight * 0.03),
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: screenHeight * 0.065,
                         child: ElevatedButton(
                           onPressed: isLoading ? null : submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color(0xFF1E88E5),
-                            elevation: 4,
+                            backgroundColor: buttonColor,
+                            elevation: isDarkMode ? 2 : 4,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(screenWidth * 0.035),
                             ),
                           ),
                           child: isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white,
+                              ? SizedBox(
+                                  height: screenHeight * 0.025,
+                                  width: screenHeight * 0.025,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
                                 )
-                              : const Text(
+                              : Text(
                                   "Submit Travel Request",
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: screenWidth * 0.04,
                                     fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
                         ),

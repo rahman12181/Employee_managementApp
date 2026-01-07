@@ -19,29 +19,45 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
   String reason = "On Duty";
   bool isSubmitting = false;
 
-  double responsiveWidth(double v) => MediaQuery.of(context).size.width * v;
+  late double screenWidth;
+  late double screenHeight;
+  late bool isDarkMode;
 
-  double responsiveFontSize(double v) =>
-      MediaQuery.of(context).size.width * (v / 375);
+  double responsiveWidth(double v) => screenWidth * v;
+
+  double responsiveFontSize(double v) => screenWidth * (v / 375);
 
   InputDecoration inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(fontSize: responsiveFontSize(14)),
-      floatingLabelStyle: const TextStyle(color: Colors.black),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      labelStyle: TextStyle(
+        fontSize: responsiveFontSize(14),
+        color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+      ),
+      floatingLabelStyle: TextStyle(
+        color: isDarkMode ? Colors.blue[300] : Colors.black,
+      ),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical: screenHeight * 0.018,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
-        borderSide: const BorderSide(color: Colors.black),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.grey[700]! : Colors.black,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
-        borderSide:
-            const BorderSide(color: Color.fromARGB(255, 52, 169, 232)),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.blue[300]! : const Color.fromARGB(255, 52, 169, 232),
+        ),
       ),
+      filled: true,
+      fillColor: isDarkMode ? Colors.grey[800] : Colors.white,
     );
   }
 
@@ -60,9 +76,9 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Attendance request submitted successfully"),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text("Attendance request submitted successfully"),
+          backgroundColor: isDarkMode ? Colors.green[800]! : Colors.green,
         ),
       );
 
@@ -75,7 +91,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message.isEmpty ? "Request failed" : message),
-          backgroundColor: Colors.red,
+          backgroundColor: isDarkMode ? Colors.red[800]! : Colors.red,
         ),
       );
     } finally {
@@ -87,95 +103,156 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    screenWidth = MediaQuery.of(context).size.width;
+    screenHeight = MediaQuery.of(context).size.height;
+    isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final padding = MediaQuery.of(context).padding;
+
+    // Dark mode colors
+    final backgroundColor = isDarkMode ? Colors.grey[900]! : const Color(0xFFF7F9FC);
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final cardColor = isDarkMode ? Colors.grey[800]! : Colors.white;
+    final buttonColor = isDarkMode ? Colors.blue[300]! : Colors.blue;
+    final appBarGradientStart = isDarkMode ? Colors.grey[800]! : const Color(0xFF1565C0);
+    final appBarGradientEnd = isDarkMode ? Colors.grey[700]! : const Color(0xFF1E88E5);
+    final dropdownTextColor = isDarkMode ? Colors.white : Colors.black;
+    final iconColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
+    final dateTextColor = isDarkMode ? Colors.grey[300] : Colors.black;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          "Leave Request",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          "Attendance Request",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.white,
+          ),
         ),
         centerTitle: true,
         elevation: 0,
-        foregroundColor: Colors.white,
+        iconTheme: IconThemeData(
+          color: isDarkMode ? Colors.white : Colors.white,
+        ),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+              colors: [appBarGradientStart, appBarGradientEnd],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
         ),
       ),
-      body: Center(
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            screenWidth * 0.04,
+            padding.top + screenHeight * 0.01,
+            screenWidth * 0.04,
+            screenHeight * 0.02,
+          ),
           child: Card(
-            elevation: 4,
+            elevation: isDarkMode ? 2 : 4,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(responsiveWidth(0.05)),
             ),
+            color: cardColor,
             child: Padding(
-              padding: const EdgeInsets.all(18),
+              padding: EdgeInsets.all(screenWidth * 0.045),
               child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     InkWell(
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
-                          firstDate:
-                              DateTime.now().subtract(const Duration(days: 30)),
+                          firstDate: DateTime.now().subtract(const Duration(days: 30)),
                           lastDate: DateTime.now(),
                           initialDate: selectedDate,
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: ColorScheme.light(
+                                  primary: isDarkMode ? Colors.blue[300]! : Colors.blue,
+                                  onPrimary: Colors.white,
+                                  surface: isDarkMode ? Colors.grey[800]! : Colors.white,
+                                  onSurface: isDarkMode ? Colors.white : Colors.black,
+                                ),
+                                dialogBackgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                              ),
+                              child: child!,
+                            );
+                          },
                         );
                         if (picked != null) {
                           setState(() => selectedDate = picked);
                         }
                       },
                       child: InputDecorator(
-                        decoration: inputDecoration("Date"),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              DateFormat('dd MMM yyyy')
-                                  .format(selectedDate),
-                              style: TextStyle(
-                                fontSize: responsiveFontSize(14),
-                              ),
-                            ),
-                            const Icon(Icons.calendar_today, size: 18),
-                          ],
+                        decoration: inputDecoration("Date").copyWith(
+                          suffixIcon: Icon(
+                            Icons.calendar_today,
+                            size: screenWidth * 0.05,
+                            color: iconColor,
+                          ),
+                        ),
+                        child: Text(
+                          DateFormat('dd MMM yyyy').format(selectedDate),
+                          style: TextStyle(
+                            fontSize: responsiveFontSize(14),
+                            color: dateTextColor,
+                          ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    SizedBox(height: screenHeight * 0.016),
 
                     DropdownButtonFormField<String>(
-                      initialValue: reason,
+                      dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: iconColor,
+                        size: screenWidth * 0.06,
+                      ),
+                      style: TextStyle(
+                        fontSize: responsiveFontSize(14),
+                        color: dropdownTextColor,
+                      ),
                       decoration: inputDecoration("Reason"),
                       items: const [
                         DropdownMenuItem(
-                            value: "On Duty", child: Text("On Duty")),
+                          value: "On Duty",
+                          child: Text("On Duty"),
+                        ),
                         DropdownMenuItem(
-                            value: "Missed Punch",
-                            child: Text("Missed Punch")),
+                          value: "Missed Punch",
+                          child: Text("Missed Punch"),
+                        ),
                         DropdownMenuItem(
-                            value: "System Issue",
-                            child: Text("System Issue")),
+                          value: "System Issue",
+                          child: Text("System Issue"),
+                        ),
                       ],
-                      onChanged: (val) =>
-                          setState(() => reason = val!),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => reason = val);
+                        }
+                      },
                     ),
 
-                    const SizedBox(height: 16),
+                    SizedBox(height: screenHeight * 0.016),
 
                     TextFormField(
                       controller: explanationCtrl,
+                      style: TextStyle(
+                        fontSize: responsiveFontSize(14),
+                        color: textColor,
+                      ),
                       maxLines: 4,
                       decoration: inputDecoration("Explanation"),
                       validator: (v) {
@@ -189,35 +266,34 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
                       },
                     ),
 
-                    const SizedBox(height: 24),
+                    SizedBox(height: screenHeight * 0.024),
 
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
+                      height: screenHeight * 0.065,
                       child: ElevatedButton(
-                        onPressed:
-                            isSubmitting ? null : submitRequest,
+                        onPressed: isSubmitting ? null : submitRequest,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: buttonColor,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                responsiveWidth(0.04)),
+                            borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
                           ),
                         ),
                         child: isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
+                            ? SizedBox(
+                                width: screenWidth * 0.06,
+                                height: screenWidth * 0.06,
+                                child: const CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 "Submit Request",
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: screenWidth * 0.04,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
                       ),

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:management_app/animations/slide_animation.dart';
 import 'package:management_app/providers/employee_provider.dart';
@@ -24,24 +26,39 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
     EdgeInsets screenPadding = MediaQuery.of(context).padding;
 
+    double textScaleFactor = MediaQuery.of(context).textScaleFactor;
+
     double responsiveFontSize(double baseSize) {
-      return baseSize * (screenWidth / 375);
+      return (baseSize * (screenWidth / 375)) * (1 / textScaleFactor.clamp(0.8, 1.2));
     }
 
     double responsiveHeight(double percentage) {
-      return screenHeight * percentage;
+      final safeHeight = screenHeight - screenPadding.top - screenPadding.bottom;
+      return safeHeight * percentage;
     }
 
     double responsiveWidth(double percentage) {
       return screenWidth * percentage;
     }
 
+    final backgroundColor = isDarkMode ? Colors.grey[900] : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final hintTextColor = isDarkMode ? Colors.grey[400] : const Color.fromARGB(255, 96, 93, 93);
+    final borderColor = isDarkMode ? Colors.grey[700] : Colors.black;
+    final focusedBorderColor = isDarkMode ? Colors.blue[300]! : const Color.fromARGB(255, 52, 169, 232);
+    final forgotPasswordColor = _isColorChanged ? (isDarkMode ? Colors.white : Colors.black) : Colors.blue;
+    final dividerColor = isDarkMode ? Colors.grey[700] : Colors.grey.shade400;
+    final dialogBgColor = isDarkMode ? Colors.grey[800] : Colors.white;
+    final dialogTextColor = isDarkMode ? Colors.white : Colors.black;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(
@@ -73,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Image.asset(
                               "assets/images/app_icon.png",
                               width: responsiveWidth(0.267),
+                              color: isDarkMode ? Colors.white : null,
                             ),
                           ),
                         ),
@@ -85,6 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(
                               fontSize: responsiveFontSize(20),
                               fontFamily: "poppins",
+                              color: textColor,
                             ),
                           ),
                         ),
@@ -96,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(
                               fontSize: responsiveFontSize(13),
                               fontFamily: "poppins",
-                              color: const Color.fromARGB(255, 96, 93, 93),
+                              color: hintTextColor,
                             ),
                           ),
                         ),
@@ -104,6 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(height: responsiveHeight(0.07)),
                         TextFormField(
                           controller: _emailController,
+                          style: TextStyle(color: textColor),
                           decoration: InputDecoration(
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: responsiveWidth(0.04),
@@ -113,13 +133,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon: Icon(
                               Icons.email_rounded,
                               size: responsiveFontSize(17),
+                              color: isDarkMode ? Colors.grey[400] : null,
                             ),
                             labelStyle: TextStyle(
                               fontSize: responsiveFontSize(14),
+                              color: hintTextColor,
                             ),
-                            floatingLabelStyle: const TextStyle(
-                              color: Colors.black,
+                            floatingLabelStyle: TextStyle(
+                              color: focusedBorderColor,
                             ),
+                            hintStyle: TextStyle(color: hintTextColor),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
                                 responsiveWidth(0.04),
@@ -129,16 +152,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(
                                 responsiveWidth(0.04),
                               ),
-                              borderSide: const BorderSide(color: Colors.black),
+                              borderSide: BorderSide(color: borderColor ?? Colors.black),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
                                 responsiveWidth(0.04),
                               ),
-                              borderSide: const BorderSide(
-                                color: Color.fromARGB(255, 52, 169, 232),
+                              borderSide: BorderSide(
+                                color: focusedBorderColor,
                               ),
                             ),
+                            filled: isDarkMode,
+                            fillColor: isDarkMode ? Colors.grey[800] : null,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -160,6 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
+                          style: TextStyle(color: textColor),
                           decoration: InputDecoration(
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: responsiveWidth(0.04),
@@ -169,12 +195,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon: Icon(
                               Icons.lock,
                               size: responsiveFontSize(18),
+                              color: isDarkMode ? Colors.grey[400] : null,
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isPasswordVisible
                                     ? Icons.visibility
                                     : Icons.visibility_off,
+                                color: isDarkMode ? Colors.grey[400] : null,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -184,9 +212,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             labelStyle: TextStyle(
                               fontSize: responsiveFontSize(14),
+                              color: hintTextColor,
                             ),
-                            floatingLabelStyle: const TextStyle(
-                              color: Colors.black,
+                            floatingLabelStyle: TextStyle(
+                              color: focusedBorderColor,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
@@ -197,14 +226,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(
                                 responsiveWidth(0.04),
                               ),
-                              borderSide: const BorderSide(color: Colors.black),
+                              borderSide: BorderSide(color: borderColor ?? Colors.black),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
                                 responsiveWidth(0.04),
                               ),
-                              borderSide: const BorderSide(color: Colors.blue),
+                              borderSide: BorderSide(color: focusedBorderColor),
                             ),
+                            filled: isDarkMode,
+                            fillColor: isDarkMode ? Colors.grey[800] : null,
                           ),
                           validator: (value) => (value == null || value.isEmpty)
                               ? "password required"
@@ -229,9 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontSize: responsiveFontSize(15),
                                 fontWeight: FontWeight.bold,
                                 fontFamily: "poppins",
-                                color: _isColorChanged
-                                    ? Colors.black
-                                    : Colors.blue,
+                                color: forgotPasswordColor,
                                 decoration: TextDecoration.underline,
                               ),
                             ),
@@ -327,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             }
 
                                             return Dialog(
-                                              backgroundColor: Colors.white,
+                                              backgroundColor: dialogBgColor,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(
@@ -355,8 +384,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         0.074,
                                                       ),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.green
-                                                            .withAlpha(30),
+                                                        color: isDarkMode 
+                                                          ? Colors.green.withAlpha(50)
+                                                          : Colors.green.withAlpha(30),
                                                         shape: BoxShape.circle,
                                                       ),
                                                       child: Icon(
@@ -383,6 +413,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                             ),
                                                         fontWeight:
                                                             FontWeight.w600,
+                                                        color: dialogTextColor,
                                                       ),
                                                     ),
                                                     SizedBox(
@@ -399,9 +430,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                             responsiveFontSize(
                                                               14,
                                                             ),
-                                                        color: Colors
-                                                            .grey
-                                                            .shade700,
+                                                        color: isDarkMode
+                                                          ? Colors.grey[300]
+                                                          : Colors.grey.shade700,
                                                       ),
                                                     ),
                                                     SizedBox(
@@ -417,8 +448,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         0.022,
                                                       ),
                                                       child:
-                                                          const CircularProgressIndicator(
+                                                          CircularProgressIndicator(
                                                             strokeWidth: 2,
+                                                            color: focusedBorderColor,
                                                           ),
                                                     ),
                                                     SizedBox(
@@ -433,9 +465,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                             responsiveFontSize(
                                                               12,
                                                             ),
-                                                        color: Colors
-                                                            .grey
-                                                            .shade500,
+                                                        color: isDarkMode
+                                                          ? Colors.grey[400]
+                                                          : Colors.grey.shade500,
                                                       ),
                                                     ),
                                                   ],
@@ -469,11 +501,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                             showDialog(
                                               context: context,
                                               builder: (_) => AlertDialog(
+                                                backgroundColor: dialogBgColor,
                                                 title: Text(
                                                   title,
                                                   style: TextStyle(
                                                     fontSize:
                                                         responsiveFontSize(16),
+                                                    color: dialogTextColor,
                                                   ),
                                                 ),
                                                 content: Text(
@@ -481,6 +515,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   style: TextStyle(
                                                     fontSize:
                                                         responsiveFontSize(14),
+                                                    color: dialogTextColor,
                                                   ),
                                                 ),
                                                 actions: [
@@ -494,6 +529,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                             responsiveFontSize(
                                                               14,
                                                             ),
+                                                        color: focusedBorderColor,
                                                       ),
                                                     ),
                                                   ),
@@ -509,12 +545,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                           showDialog(
                                             context: context,
                                             builder: (_) => AlertDialog(
+                                              backgroundColor: dialogBgColor,
                                               title: Text(
                                                 "Network Error",
                                                 style: TextStyle(
                                                   fontSize: responsiveFontSize(
                                                     16,
                                                   ),
+                                                  color: dialogTextColor,
                                                 ),
                                               ),
                                               content: Text(
@@ -523,6 +561,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   fontSize: responsiveFontSize(
                                                     14,
                                                   ),
+                                                  color: dialogTextColor,
                                                 ),
                                               ),
                                               actions: [
@@ -536,6 +575,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                           responsiveFontSize(
                                                             14,
                                                           ),
+                                                      color: focusedBorderColor,
                                                     ),
                                                   ),
                                                 ),
@@ -546,7 +586,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: focusedBorderColor,
                             minimumSize: Size(
                               responsiveWidth(0.9),
                               responsiveHeight(0.05),
@@ -561,8 +601,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? SizedBox(
                                   height: responsiveHeight(0.027),
                                   width: responsiveHeight(0.027),
-                                  child: const CircularProgressIndicator(
+                                  child: CircularProgressIndicator(
                                     strokeWidth: 2,
+                                    color: textColor,
                                   ),
                                 )
                               : Text(
@@ -570,7 +611,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: TextStyle(
                                     fontSize: responsiveFontSize(16),
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black,
+                                    color: textColor,
                                   ),
                                 ),
                         ),
@@ -583,7 +624,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Container(
                                 height: 1,
                                 width: responsiveWidth(0.133),
-                                color: Colors.grey.shade400,
+                                color: dividerColor,
                               ),
                             ),
 
@@ -596,7 +637,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(
                                   fontSize: responsiveFontSize(12),
                                   letterSpacing: 0.5,
-                                  color: Colors.grey.shade700,
+                                  color: hintTextColor,
                                 ),
                               ),
                             ),
@@ -605,7 +646,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Container(
                                 height: 1,
                                 width: responsiveWidth(0.133),
-                                color: Colors.grey.shade400,
+                                color: dividerColor,
                               ),
                             ),
                           ],
@@ -619,14 +660,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(
                                   fontSize: responsiveFontSize(15),
                                   fontFamily: "poppins",
-                                  color: const Color.fromARGB(255, 36, 35, 35),
+                                  color: textColor,
                                 ),
                               ),
                               TextSpan(
                                 text: "Tech",
                                 style: TextStyle(
                                   fontSize: responsiveFontSize(15),
-                                  color: Colors.black,
+                                  color: textColor,
                                   fontFamily: "poppins",
                                   fontWeight: FontWeight.w600,
                                 ),

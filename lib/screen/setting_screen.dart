@@ -18,36 +18,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final padding = MediaQuery.of(context).padding;
+
+    // Responsive functions
+    double responsiveFontSize(double baseSize) {
+      return baseSize * (screenWidth / 375);
+    }
+
+    double responsiveWidth(double percentage) {
+      return screenWidth * percentage;
+    }
+
+    double responsiveHeight(double percentage) {
+      return screenHeight * percentage;
+    }
+
+    // Dark mode colors
+    final backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey;
+    final borderColor = isDarkMode ? Colors.grey[700]! : Colors.lightBlue.shade100;
+    final iconContainerColor = isDarkMode ? Colors.grey[800]! : Colors.blue.shade50;
+    final iconColor = isDarkMode ? Colors.blue[300]! : Colors.blue;
+    final boxColor = isDarkMode ? Colors.grey[800]! : Colors.white;
+    final logoutIconColor = isDarkMode ? Colors.red[300]! : Colors.red;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Consumer<ProfileProvider>(
           builder: (context, provider, _) {
             final user = provider.profileData;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                responsiveWidth(0.04),
+                padding.top + responsiveHeight(0.01),
+                responsiveWidth(0.04),
+                responsiveHeight(0.02),
+              ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(width: 40),
-                      const Text(
+                      SizedBox(width: responsiveWidth(0.1)),
+                      Text(
                         "My Profile",
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: responsiveFontSize(20),
                           fontWeight: FontWeight.w500,
+                          color: textColor,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.logout, color: Colors.red),
+                        icon: Icon(Icons.logout, color: logoutIconColor),
                         onPressed: () => _logout(context),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: responsiveHeight(0.02)),
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -58,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       );
                     },
                     child: CircleAvatar(
-                      radius: 45,
+                      radius: responsiveWidth(0.12),
                       backgroundImage:
                           (user != null &&
                               user['user_image'] != null &&
@@ -71,25 +106,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  SizedBox(height: responsiveHeight(0.012)),
                   Text(
                     user?['full_name'] ?? "Loading...",
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: responsiveFontSize(18),
                       fontWeight: FontWeight.w600,
+                      color: textColor,
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: responsiveHeight(0.024)),
                   _box(
+                    context,
                     _row(
                       icon: Icons.send_outlined,
                       title: "User Name",
                       subtitle: user?['email'] ?? "",
+                      textColor: textColor,
+                      subtitleColor: subtitleColor,
+                      iconColor: iconColor,
+                      iconContainerColor: iconContainerColor,
                     ),
+                    screenWidth: screenWidth,
+                    boxColor: boxColor,
+                    borderColor: borderColor,
                   ),
 
                   _box(
+                    context,
                     _row(
                       icon: Icons.lock_outline,
                       title: "Change Password",
@@ -101,18 +146,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         );
                       },
+                      textColor: textColor,
+                      iconColor: iconColor,
+                      iconContainerColor: iconContainerColor,
                     ),
+                    screenWidth: screenWidth,
+                    boxColor: boxColor,
+                    borderColor: borderColor,
                   ),
 
                   _box(
+                    context,
                     _row(
                       icon: Icons.email_outlined,
                       title: "Notification E-Mail",
                       subtitle: user?['email'] ?? "",
+                      textColor: textColor,
+                      subtitleColor: subtitleColor,
+                      iconColor: iconColor,
+                      iconContainerColor: iconContainerColor,
                     ),
+                    screenWidth: screenWidth,
+                    boxColor: boxColor,
+                    borderColor: borderColor,
                   ),
 
                   _box(
+                    context,
                     _switchRow(
                       icon: Icons.mic_none,
                       title: "Activate voice recognition",
@@ -120,26 +180,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onChanged: (v) {
                         setState(() => voiceEnabled = v);
                       },
+                      textColor: textColor,
+                      iconColor: iconColor,
+                      iconContainerColor: iconContainerColor,
                     ),
+                    screenWidth: screenWidth,
+                    boxColor: boxColor,
+                    borderColor: borderColor,
                   ),
 
                   _box(
+                    context,
                     _dropdownRow(
                       icon: Icons.translate,
                       title: "Languages",
                       value: "English",
+                      textColor: textColor,
+                      subtitleColor: subtitleColor,
+                      iconColor: iconColor,
+                      iconContainerColor: iconContainerColor,
                     ),
+                    screenWidth: screenWidth,
+                    boxColor: boxColor,
+                    borderColor: borderColor,
                   ),
 
                   _box(
+                    context,
                     _dropdownRow(
                       icon: Icons.dark_mode_outlined,
                       title: "Theme",
                       value: "Light",
+                      textColor: textColor,
+                      subtitleColor: subtitleColor,
+                      iconColor: iconColor,
+                      iconContainerColor: iconContainerColor,
                     ),
+                    screenWidth: screenWidth,
+                    boxColor: boxColor,
+                    borderColor: borderColor,
                   ),
 
                   _box(
+                    context,
                     _switchRow(
                       icon: Icons.face_retouching_natural,
                       title: "Login by Face ID",
@@ -148,7 +231,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onChanged: (v) {
                         setState(() => faceIdEnabled = v);
                       },
+                      textColor: textColor,
+                      subtitleColor: subtitleColor,
+                      iconColor: iconColor,
+                      iconContainerColor: iconContainerColor,
                     ),
+                    screenWidth: screenWidth,
+                    boxColor: boxColor,
+                    borderColor: borderColor,
                   ),
                 ],
               ),
@@ -158,22 +248,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
   Future<void> _logout(BuildContext context) async {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: const Text("Confirm Logout"),
-        content: const Text("Are you sure you want to logout?"),
+        backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+        title: Text(
+          "Confirm Logout",
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
+        ),
+        content: Text(
+          "Are you sure you want to logout?",
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey[300] : Colors.black,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: isDarkMode ? Colors.blue[300] : Colors.blue,
+              ),
+            ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDarkMode ? Colors.red[700]! : Colors.red,
+            ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Logout"),
+            child: const Text(
+              "Logout",
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -184,7 +302,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => Center(
+        child: CircularProgressIndicator(
+          color: isDarkMode ? Colors.blue[300] : Colors.blue,
+        ),
+      ),
     );
 
     final auth = AuthService();
@@ -212,27 +334,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
+          backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 result["success"] ? Icons.check_circle : Icons.error,
-                size: 48,
+                size: screenWidth * 0.12,
                 color: result["success"] ? Colors.green : Colors.red,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: screenWidth * 0.03),
               Text(
                 result["success"] ? "Logged out" : "Logout failed",
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.045,
                   fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: screenWidth * 0.015),
               Text(
                 result["message"] ?? "",
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey,
+                  fontSize: screenWidth * 0.035,
+                ),
               ),
             ],
           ),
@@ -241,18 +368,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _box(Widget child) {
+  Widget _box(
+    BuildContext context,
+    Widget child, {
+    required double screenWidth,
+    required Color boxColor,
+    required Color borderColor,
+  }) {
     return Align(
       alignment: Alignment.center,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.95, 
-        margin: const EdgeInsets.only(bottom: 12),
+        width: screenWidth * 0.92,
+        margin: EdgeInsets.only(bottom: screenWidth * 0.03),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: boxColor,
+          borderRadius: BorderRadius.circular(screenWidth * 0.035),
           border: Border.all(
-            color: Colors.lightBlue.shade100,
-            width: 1, // 
+            color: borderColor,
+            width: 1,
           ),
         ),
         child: child,
@@ -265,14 +398,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     String? subtitle,
     VoidCallback? onTap,
+    required Color textColor,
+    Color? subtitleColor,
+    required Color iconColor,
+    required Color iconContainerColor,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return ListTile(
-      leading: _icon(icon),
-      title: Text(title),
+      leading: _icon(icon, iconColor, iconContainerColor, screenWidth),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: screenWidth * 0.04,
+          color: textColor,
+        ),
+      ),
       subtitle: subtitle != null
-          ? Text(subtitle, style: const TextStyle(color: Colors.grey))
+          ? Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                color: subtitleColor,
+              ),
+            )
           : null,
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: Icon(
+        Icons.arrow_forward_ios,
+        size: screenWidth * 0.04,
+        color: isDarkMode ? Colors.grey[400] : Colors.grey,
+      ),
       onTap: onTap,
     );
   }
@@ -283,14 +438,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool value,
     String? subtitle,
     required ValueChanged<bool> onChanged,
+    required Color textColor,
+    Color? subtitleColor,
+    required Color iconColor,
+    required Color iconContainerColor,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return SwitchListTile(
-      secondary: _icon(icon),
-      title: Text(title),
+      secondary: _icon(icon, iconColor, iconContainerColor, screenWidth),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: screenWidth * 0.04,
+          color: textColor,
+        ),
+      ),
       subtitle: subtitle != null
-          ? Text(subtitle, style: const TextStyle(color: Colors.grey))
+          ? Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                color: subtitleColor,
+              ),
+            )
           : null,
       value: value,
+      activeColor: isDarkMode ? Colors.blue[300] : Colors.blue,
       onChanged: onChanged,
     );
   }
@@ -299,23 +475,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required IconData icon,
     required String title,
     required String value,
+    required Color textColor,
+    required Color subtitleColor,
+    required Color iconColor,
+    required Color iconContainerColor,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return ListTile(
-      leading: _icon(icon),
-      title: Text(title),
-      subtitle: Text(value, style: const TextStyle(color: Colors.grey)),
-      trailing: const Icon(Icons.keyboard_arrow_down),
+      leading: _icon(icon, iconColor, iconContainerColor, screenWidth),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: screenWidth * 0.04,
+          color: textColor,
+        ),
+      ),
+      subtitle: Text(
+        value,
+        style: TextStyle(
+          fontSize: screenWidth * 0.035,
+          color: subtitleColor,
+        ),
+      ),
+      trailing: Icon(
+        Icons.keyboard_arrow_down,
+        color: isDarkMode ? Colors.grey[400] : Colors.grey,
+      ),
     );
   }
 
-  Widget _icon(IconData icon) {
+  bool get isDarkMode {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark;
+  }
+
+  Widget _icon(IconData icon, Color iconColor, Color containerColor, double screenWidth) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(screenWidth * 0.02),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade100),
+        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+        color: containerColor,
       ),
-      child: Icon(icon, color: Colors.blue),
+      child: Icon(
+        icon,
+        color: iconColor,
+        size: screenWidth * 0.05,
+      ),
     );
   }
 }

@@ -77,6 +77,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             currentMonth.month < now.month);
 
     final monthlyLogs = provider.getMonthlyLogs(currentMonth);
+    
+    // Get screen dimensions
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final padding = MediaQuery.of(context).padding;
+    
+    // Calculate calendar cell size to fit within 95% of screen width
+    final availableWidth = screenWidth * 0.95;
+    final cellSpacing = 6.0;
+    final cellSize = (availableWidth - (cellSpacing * 6)) / 7;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -86,7 +96,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           child: SingleChildScrollView(   
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 20, 12, 16),
+              padding: EdgeInsets.fromLTRB(
+                screenWidth * 0.025, // 2.5% padding on sides
+                padding.top + 20,
+                screenWidth * 0.025,
+                16,
+              ),
               child: Column(
                 children: [
                   Row(
@@ -129,198 +144,232 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                   const SizedBox(height: 12),
 
-                  /// CALENDAR GRID (LOGIC UNCHANGED)
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: daysInMonth,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      crossAxisSpacing: 6,
-                      mainAxisSpacing: 6,
+                  /// CALENDAR GRID (FIXED OVERFLOW)
+                  Container(
+                    width: availableWidth,
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: daysInMonth,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                        crossAxisSpacing: cellSpacing,
+                        mainAxisSpacing: cellSpacing,
+                        childAspectRatio: 0.9, // Fixed aspect ratio
+                      ),
+                      itemBuilder: (_, index) {
+                        final day = index + 1;
+                        final date = DateTime(
+                          currentMonth.year,
+                          currentMonth.month,
+                          day,
+                        );
+
+                        Color? bgColor;
+                        Border? border;
+
+                        final log = provider.attendanceMap[date];
+
+                        if (date.isAfter(today)) {
+                          bgColor = null;
+                          border = Border.all(
+                            color: theme.dividerColor,
+                          );
+                        } else if (date == today) {
+                          bgColor = log != null
+                              ? getStatusColor(log.status)
+                              : null;
+                          border = Border.all(
+                            color: theme.colorScheme.primary,
+                            width: 2,
+                          );
+                        } else {
+                          final status =
+                              log?.status ?? AttendanceStatus.absent;
+                          bgColor = getStatusColor(status);
+                        }
+
+                        return Container(
+                          constraints: BoxConstraints(
+                            maxHeight: cellSize,
+                            maxWidth: cellSize,
+                          ),
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            border: border,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "$day",
+                                style: TextStyle(
+                                  fontSize: cellSize * 0.25, // Responsive font size
+                                  color: bgColor == null
+                                      ? theme.textTheme.bodyMedium?.color
+                                      : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: cellSize * 0.05),
+                              Text(
+                                DateFormat('E').format(date),
+                                style: TextStyle(
+                                  fontSize: cellSize * 0.15, // Responsive font size
+                                  color: bgColor == null
+                                      ? theme.hintColor
+                                      : Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                    itemBuilder: (_, index) {
-                      final day = index + 1;
-                      final date = DateTime(
-                        currentMonth.year,
-                        currentMonth.month,
-                        day,
-                      );
-
-                      Color? bgColor;
-                      Border? border;
-
-                      final log = provider.attendanceMap[date];
-
-                      if (date.isAfter(today)) {
-                        bgColor = null;
-                        border = Border.all(
-                          color: theme.dividerColor,
-                        );
-                      } else if (date == today) {
-                        bgColor = log != null
-                            ? getStatusColor(log.status)
-                            : null;
-                        border = Border.all(
-                          color: theme.colorScheme.primary,
-                          width: 2,
-                        );
-                      } else {
-                        final status =
-                            log?.status ?? AttendanceStatus.absent;
-                        bgColor = getStatusColor(status);
-                      }
-
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          border: border,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "$day",
-                              style: TextStyle(
-                                color: bgColor == null
-                                    ? theme.textTheme.bodyMedium?.color
-                                    : Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              DateFormat('E').format(date),
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: bgColor == null
-                                    ? theme.hintColor
-                                    : Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
                   ),
 
                   const SizedBox(height: 18),
 
-                  /// LEGEND
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: [
-                      _legend(Colors.green, "Completed"),
-                      _legend(Colors.blue, "Overtime"),
-                      _legend(Colors.orange, "Shortage"),
-                      _legend(Colors.amber, "Checked In"),
-                      _legend(Colors.red, "Absent"),
-                      _legendBorder("Today"),
-                    ],
+                  /// LEGEND (Made responsive)
+                  Container(
+                    width: availableWidth,
+                    child: Wrap(
+                      spacing: screenWidth * 0.03,
+                      runSpacing: 8,
+                      children: [
+                        _legend(Colors.green, "Completed", screenWidth),
+                        _legend(Colors.blue, "Overtime", screenWidth),
+                        _legend(Colors.orange, "Shortage", screenWidth),
+                        _legend(Colors.amber, "Checked In", screenWidth),
+                        _legend(Colors.red, "Absent", screenWidth),
+                        _legendBorder("Today", screenWidth),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  /// ATTENDANCE LIST (STYLED)
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: monthlyLogs.length,
-                    itemBuilder: (_, index) {
-                      final log = monthlyLogs[index];
-                      final statusColor = getStatusColor(log.status);
+                  /// ATTENDANCE LIST (Made responsive)
+                  Container(
+                    width: availableWidth,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: monthlyLogs.length,
+                      itemBuilder: (_, index) {
+                        final log = monthlyLogs[index];
+                        final statusColor = getStatusColor(log.status);
 
-                      String formatDuration(Duration d) {
-                        final h =
-                            d.inHours.toString().padLeft(2, '0');
-                        final m =
-                            (d.inMinutes % 60).toString().padLeft(2, '0');
-                        return "$h:$m";
-                      }
+                        String formatDuration(Duration d) {
+                          final h =
+                              d.inHours.toString().padLeft(2, '0');
+                          final m =
+                              (d.inMinutes % 60).toString().padLeft(2, '0');
+                          return "$h:$m";
+                        }
 
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: isDark
-                              ? []
-                              : [
-                                  const BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 6,
-                                    offset: Offset(0, 3),
-                                  )
-                                ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 54,
-                                height: 54,
-                                decoration: BoxDecoration(
-                                  color: statusColor,
-                                  borderRadius:
-                                      BorderRadius.circular(12),
+                        return Container(
+                          margin: EdgeInsets.symmetric(
+                            vertical: screenHeight * 0.008,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.cardColor,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: isDark
+                                ? []
+                                : [
+                                    const BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 6,
+                                      offset: Offset(0, 3),
+                                    )
+                                  ],
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(screenWidth * 0.04),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: screenWidth * 0.14,
+                                  height: screenWidth * 0.14,
+                                  decoration: BoxDecoration(
+                                    color: statusColor,
+                                    borderRadius:
+                                        BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          DateFormat('dd')
+                                              .format(log.date),
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.04,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: screenWidth * 0.005),
+                                        Text(
+                                          DateFormat('EEE')
+                                              .format(log.date),
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.03,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                                child: Center(
+                                SizedBox(width: screenWidth * 0.04),
+                                Expanded(
                                   child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        DateFormat('dd')
-                                            .format(log.date),
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        getStatusText(log.status),
+                                        style: theme
+                                            .textTheme.bodyMedium
+                                            ?.copyWith(
                                           fontWeight: FontWeight.bold,
+                                          color: statusColor,
+                                          fontSize: screenWidth * 0.035,
+                                        ),
+                                      ),
+                                      SizedBox(height: screenHeight * 0.008),
+                                      Text(
+                                        "In   : ${log.checkIn ?? '--'}",
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.033,
                                         ),
                                       ),
                                       Text(
-                                        DateFormat('EEE')
-                                            .format(log.date),
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 11,
+                                        "Out : ${log.checkOut ?? '--'}",
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.033,
+                                        ),
+                                      ),
+                                      Text(
+                                        "Total : ${formatDuration(log.totalHours)}",
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.033,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      getStatusText(log.status),
-                                      style: theme
-                                          .textTheme.bodyMedium
-                                          ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: statusColor,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text("In   : ${log.checkIn ?? '--'}"),
-                                    Text("Out : ${log.checkOut ?? '--'}"),
-                                    Text(
-                                      "Total : ${formatDuration(log.totalHours)}",
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -331,31 +380,36 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-  Widget _legend(Color color, String text) {
+  Widget _legend(Color color, String text, double screenWidth) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: screenWidth * 0.03,
+          height: screenWidth * 0.03,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 6),
-        Text(text, style: const TextStyle(fontSize: 12)),
+        SizedBox(width: screenWidth * 0.015),
+        Text(
+          text, 
+          style: TextStyle(
+            fontSize: screenWidth * 0.03,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _legendBorder(String text) {
+  Widget _legendBorder(String text, double screenWidth) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: screenWidth * 0.03,
+          height: screenWidth * 0.03,
           decoration: BoxDecoration(
             border: Border.all(
               color: Colors.blue,
@@ -364,8 +418,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 6),
-        Text(text, style: const TextStyle(fontSize: 12)),
+        SizedBox(width: screenWidth * 0.015),
+        Text(
+          text, 
+          style: TextStyle(
+            fontSize: screenWidth * 0.03,
+          ),
+        ),
       ],
     );
   }
