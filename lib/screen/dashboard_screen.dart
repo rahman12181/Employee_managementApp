@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
@@ -213,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         itemCount: modules.length,
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.9,
+                          childAspectRatio: 0.85, // Original ratio
                           crossAxisSpacing: w * 0.03,
                           mainAxisSpacing: w * 0.03,
                         ),
@@ -254,38 +256,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         'No route defined for ${module['type']}');
                                 }
                               },
-                              child: Card(
-                                shape: RoundedRectangleBorder(
+                              child: Container(
+                                margin: EdgeInsets.all(w * 0.01),
+                                decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(w * 0.04),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      theme.colorScheme.primary.withOpacity(0.05),
+                                      theme.colorScheme.primary.withOpacity(0.02),
+                                      theme.cardColor,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.1),
+                                      blurRadius: 5,
+                                      spreadRadius: 1,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                                color: theme.cardColor,
-                                elevation: 3,
                                 child: Padding(
-                                  padding: EdgeInsets.all(w * 0.03),
+                                  padding: EdgeInsets.all(w * 0.04),
                                   child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Image.asset(
-                                        module['image'],
-                                        height: h * 0.06,
-                                      ),
-                                      SizedBox(height: h * 0.01),
-                                      Text(
-                                        module['title'],
-                                        style: theme.textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: w * 0.032,
+                                      Container(
+                                        width: w * 0.14,
+                                        height: w * 0.14,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(w * 0.03),
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              theme.colorScheme.primary.withOpacity(0.2),
+                                              theme.colorScheme.primary.withOpacity(0.1),
+                                            ],
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Image.asset(
+                                            module['image'],
+                                            height: h * 0.035,
+                                            width: w * 0.08,
+                                            fit: BoxFit.contain,
+                                          ),
                                         ),
                                       ),
+                                      
+                                      SizedBox(height: h * 0.015),
+                                      
+                                      SizedBox(
+                                        height: h * 0.045, 
+                                        child: Text(
+                                          module['title'],
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: w * 0.036,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      
                                       SizedBox(height: h * 0.005),
-                                      Text(
-                                        module['subtitle'],
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          fontSize: w * 0.025,
-                                          color: theme.textTheme.bodySmall?.color
-                                              ?.withAlpha(70),
+                                      
+                                      // Subtitle with fixed height
+                                      SizedBox(
+                                        height: h * 0.025, // Fixed height for subtitle
+                                        child: Text(
+                                          module['subtitle'],
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            fontSize: w * 0.028,
+                                            color: theme.textTheme.bodySmall?.color
+                                                ?.withOpacity(0.7),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        textAlign: TextAlign.center,
                                       ),
                                     ],
                                   ),
