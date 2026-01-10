@@ -10,7 +10,7 @@ import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/providers/slide_provider.dart';
-import 'package:management_app/screen/HomeMain_Screen.dart';
+import 'package:management_app/screen/homemain_screen.dart';
 import 'package:management_app/screen/attendance_request_screen.dart';
 import 'package:management_app/screen/attendance_screen.dart';
 import 'package:management_app/screen/forgotPassword_screen.dart';

@@ -28,6 +28,10 @@ class _HomemainScreenState extends State<HomemainScreen> {
   bool isPunching = false;
   bool showSuccess = false;
   String successText = "";
+  bool _hasError = false;
+  String _errorMessage = "";
+
+  get hoursh => null;
 
   @override
   void initState() {
@@ -91,10 +95,10 @@ class _HomemainScreenState extends State<HomemainScreen> {
   }
 
   Color fingerprintColor(PunchProvider punchProvider) {
-    if (isPunching) return Colors.red.shade600;
+    if (isPunching) return Colors.orange.shade600;
     if (punchProvider.punchInTime == null) return Colors.blue.shade600;
     if (punchProvider.punchOutTime == null) return Colors.red.shade600;
-    return Colors.blue.shade600;
+    return Colors.green.shade600;
   }
 
   String punchText(PunchProvider punchProvider) {
@@ -103,40 +107,57 @@ class _HomemainScreenState extends State<HomemainScreen> {
     return "DONE";
   }
 
+  Color punchButtonColor(PunchProvider punchProvider) {
+    if (punchProvider.punchInTime == null) return Colors.blue;
+    if (punchProvider.punchOutTime == null) return Colors.red;
+    return Colors.green;
+  }
+
   Future<void> onPunchTap() async {
     final punchProvider = Provider.of<PunchProvider>(context, listen: false);
     final slideProvider = Provider.of<SlideProvider>(context, listen: false);
-    
-    // Check if already punched for the day
+
+    if (_hasError) {
+      setState(() {
+        _hasError = false;
+        _errorMessage = "";
+      });
+    }
+
     if (punchProvider.punchInTime != null &&
         punchProvider.punchOutTime != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("You have already checked in & out today"),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showError("You have already checked in & out today");
       return;
     }
 
+    HapticFeedback.lightImpact();
+
     if (punchProvider.punchInTime != null &&
         punchProvider.punchOutTime == null) {
-      // Request slide to punch out
       slideProvider.showSlideButton(false, performPunch);
     } else if (punchProvider.punchInTime == null) {
-      // Request slide to punch in
       slideProvider.showSlideButton(true, performPunch);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("You already checked in today"),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showError("You already checked in today");
     }
   }
 
-  // This function will be called when slide is completed
+  void _showError(String message) {
+    setState(() {
+      _hasError = true;
+      _errorMessage = message;
+    });
+
+    Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _hasError = false;
+          _errorMessage = "";
+        });
+      }
+    });
+  }
+
   Future<void> performPunch(bool isPunchIn) async {
     final employeeId = Provider.of<EmployeeProvider>(
       context,
@@ -149,7 +170,12 @@ class _HomemainScreenState extends State<HomemainScreen> {
     final logType = isPunchIn ? "IN" : "OUT";
 
     try {
-      setState(() => isPunching = true);
+      setState(() {
+        isPunching = true;
+        showSuccess = false;
+        _hasError = false;
+      });
+
       HapticFeedback.lightImpact();
 
       await _checkinService.checkIn(employeeId: employeeId, logType: logType);
@@ -163,18 +189,30 @@ class _HomemainScreenState extends State<HomemainScreen> {
         await punchProvider.setPunchOut(now);
         successText = "Checked out at ${DateFormat('hh:mm a').format(now)}";
       }
-
       setState(() => showSuccess = true);
 
       Timer(const Duration(seconds: 2), () {
         if (mounted) setState(() => showSuccess = false);
       });
+
+      Timer(const Duration(milliseconds: 500), () {
+        if (mounted) setState(() => isPunching = false);
+      });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Punch failed")));
-    } finally {
-      setState(() => isPunching = false);
+      setState(() {
+        isPunching = false;
+        _hasError = true;
+        _errorMessage = "Punch failed: ${e.toString()}";
+      });
+
+      Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _hasError = false;
+            _errorMessage = "";
+          });
+        }
+      });
     }
   }
 
@@ -182,6 +220,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final punchProvider = Provider.of<PunchProvider>(context);
+    final slideProvider = Provider.of<SlideProvider>(context, listen: false);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -258,7 +297,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                   child: CircularProgressIndicator(
                     value: punchProvider.progressValue().clamp(0.0, 1.0),
                     strokeWidth: 7,
-                    color: Colors.blue,
+                    color: punchButtonColor(punchProvider),
                     backgroundColor: const Color.fromARGB(255, 199, 196, 196),
                   ),
                 ),
@@ -269,7 +308,11 @@ class _HomemainScreenState extends State<HomemainScreen> {
                     customBorder: const CircleBorder(),
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
-                    onTap: isPunching ? null : onPunchTap,
+                    onTap: () {
+                      if (!slideProvider.showSlideToPunch) {
+                        onPunchTap();
+                      }
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       width: size.width * 0.48,
@@ -277,50 +320,18 @@ class _HomemainScreenState extends State<HomemainScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Theme.of(context).cardColor,
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Colors.black26,
+                            color: punchButtonColor(
+                              punchProvider,
+                            ).withOpacity(0.3),
                             blurRadius: 20,
-                            offset: Offset(0, 6),
+                            spreadRadius: 2,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: showSuccess
-                            ? Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                    size: 60,
-                                  ),
-                                  Text(
-                                    successText,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.fingerprint,
-                                    size: 55,
-                                    color: fingerprintColor(punchProvider),
-                                  ),
-                                  Text(
-                                    punchText(punchProvider),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: fingerprintColor(punchProvider),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
+                      child: Center(child: _buildCenterContent(punchProvider)),
                     ),
                   ),
                 ),
@@ -328,8 +339,6 @@ class _HomemainScreenState extends State<HomemainScreen> {
             ),
 
             SizedBox(height: size.height * 0.07),
-
-            /// INFO ROW
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -361,9 +370,175 @@ class _HomemainScreenState extends State<HomemainScreen> {
                 ),
               ],
             ),
+
+            if (_hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: IntrinsicWidth(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.red.shade600,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _errorMessage,
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (punchProvider.punchInTime == null && !_hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: Text(
+                  "Tap the punch button to check in",
+                  style: TextStyle(color: Colors.blue.shade600, fontSize: 14),
+                ),
+              ),
+            if (punchProvider.punchInTime != null &&
+                punchProvider.punchOutTime == null &&
+                !_hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: Text(
+                  "Tap the punch button to check out",
+                  style: TextStyle(color: Colors.red.shade600, fontSize: 14),
+                ),
+              ),
+            if (punchProvider.punchInTime != null &&
+                punchProvider.punchOutTime != null &&
+                !_hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green.shade600,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "Work Completed",
+                            style: TextStyle(
+                              color: Colors.green.shade800,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Your total working hours: ${punchProvider.totalHours()}",
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCenterContent(PunchProvider punchProvider) {
+    if (showSuccess) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.check_circle, color: Colors.green, size: 60),
+          const SizedBox(height: 8),
+          Text(
+            successText,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ],
+      );
+    }
+
+    if (isPunching) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: punchButtonColor(punchProvider),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Processing...",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: punchButtonColor(punchProvider),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.fingerprint,
+          size: 55,
+          color: fingerprintColor(punchProvider),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          punchText(punchProvider),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: fingerprintColor(punchProvider),
+          ),
+        ),
+      ],
     );
   }
 
@@ -376,7 +551,12 @@ class _HomemainScreenState extends State<HomemainScreen> {
     return Column(
       children: [
         Icon(icon, size: 26, color: iconColor),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        const SizedBox(height: 2),
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );

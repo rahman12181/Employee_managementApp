@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:management_app/screen/HomeMain_Screen.dart';
+import 'package:management_app/screen/homemain_screen.dart';
 import 'package:management_app/screen/attendance_screen.dart';
 import 'package:management_app/screen/dashboard_screen.dart';
 import 'package:management_app/screen/setting_screen.dart';
@@ -15,8 +15,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  double _slideValue = 0.0;
-  bool _isSliding = false;
 
   static final List<Widget> _bottomNavigationScreens = [
     const HomemainScreen(),
@@ -35,9 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final slideProvider = Provider.of<SlideProvider>(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final containerWidth = screenWidth - 40; // Minus margins
-    final maxSlide = containerWidth - 130; // Adjusted for button width and padding
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -52,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
         top: false,
         child: Container(
           margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: slideProvider.showSlideToPunch 
                 ? Colors.grey[800]
@@ -67,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           child: slideProvider.showSlideToPunch
-              ? _buildSlideToContinueButton(slideProvider, maxSlide)
+              ? _buildSlideToContinueButton(slideProvider)
               : _buildNormalNavigation(),
         ),
       ),
@@ -86,124 +81,158 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSlideToContinueButton(SlideProvider slideProvider, double maxSlide) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white70),
-              onPressed: () {
-                slideProvider.hideSlideButton();
-                setState(() {
-                  _slideValue = 0.0;
-                  _isSliding = false;
-                });
-              },
-            ),
-            Text(
-              slideProvider.isPunchInMode ? "Slide to Punch In" : "Slide to Punch Out",
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+  Widget _buildSlideToContinueButton(SlideProvider slideProvider) {
+    return Container(
+      height: 50,
+      child: Row(
+        children: [
+          // Cancel button
+          GestureDetector(
+            onTap: () {
+              slideProvider.hideSlideButton();
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey[700],
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white70,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 40), // For balance
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.grey[700],
-            borderRadius: BorderRadius.circular(25),
           ),
-          child: Stack(
-            children: [
-              // Background track
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(25),
-                    color: Colors.grey[700],
-                  ),
+          
+          const SizedBox(width: 12),
+          
+          // Slide track with progress
+          Expanded(
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                final containerWidth = MediaQuery.of(context).size.width - 140;
+                final delta = details.delta.dx;
+                final newProgress = (slideProvider.slideProgress + (delta / containerWidth))
+                    .clamp(0.0, 1.0);
+                
+                slideProvider.updateSlideProgress(newProgress);
+                
+                // Auto-complete when progress reaches 90%
+                if (newProgress >= 0.9) {
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    slideProvider.completePunch();
+                  });
+                }
+              },
+              onHorizontalDragEnd: (details) {
+                // Reset if not completed
+                if (slideProvider.slideProgress < 0.9) {
+                  slideProvider.updateSlideProgress(0.0);
+                }
+              },
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey[700],
+                  borderRadius: BorderRadius.circular(25),
                 ),
-              ),
-              
-              // Instruction text
-              if (!_isSliding)
-                const Positioned.fill(
-                  child: Center(
-                    child: Text(
-                      "Slide to continue →",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
+                child: Stack(
+                  children: [
+                    // Progress fill
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 100),
+                      width: (MediaQuery.of(context).size.width - 140) * slideProvider.slideProgress,
+                      decoration: BoxDecoration(
+                        color: slideProvider.isPunchInMode ? Colors.blue : Colors.red,
+                        borderRadius: BorderRadius.circular(25),
                       ),
                     ),
-                  ),
-                ),
-              
-              // Sliding button
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 100),
-                left: _slideValue,
-                child: GestureDetector(
-                  onPanUpdate: (details) {
-                    final newValue = (_slideValue + details.delta.dx)
-                        .clamp(0.0, maxSlide);
                     
-                    setState(() {
-                      _slideValue = newValue;
-                      _isSliding = newValue > 0;
-                    });
-                  },
-                  onPanEnd: (details) {
-                    if (_slideValue > maxSlide - 30) {
-                      // Slide completed
-                      slideProvider.completePunch();
-                      setState(() {
-                        _slideValue = 0.0;
-                        _isSliding = false;
-                      });
-                    } else {
-                      // Reset if not completed
-                      setState(() {
-                        _slideValue = 0.0;
-                        _isSliding = false;
-                      });
-                    }
-                  },
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: _isSliding 
-                          ? (slideProvider.isPunchInMode ? Colors.blue : Colors.red)
-                          : Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
+                    // Slide button
+                    Positioned(
+                      left: (MediaQuery.of(context).size.width - 190) * slideProvider.slideProgress,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: Icon(
+                          slideProvider.isPunchInMode ? Icons.login : Icons.logout,
+                          color: slideProvider.isPunchInMode ? Colors.blue : Colors.red,
+                          size: 24,
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      slideProvider.isPunchInMode ? Icons.login : Icons.logout,
-                      color: _isSliding ? Colors.white : Colors.grey,
-                      size: 24,
+                    
+                    // Text overlay
+                    Positioned.fill(
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              slideProvider.isPunchInMode ? Icons.login : Icons.logout,
+                              color: Colors.white70,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              slideProvider.isPunchInMode ? "Slide to Punch In" : "Slide to Punch Out",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white70,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ],
+          
+          const SizedBox(width: 12),
+          
+          // Success indicator when sliding
+          AnimatedOpacity(
+            opacity: slideProvider.slideProgress > 0.7 ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: slideProvider.isPunchInMode ? Colors.blue : Colors.red,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
