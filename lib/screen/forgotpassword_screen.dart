@@ -1,6 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:management_app/animations/slide_animation.dart';
 import 'package:management_app/screen/login_screen.dart';
 import 'package:management_app/services/auth_service.dart';
 
@@ -24,7 +23,6 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
     EdgeInsets screenPadding = MediaQuery.of(context).padding;
 
-    // Responsive functions
     double responsiveFontSize(double baseSize) {
       return baseSize * (screenWidth / 375);
     }
@@ -37,7 +35,7 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
       return screenWidth * percentage;
     }
 
-    // Dark mode compatible colors
+
     final backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black;
     final hintTextColor = isDarkMode ? Colors.grey[400]! : const Color.fromARGB(255, 134, 133, 133);
@@ -60,8 +58,7 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
             ),
             child: Column(
               children: [
-                SlideAnimation(
-                  child: Column(
+                 Column(
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
@@ -306,7 +303,6 @@ class _ForgotpasswordScreenState extends State<ForgotpasswordScreen> {
                       ),
                     ],
                   ),
-                ),
               ],
             ),
           ),

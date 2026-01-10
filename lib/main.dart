@@ -9,6 +9,7 @@ import 'package:management_app/providers/attendance_provider.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
+import 'package:management_app/providers/slide_provider.dart';
 import 'package:management_app/screen/HomeMain_Screen.dart';
 import 'package:management_app/screen/attendance_request_screen.dart';
 import 'package:management_app/screen/attendance_screen.dart';
@@ -40,6 +41,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => EmployeeProvider()),
         ChangeNotifierProvider(create: (_) => PunchProvider()),
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
+        ChangeNotifierProvider(create: (_) => SlideProvider()),
       ],
       child: MyApp(initialRoute: initialRoute),
     ),

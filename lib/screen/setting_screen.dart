@@ -24,7 +24,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final padding = MediaQuery.of(context).padding;
 
-    // Responsive functions
     double responsiveFontSize(double baseSize) {
       return baseSize * (screenWidth / 375);
     }
@@ -37,7 +36,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return screenHeight * percentage;
     }
 
-    // Dark mode colors
     final backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black;
     final subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey;

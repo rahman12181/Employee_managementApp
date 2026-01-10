@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
+import 'package:management_app/providers/slide_provider.dart';
 import 'package:management_app/services/checkin_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
@@ -103,6 +104,40 @@ class _HomemainScreenState extends State<HomemainScreen> {
   }
 
   Future<void> onPunchTap() async {
+    final punchProvider = Provider.of<PunchProvider>(context, listen: false);
+    final slideProvider = Provider.of<SlideProvider>(context, listen: false);
+    
+    // Check if already punched for the day
+    if (punchProvider.punchInTime != null &&
+        punchProvider.punchOutTime != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("You have already checked in & out today"),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (punchProvider.punchInTime != null &&
+        punchProvider.punchOutTime == null) {
+      // Request slide to punch out
+      slideProvider.showSlideButton(false, performPunch);
+    } else if (punchProvider.punchInTime == null) {
+      // Request slide to punch in
+      slideProvider.showSlideButton(true, performPunch);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("You already checked in today"),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  // This function will be called when slide is completed
+  Future<void> performPunch(bool isPunchIn) async {
     final employeeId = Provider.of<EmployeeProvider>(
       context,
       listen: false,
@@ -111,7 +146,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
     if (employeeId == null || isPunching) return;
 
-    final logType = punchProvider.punchInTime == null ? "IN" : "OUT";
+    final logType = isPunchIn ? "IN" : "OUT";
 
     try {
       setState(() => isPunching = true);
@@ -121,7 +156,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
       final now = DateTime.now();
 
-      if (logType == "IN") {
+      if (isPunchIn) {
         await punchProvider.setPunchIn(now);
         successText = "Checked in at ${DateFormat('hh:mm a').format(now)}";
       } else {
@@ -137,7 +172,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Punch failed: $e")));
+      ).showSnackBar(const SnackBar(content: Text("Punch failed")));
     } finally {
       setState(() => isPunching = false);
     }
@@ -200,15 +235,16 @@ class _HomemainScreenState extends State<HomemainScreen> {
 
             Text(
               _currentTime,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
             Text(
               _currentDate,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: const Color.fromARGB(255, 112, 112, 112)),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color.fromARGB(255, 112, 112, 112),
+              ),
             ),
 
             SizedBox(height: size.height * 0.07),
@@ -226,58 +262,65 @@ class _HomemainScreenState extends State<HomemainScreen> {
                     backgroundColor: const Color.fromARGB(255, 199, 196, 196),
                   ),
                 ),
-                InkWell(
-                  onTap: isPunching ? null : onPunchTap,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: size.width * 0.48,
-                    height: size.width * 0.48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Theme.of(context).cardColor,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 20,
-                          offset: Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: showSuccess
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                  size: 60,
-                                ),
-                                Text(
-                                  successText,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    onTap: isPunching ? null : onPunchTap,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: size.width * 0.48,
+                      height: size.width * 0.48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Theme.of(context).cardColor,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 20,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: showSuccess
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: 60,
                                   ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.fingerprint,
-                                  size: 55,
-                                  color: fingerprintColor(punchProvider),
-                                ),
-                                Text(
-                                  punchText(punchProvider),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                  Text(
+                                    successText,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.fingerprint,
+                                    size: 55,
                                     color: fingerprintColor(punchProvider),
                                   ),
-                                ),
-                              ],
-                            ),
+                                  Text(
+                                    punchText(punchProvider),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: fingerprintColor(punchProvider),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ),
                 ),
@@ -298,7 +341,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                           'hh:mm a',
                         ).format(punchProvider.punchInTime!),
                   "Punch In",
-                  iconColor: Colors.blue, // 🔵 Login
+                  iconColor: Colors.blue,
                 ),
                 _smallInfo(
                   Icons.logout,
@@ -308,13 +351,13 @@ class _HomemainScreenState extends State<HomemainScreen> {
                           'hh:mm a',
                         ).format(punchProvider.punchOutTime!),
                   "Punch Out",
-                  iconColor: Colors.red, // 🔴 Logout
+                  iconColor: Colors.red,
                 ),
                 _smallInfo(
                   Icons.av_timer,
                   punchProvider.totalHours(),
                   "Total",
-                  iconColor: Colors.green, // 🟢 Total Hours (you can change)
+                  iconColor: Colors.green,
                 ),
               ],
             ),

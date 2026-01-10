@@ -1,7 +1,5 @@
 // ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
-import 'package:management_app/animations/slide_animation.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/screen/setting_screen.dart';
@@ -52,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final hintTextColor = isDarkMode ? Colors.grey[400] : const Color.fromARGB(255, 96, 93, 93);
     final borderColor = isDarkMode ? Colors.grey[700] : Colors.black;
     final focusedBorderColor = isDarkMode ? Colors.blue[300]! : const Color.fromARGB(255, 52, 169, 232);
-    final forgotPasswordColor = _isColorChanged ? (isDarkMode ? Colors.white : Colors.black) : Colors.blue;
+    final forgotPasswordColor = _isColorChanged ? (isDarkMode ? Colors.white : Colors.black) : const Color.fromARGB(255, 8, 12, 15);
     final dividerColor = isDarkMode ? Colors.grey[700] : Colors.grey.shade400;
     final dialogBgColor = isDarkMode ? Colors.grey[800] : Colors.white;
     final dialogTextColor = isDarkMode ? Colors.white : Colors.black;
@@ -73,8 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SlideAnimation(
-                    child: Column(
+                  Column(
                       children: [
                         Align(
                           alignment: Alignment.topLeft,
@@ -261,7 +258,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontWeight: FontWeight.bold,
                                 fontFamily: "poppins",
                                 color: forgotPasswordColor,
-                                decoration: TextDecoration.underline,
                               ),
                             ),
                           ),
@@ -677,7 +673,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                  ),
                 ],
               ),
             ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:management_app/animations/slide_animation.dart';
 import 'package:management_app/services/auth_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -15,7 +14,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   bool _isLoading = false;
 
-  // ================= SUCCESS DIALOG =================
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -196,7 +194,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: SlideAnimation(
               child: Column(
                 children: [
                   Align(
@@ -282,7 +279,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                 ],
               ),
-            ),
           ),
         ),
       ),
