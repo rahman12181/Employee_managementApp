@@ -181,8 +181,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen> {
                                   onPrimary: Colors.white,
                                   surface: isDarkMode ? Colors.grey[800]! : Colors.white,
                                   onSurface: isDarkMode ? Colors.white : Colors.black,
-                                ),
-                                dialogBackgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                                ), dialogTheme: DialogThemeData(backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white),
                               ),
                               child: child!,
                             );

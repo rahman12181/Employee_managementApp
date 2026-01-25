@@ -30,11 +30,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
+  // Load cookies only (route decision splash karega)
   await AuthService.loadCookies();
-  final authService = AuthService();
-  final initialRoute = await authService.getInitialRoute();
 
-  runApp( 
+  runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
@@ -43,14 +42,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
         ChangeNotifierProvider(create: (_) => SlideProvider()),
       ],
-      child: MyApp(initialRoute: initialRoute),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final String initialRoute;
-  const MyApp({super.key, required this.initialRoute});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +61,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: false,
         fontFamily: 'poppins',
         brightness: Brightness.light,
-
         scaffoldBackgroundColor: Colors.white,
 
         appBarTheme: const AppBarTheme(
@@ -99,7 +96,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: false,
         fontFamily: 'poppins',
         brightness: Brightness.dark,
-
         scaffoldBackgroundColor: Colors.black,
 
         appBarTheme: const AppBarTheme(
@@ -135,8 +131,7 @@ class MyApp extends StatelessWidget {
         SystembarUtil.setSystemBar(context);
         return child!;
       },
-
-      initialRoute: initialRoute,
+      initialRoute: '/splashScreen',
 
       routes: {
         '/splashScreen': (_) => const SplashScreen(),
@@ -152,11 +147,10 @@ class MyApp extends StatelessWidget {
         '/leaveRequestDetail': (_) => const LeaveRequestdetail(),
         '/leaveApproval': (_) => const LeaveApproval(),
         '/attendanceRequest': (_) => const AttendanceRequestScreen(),
-        '/travelRequest': (_) => const TravelRequestScreen(), 
+        '/travelRequest': (_) => const TravelRequestScreen(),
         '/regularizationListing': (_) => const RegularizationLsiting(),
         '/checkMore': (_) => const CheckMore(),
-        '/leaveApprovalScreen':(_) => const LeaveApprovalScreen(),
-        
+        '/leaveApprovalScreen': (_) => const LeaveApprovalScreen(),
       },
 
       onUnknownRoute: (_) =>

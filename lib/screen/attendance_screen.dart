@@ -77,15 +77,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             currentMonth.month < now.month);
 
     final monthlyLogs = provider.getMonthlyLogs(currentMonth);
-    
-    // Get screen dimensions
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final padding = MediaQuery.of(context).padding;
     
-    // Calculate calendar cell size to fit within 95% of screen width
     final availableWidth = screenWidth * 0.95;
-    final cellSpacing = 6.0;
+    const cellSpacing = 6.0;
     final cellSize = (availableWidth - (cellSpacing * 6)) / 7;
 
     return Scaffold(
@@ -97,7 +94,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                screenWidth * 0.025, // 2.5% padding on sides
+                screenWidth * 0.025, 
                 padding.top + 20,
                 screenWidth * 0.025,
                 16,
@@ -143,19 +140,17 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   ),
 
                   const SizedBox(height: 12),
-
-                  /// CALENDAR GRID (FIXED OVERFLOW)
-                  Container(
+                  SizedBox(
                     width: availableWidth,
                     child: GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: daysInMonth,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 7,
                         crossAxisSpacing: cellSpacing,
                         mainAxisSpacing: cellSpacing,
-                        childAspectRatio: 0.9, // Fixed aspect ratio
+                        childAspectRatio: 0.9, 
                       ),
                       itemBuilder: (_, index) {
                         final day = index + 1;
@@ -232,8 +227,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                   const SizedBox(height: 18),
 
-                  /// LEGEND (Made responsive)
-                  Container(
+                
+                  SizedBox(
                     width: availableWidth,
                     child: Wrap(
                       spacing: screenWidth * 0.03,
@@ -251,8 +246,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                   const SizedBox(height: 20),
 
-                  /// ATTENDANCE LIST (Made responsive)
-                  Container(
+                  SizedBox(
                     width: availableWidth,
                     child: ListView.builder(
                       shrinkWrap: true,

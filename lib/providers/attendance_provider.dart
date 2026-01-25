@@ -21,7 +21,7 @@ class AttendanceProvider extends ChangeNotifier {
       start: start,
       end: end,
     );
-
+    
     attendanceMap.clear();
 
     for (var item in data) {
@@ -106,6 +106,5 @@ class AttendanceProvider extends ChangeNotifier {
 
     return logs.reversed.toList();
   }
-
   String _formatTime(DateTime t) => DateFormat("HH:mm").format(t);
 }

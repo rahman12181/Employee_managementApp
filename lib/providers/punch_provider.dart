@@ -16,7 +16,6 @@ class PunchProvider extends ChangeNotifier {
 
     punchInTime = inStr != null ? DateTime.parse(inStr) : null;
     punchOutTime = outStr != null ? DateTime.parse(outStr) : null;
-
     notifyListeners();
   }
 

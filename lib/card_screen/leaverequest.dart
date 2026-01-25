@@ -59,8 +59,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
               primary: Theme.of(context).colorScheme.primary,
               onPrimary: Colors.white,
               onSurface: Theme.of(context).colorScheme.onSurface,
-            ),
-            dialogBackgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            ), dialogTheme: DialogThemeData(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
           ),
           child: child!,
         );
@@ -127,8 +126,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
     final hintTextColor = isDarkMode ? Colors.grey[400] : Colors.black54;
     final borderColor = isDarkMode ? Colors.grey[700]! : Colors.grey[300]!;
     final buttonColor = Theme.of(context).primaryColor;
-    final successColor = Colors.green;
-    final errorColor = Colors.red;
+    const successColor = Colors.green;
+    const errorColor = Colors.red;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -417,7 +416,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                           ? SizedBox(
                               width: isSmallScreen ? 18 : 20,
                               height: isSmallScreen ? 18 : 20,
-                              child: CircularProgressIndicator(
+                              child: const CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: Colors.white,
                               ),

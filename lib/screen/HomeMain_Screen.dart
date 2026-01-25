@@ -234,16 +234,19 @@ class _HomemainScreenState extends State<HomemainScreen> {
               builder: (_, provider, __) {
                 final user = provider.profileData;
                 final imagePath = user?['user_image'];
-
                 return Row(
                   children: [
-                    CircleAvatar(
-                      radius: 25,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/settingScreen');
+                      },child: CircleAvatar(
+                      radius: 20,
                       backgroundImage:
                           (imagePath != null && imagePath.isNotEmpty)
                           ? NetworkImage("https://ppecon.erpnext.com$imagePath")
                           : const AssetImage("assets/images/app_icon.png")
                                 as ImageProvider,
+                    ),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -270,13 +273,13 @@ class _HomemainScreenState extends State<HomemainScreen> {
               },
             ),
 
-            SizedBox(height: size.height * 0.07),
-
+            SizedBox(height: size.height * 0.04),
             Text(
               _currentTime,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
+                fontSize: 25,
               ),
             ),
             Text(
@@ -286,7 +289,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
               ),
             ),
 
-            SizedBox(height: size.height * 0.07),
+            SizedBox(height: size.height * 0.05),
 
             Stack(
               alignment: Alignment.center,
@@ -298,7 +301,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
                     value: punchProvider.progressValue().clamp(0.0, 1.0),
                     strokeWidth: 7,
                     color: punchButtonColor(punchProvider),
-                    backgroundColor: const Color.fromARGB(255, 199, 196, 196),
+                    backgroundColor: const Color.fromARGB(255, 187, 186, 199),
                   ),
                 ),
                 Material(
@@ -338,7 +341,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
               ],
             ),
 
-            SizedBox(height: size.height * 0.07),
+            SizedBox(height: size.height * 0.05),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -422,7 +425,7 @@ class _HomemainScreenState extends State<HomemainScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 20),
                 child: Text(
-                  "Tap the punch button to check out",
+                  "Tap the punch button to punch out",
                   style: TextStyle(color: Colors.red.shade600, fontSize: 14),
                 ),
               ),
@@ -482,65 +485,80 @@ class _HomemainScreenState extends State<HomemainScreen> {
     );
   }
 
-  Widget _buildCenterContent(PunchProvider punchProvider) {
-    if (showSuccess) {
-      return Column(
+ Widget _buildCenterContent(PunchProvider punchProvider) {
+  if (showSuccess) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.check_circle, color: Colors.green, size: 60),
-          const SizedBox(height: 8),
-          Text(
-            successText,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          const Icon(
+            Icons.check_circle,
+            color: Colors.green,
+            size: 42, // 👈 icon thoda chhota
           ),
-        ],
-      );
-    }
-
-    if (isPunching) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              color: punchButtonColor(punchProvider),
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           Text(
-            "Processing...",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: punchButtonColor(punchProvider),
+            successText, // Checked in / out text
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12, // 👈 text chhota (important)
+              color: Colors.green,
             ),
           ),
         ],
-      );
-    }
+      ),
+    );
+  }
 
+  if (isPunching) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.fingerprint,
-          size: 55,
-          color: fingerprintColor(punchProvider),
+        SizedBox(
+          width: 32,
+          height: 32,
+          child: CircularProgressIndicator(
+            strokeWidth: 3,
+            color: punchButtonColor(punchProvider),
+          ),
         ),
         const SizedBox(height: 8),
         Text(
-          punchText(punchProvider),
+          "Processing...",
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: fingerprintColor(punchProvider),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: punchButtonColor(punchProvider),
           ),
         ),
       ],
     );
   }
+
+  return Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Icon(
+        Icons.fingerprint,
+        size: 48,
+        color: fingerprintColor(punchProvider),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        punchText(punchProvider),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: fingerprintColor(punchProvider),
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _smallInfo(
     IconData icon,
