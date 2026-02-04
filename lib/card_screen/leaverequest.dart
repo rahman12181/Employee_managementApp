@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -17,6 +19,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
   bool _showSuccessDialog = false;
   bool _showErrorDialog = false;
   String _errorMessage = "";
+  String _successMessage = "";
 
   final TextEditingController fromDateCtrl = TextEditingController();
   final TextEditingController toDateCtrl = TextEditingController();
@@ -25,8 +28,16 @@ class _LeaveRequestState extends State<LeaveRequest> {
   final TextEditingController empNameCtrl = TextEditingController();
   final TextEditingController inchargeCtrl = TextEditingController();
 
-  String? leaveType;
+  String? selectedLeaveType;
   String compOff = "NO";
+
+  // Available leave types
+  final List<Map<String, String>> leaveTypes = [
+    {"code": "CL", "name": "Casual Leave"},
+    {"code": "SL", "name": "Sick Leave"},
+    {"code": "EL", "name": "Earned Leave"},
+    {"code": "UL", "name": "Unpaid Leave"},
+  ];
 
   @override
   void initState() {
@@ -36,13 +47,23 @@ class _LeaveRequestState extends State<LeaveRequest> {
 
   Future<void> _loadEmployeeData() async {
     final prefs = await SharedPreferences.getInstance();
-    empCodeCtrl.text = prefs.getString("employeeId") ?? "";
+    final savedEmpCode = prefs.getString("employeeId") ?? "";
     final profileData = prefs.getString("profileData");
+    
+    setState(() {
+      empCodeCtrl.text = savedEmpCode;
+    });
+    
     if (profileData != null) {
       try {
         final data = jsonDecode(profileData);
-        empNameCtrl.text = data["full_name"] ?? "";
-      } catch (_) {}
+        final fullName = data["full_name"] ?? "";
+        setState(() {
+          empNameCtrl.text = fullName;
+        });
+      } catch (e) {
+        print("Error parsing profile data: $e");
+      }
     }
   }
 
@@ -50,8 +71,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -59,7 +80,10 @@ class _LeaveRequestState extends State<LeaveRequest> {
               primary: Theme.of(context).colorScheme.primary,
               onPrimary: Colors.white,
               onSurface: Theme.of(context).colorScheme.onSurface,
-            ), dialogTheme: DialogThemeData(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
+            ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            ),
           ),
           child: child!,
         );
@@ -83,8 +107,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
     }
   }
 
-  void _showSuccessPopup() {
+  void _showSuccessPopup(String message) {
     setState(() {
+      _successMessage = message;
       _showSuccessDialog = true;
       _showErrorDialog = false;
     });
@@ -102,6 +127,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
     setState(() {
       _showSuccessDialog = false;
       _showErrorDialog = false;
+      _successMessage = "";
+      _errorMessage = "";
     });
   }
 
@@ -109,9 +136,123 @@ class _LeaveRequestState extends State<LeaveRequest> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  void _resetForm() {
+    _formKey.currentState?.reset();
+    fromDateCtrl.clear();
+    toDateCtrl.clear();
+    reasonCtrl.clear();
+    inchargeCtrl.clear();
+    setState(() {
+      selectedLeaveType = null;
+      compOff = "NO";
+    });
+  }
+
+  Future<void> _submitLeave() async {
+    // Validate form
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (selectedLeaveType == null) {
+      _showErrorPopup("Please select leave type");
+      return;
+    }
+
+    // Check internet connection
+    final hasNet = await _hasInternet();
+    if (!hasNet) {
+      _showErrorPopup("No internet connection. Please check your connection and try again.");
+      return;
+    }
+
+    // Validate dates
+    try {
+      final fromParts = fromDateCtrl.text.split("-");
+      final toParts = toDateCtrl.text.split("-");
+      
+      if (fromParts.length != 3 || toParts.length != 3) {
+        _showErrorPopup("Invalid date format. Please use DD-MM-YYYY format.");
+        return;
+      }
+      
+      final fromDate = DateTime(
+        int.parse(fromParts[2]),
+        int.parse(fromParts[1]),
+        int.parse(fromParts[0]),
+      );
+      final toDate = DateTime(
+        int.parse(toParts[2]),
+        int.parse(toParts[1]),
+        int.parse(toParts[0]),
+      );
+      
+      if (toDate.isBefore(fromDate)) {
+        _showErrorPopup("To date cannot be before from date.");
+        return;
+      }
+      
+      final difference = toDate.difference(fromDate).inDays;
+      if (difference < 0) {
+        _showErrorPopup("Invalid date range.");
+        return;
+      }
+    } catch (e) {
+      _showErrorPopup("Invalid date format. Please use DD-MM-YYYY format.");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Call the service to submit leave
+      final result = await LeaveRequestService.submitLeave(
+        employeeCode: empCodeCtrl.text.trim(),
+        leaveType: LeaveRequestService.mapLeaveType(selectedLeaveType),
+        fromDate: fromDateCtrl.text,
+        toDate: toDateCtrl.text,
+        reason: reasonCtrl.text.trim(),
+        compOff: compOff,
+        inchargeReplacement: inchargeCtrl.text.trim(),
+      );
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (result["success"] == true) {
+        // Success - show success message
+        final successMsg = result["message"] ?? "Leave applied successfully!";
+        
+        String displayMessage = successMsg;
+        
+        // Reset form on success
+        _resetForm();
+        
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Show success dialog with appropriate message
+        _showSuccessPopup(displayMessage);
+        
+      } else {
+        // Error - show error message
+        await Future.delayed(const Duration(milliseconds: 300));
+        _showErrorPopup(result["message"] ?? "Failed to apply leave. Please try again.");
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      await Future.delayed(const Duration(milliseconds: 300));
+      _showErrorPopup("An error occurred: ${e.toString()}");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // MediaQuery for responsive design
     final mediaQuery = MediaQuery.of(context);
     final isDarkMode = mediaQuery.platformBrightness == Brightness.dark;
     final screenWidth = mediaQuery.size.width;
@@ -119,7 +260,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
     final isSmallScreen = screenWidth < 360;
     final paddingValue = isSmallScreen ? 12.0 : 16.0;
 
-    // Colors based on theme
+    // Theme colors
     final backgroundColor = isDarkMode ? Colors.grey[900]! : const Color(0xffF5F6FA);
     final cardColor = isDarkMode ? Colors.grey[800]! : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black87;
@@ -132,11 +273,11 @@ class _LeaveRequestState extends State<LeaveRequest> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           "Leave Request",
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.white,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
@@ -164,8 +305,54 @@ class _LeaveRequestState extends State<LeaveRequest> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Employee Info (Read-only)
+                  if (empNameCtrl.text.isNotEmpty)
+                    Card(
+                      color: cardColor,
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: borderColor),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Employee",
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 12 : 14,
+                                color: hintTextColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              empNameCtrl.text,
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 14 : 16,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "ID: ${empCodeCtrl.text}",
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 12 : 14,
+                                color: hintTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  SizedBox(height: screenHeight * 0.02),
+
+                  // Leave Type
                   Text(
-                    "Leave Type",
+                    "Leave Type *",
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: hintTextColor,
@@ -174,6 +361,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                   ),
                   SizedBox(height: screenHeight * 0.01),
                   DropdownButtonFormField<String>(
+                    value: selectedLeaveType,
                     dropdownColor: cardColor,
                     style: TextStyle(
                       color: textColor,
@@ -201,81 +389,109 @@ class _LeaveRequestState extends State<LeaveRequest> {
                         vertical: isSmallScreen ? 14 : 16,
                       ),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: "CL", child: Text("Casual Leave")),
-                      DropdownMenuItem(value: "SL", child: Text("Sick Leave")),
-                      DropdownMenuItem(value: "EL", child: Text("Earned Leave")),
-                    ],
-                    onChanged: (value) => setState(() => leaveType = value),
+                    items: leaveTypes.map((type) {
+                      return DropdownMenuItem<String>(
+                        value: type["code"],
+                        child: Text(type["name"]!),
+                      );
+                    }).toList(),
+                    onChanged: (value) => setState(() => selectedLeaveType = value),
                     validator: (value) =>
-                        value == null ? "Select leave type" : null,
+                        value == null ? "Please select leave type" : null,
                   ),
 
                   SizedBox(height: screenHeight * 0.02),
 
+                  // Date Range
                   Row(
                     children: [
                       Expanded(
-                        child: TextFormField(
-                          controller: fromDateCtrl,
-                          readOnly: true,
-                          onTap: () => selectDate(fromDateCtrl),
-                          style: TextStyle(color: textColor),
-                          decoration: InputDecoration(
-                            hintText: "From date",
-                            hintStyle: TextStyle(color: hintTextColor),
-                            filled: true,
-                            fillColor: cardColor,
-                            suffixIcon: Icon(Icons.calendar_today, 
-                                size: isSmallScreen ? 18 : 20, 
-                                color: hintTextColor),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: borderColor),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "From Date *",
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 12 : 14,
+                                color: hintTextColor,
+                              ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: borderColor),
+                            const SizedBox(height: 4),
+                            TextFormField(
+                              controller: fromDateCtrl,
+                              readOnly: true,
+                              onTap: () => selectDate(fromDateCtrl),
+                              style: TextStyle(color: textColor),
+                              decoration: InputDecoration(
+                                hintText: "DD-MM-YYYY",
+                                hintStyle: TextStyle(color: hintTextColor),
+                                filled: true,
+                                fillColor: cardColor,
+                                suffixIcon: Icon(Icons.calendar_today, 
+                                    size: isSmallScreen ? 18 : 20, 
+                                    color: hintTextColor),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isSmallScreen ? 12 : 16,
+                                  vertical: isSmallScreen ? 14 : 16,
+                                ),
+                              ),
+                              validator: (value) =>
+                                  value!.isEmpty ? "Please select from date" : null,
                             ),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: isSmallScreen ? 12 : 16,
-                              vertical: isSmallScreen ? 14 : 16,
-                            ),
-                          ),
-                          validator: (value) =>
-                              value!.isEmpty ? "Select from date" : null,
+                          ],
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.03),
                       Expanded(
-                        child: TextFormField(
-                          controller: toDateCtrl,
-                          readOnly: true,
-                          onTap: () => selectDate(toDateCtrl),
-                          style: TextStyle(color: textColor),
-                          decoration: InputDecoration(
-                            hintText: "To date",
-                            hintStyle: TextStyle(color: hintTextColor),
-                            filled: true,
-                            fillColor: cardColor,
-                            suffixIcon: Icon(Icons.calendar_today, 
-                                size: isSmallScreen ? 18 : 20, 
-                                color: hintTextColor),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: borderColor),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "To Date *",
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 12 : 14,
+                                color: hintTextColor,
+                              ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: borderColor),
+                            const SizedBox(height: 4),
+                            TextFormField(
+                              controller: toDateCtrl,
+                              readOnly: true,
+                              onTap: () => selectDate(toDateCtrl),
+                              style: TextStyle(color: textColor),
+                              decoration: InputDecoration(
+                                hintText: "DD-MM-YYYY",
+                                hintStyle: TextStyle(color: hintTextColor),
+                                filled: true,
+                                fillColor: cardColor,
+                                suffixIcon: Icon(Icons.calendar_today, 
+                                    size: isSmallScreen ? 18 : 20, 
+                                    color: hintTextColor),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isSmallScreen ? 12 : 16,
+                                  vertical: isSmallScreen ? 14 : 16,
+                                ),
+                              ),
+                              validator: (value) =>
+                                  value!.isEmpty ? "Please select to date" : null,
                             ),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: isSmallScreen ? 12 : 16,
-                              vertical: isSmallScreen ? 14 : 16,
-                            ),
-                          ),
-                          validator: (value) =>
-                              value!.isEmpty ? "Select to date" : null,
+                          ],
                         ),
                       ),
                     ],
@@ -283,8 +499,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
 
                   SizedBox(height: screenHeight * 0.02),
 
+                  // Reason
                   Text(
-                    "Reason for leave",
+                    "Reason for Leave *",
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: hintTextColor,
@@ -295,9 +512,10 @@ class _LeaveRequestState extends State<LeaveRequest> {
                   TextFormField(
                     controller: reasonCtrl,
                     maxLines: 3,
+                    minLines: 3,
                     style: TextStyle(color: textColor),
                     decoration: InputDecoration(
-                      hintText: "Enter reason",
+                      hintText: "Enter reason for leave...",
                       hintStyle: TextStyle(color: hintTextColor),
                       filled: true,
                       fillColor: cardColor,
@@ -315,11 +533,12 @@ class _LeaveRequestState extends State<LeaveRequest> {
                       ),
                     ),
                     validator: (value) =>
-                        value!.isEmpty ? "Reason is required" : null,
+                        value!.isEmpty ? "Please enter reason for leave" : null,
                   ),
 
                   SizedBox(height: screenHeight * 0.02),
 
+                  // Comp Off
                   Text(
                     "Is it a Comp Off?",
                     style: TextStyle(
@@ -365,8 +584,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
 
                   SizedBox(height: screenHeight * 0.02),
 
+                  // Incharge Replacement
                   Text(
-                    "Incharge Replacement",
+                    "Incharge Replacement *",
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: hintTextColor,
@@ -378,7 +598,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     controller: inchargeCtrl,
                     style: TextStyle(color: textColor),
                     decoration: InputDecoration(
-                      hintText: "Enter incharge replacement",
+                      hintText: "Enter incharge replacement name",
                       hintStyle: TextStyle(color: hintTextColor),
                       filled: true,
                       fillColor: cardColor,
@@ -395,11 +615,12 @@ class _LeaveRequestState extends State<LeaveRequest> {
                         vertical: isSmallScreen ? 14 : 16,
                       ),
                     ),
-                    validator: (value) => value!.isEmpty ? "Enter incharge" : null,
+                    validator: (value) => value!.isEmpty ? "Please enter incharge replacement" : null,
                   ),
 
                   SizedBox(height: screenHeight * 0.04),
 
+                  // Submit Button
                   SizedBox(
                     width: double.infinity,
                     height: screenHeight * 0.06,
@@ -410,6 +631,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         elevation: 2,
+                        padding: EdgeInsets.zero,
                       ),
                       onPressed: _isLoading ? null : _submitLeave,
                       child: _isLoading
@@ -422,7 +644,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                               ),
                             )
                           : Text(
-                              "SUBMIT",
+                              "SUBMIT LEAVE APPLICATION",
                               style: TextStyle(
                                 fontSize: isSmallScreen ? 14 : 16,
                                 fontWeight: FontWeight.bold,
@@ -431,15 +653,95 @@ class _LeaveRequestState extends State<LeaveRequest> {
                             ),
                     ),
                   ),
+                  
+                  SizedBox(height: screenHeight * 0.02),
+                  
+                  // Info note
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50]!.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue[100]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: isSmallScreen ? 16 : 18, color: Colors.blue[700]),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Leave will be sent to your manager for approval",
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 12 : 13,
+                              color: Colors.blue[800],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
 
+          // Loading Overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: isSmallScreen ? 40 : 50,
+                        height: isSmallScreen ? 40 : 50,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: buttonColor,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Submitting Leave...",
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 14 : 16,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Please wait",
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 12 : 14,
+                          color: hintTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           // Success Dialog
           if (_showSuccessDialog)
             Container(
-              color: Colors.black54,
+              color: Colors.black.withOpacity(0.5),
               child: Center(
                 child: Container(
                   width: screenWidth * 0.85,
@@ -449,7 +751,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withAlpha(10),
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -462,7 +764,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                         width: isSmallScreen ? 70 : 80,
                         height: isSmallScreen ? 70 : 80,
                         decoration: BoxDecoration(
-                          color: successColor.withAlpha(20),
+                          color: successColor.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -482,10 +784,11 @@ class _LeaveRequestState extends State<LeaveRequest> {
                       ),
                       SizedBox(height: isSmallScreen ? 8 : 10),
                       Text(
-                        "Leave applied successfully",
+                        _successMessage,
                         style: TextStyle(
                           fontSize: isSmallScreen ? 14 : 16,
                           color: textColor,
+                          height: 1.4,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -495,10 +798,11 @@ class _LeaveRequestState extends State<LeaveRequest> {
                         height: isSmallScreen ? 45 : 50,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: buttonColor,
+                            backgroundColor: successColor,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 2,
                           ),
                           onPressed: _navigateToDashboard,
                           child: Text(
@@ -515,10 +819,11 @@ class _LeaveRequestState extends State<LeaveRequest> {
                       TextButton(
                         onPressed: _closeDialogs,
                         child: Text(
-                          "Close",
+                          "Apply Another Leave",
                           style: TextStyle(
-                            color: hintTextColor,
+                            color: buttonColor,
                             fontSize: isSmallScreen ? 13 : 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -531,7 +836,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
           // Error Dialog
           if (_showErrorDialog)
             Container(
-              color: Colors.black54,
+              color: Colors.black.withOpacity(0.5),
               child: Center(
                 child: Container(
                   width: screenWidth * 0.85,
@@ -541,7 +846,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withAlpha(10),
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -554,7 +859,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                         width: isSmallScreen ? 70 : 80,
                         height: isSmallScreen ? 70 : 80,
                         decoration: BoxDecoration(
-                          color: errorColor.withAlpha(20),
+                          color: errorColor.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -574,12 +879,11 @@ class _LeaveRequestState extends State<LeaveRequest> {
                       ),
                       SizedBox(height: isSmallScreen ? 8 : 10),
                       Text(
-                        _errorMessage.isNotEmpty 
-                            ? _errorMessage 
-                            : "Something went wrong",
+                        _errorMessage,
                         style: TextStyle(
                           fontSize: isSmallScreen ? 14 : 16,
                           color: textColor,
+                          height: 1.4,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -593,6 +897,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 2,
                           ),
                           onPressed: _closeDialogs,
                           child: Text(
@@ -609,7 +914,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                       TextButton(
                         onPressed: _closeDialogs,
                         child: Text(
-                          "Close",
+                          "Cancel",
                           style: TextStyle(
                             color: hintTextColor,
                             fontSize: isSmallScreen ? 13 : 14,
@@ -624,53 +929,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
         ],
       ),
     );
-  }
-
-  Future<void> _submitLeave() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    if (leaveType == null) {
-      _showErrorPopup("Please select leave type");
-      return;
-    }
-
-    final hasNet = await _hasInternet();
-    if (!hasNet) {
-      _showErrorPopup("No internet connection");
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    final result = await LeaveRequestService.submitLeave(
-      employeeCode: empCodeCtrl.text.trim(),
-      leaveType: LeaveRequestService.mapLeaveType(leaveType),
-      fromDate: fromDateCtrl.text,
-      toDate: toDateCtrl.text,
-      reason: reasonCtrl.text.trim(),
-      compOff: compOff,
-      inchargeReplacement: inchargeCtrl.text.trim(),
-    );
-
-    setState(() => _isLoading = false);
-
-    if (result["success"] == true) {
-      _formKey.currentState!.reset();
-      fromDateCtrl.clear();
-      toDateCtrl.clear();
-      reasonCtrl.clear();
-      inchargeCtrl.clear();
-      setState(() {
-        leaveType = null;
-        compOff = "NO";
-      });
-      
-      await Future.delayed(const Duration(milliseconds: 300));
-      _showSuccessPopup();
-    } else {
-      await Future.delayed(const Duration(milliseconds: 300));
-      _showErrorPopup(result["message"]);
-    }
   }
 
   @override

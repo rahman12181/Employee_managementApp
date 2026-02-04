@@ -19,29 +19,42 @@ class AttendanceService {
       throw Exception("Session expired");
     }
 
-    final df = DateFormat("yyyy-MM-dd HH:mm:ss");
+    final df = DateFormat("yyyy-MM-dd");
+
+    final formattedStart = "${df.format(start)} 00:00:00";
+    final formattedEnd = "${df.format(end)} 23:59:59";
 
     final url =
-        "$baseUrl"
-        "?filters=[[\"employee\",\"=\",\"$employeeId\"],"
-        "[\"time\",\">=\",\"${df.format(start)}\"],"
-        "[\"time\",\"<=\",\"${df.format(end)}\"]]"
-        "&fields=[\"log_type\",\"time\"]"
-        "&order_by=time asc";
+        "$baseUrl?fields=[\"name\",\"employee\",\"log_type\",\"time\"]"
+        "&filters=[[\"employee\",\"=\",\"$employeeId\"],"
+        "[\"time\",\">=\",\"$formattedStart\"],"
+        "[\"time\",\"<=\",\"$formattedEnd\"]]"
+        "&order_by=time%20asc"
+        "&limit_page_length=1000";
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Cookie": cookies.join("; "),
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Cookie": cookies.join("; "),
+        },
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception("Failed to fetch attendance");
+      if (response.statusCode != 200) {
+        throw Exception("Failed to fetch attendance: ${response.statusCode}");
+      }
+
+      final jsonData = jsonDecode(response.body);
+      
+      if (jsonData["data"] == null) {
+        return [];
+      }
+
+      return jsonData["data"] as List;
+    } catch (e) {
+      throw Exception("Attendance fetch error: $e");
     }
-
-    return jsonDecode(response.body)["data"];
   }
 }

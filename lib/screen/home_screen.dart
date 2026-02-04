@@ -13,8 +13,12 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  
+  // 🔴 ADD ANIMATION CONTROLLER FOR HINT
+  late AnimationController _hintController;
+  late Animation<double> _hintAnimation;
 
   static final List<Widget> _bottomNavigationScreens = [
     const HomemainScreen(),
@@ -22,6 +26,30 @@ class _HomeScreenState extends State<HomeScreen> {
     const AttendanceScreen(),
     const SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // 🔴 INITIALIZE HINT ANIMATION
+    _hintController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _hintAnimation = Tween<double>(begin: 0, end: 10).animate(
+      CurvedAnimation(
+        parent: _hintController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+  
+  @override
+  void dispose() {
+    _hintController.dispose();
+    super.dispose();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -114,27 +142,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(width: spacing),
 
-           
+              /// 🔴 UPDATED: SLIDER WITH HINT ANIMATION
               SizedBox(
                 width: sliderWidth,
                 child: GestureDetector(
                   onHorizontalDragUpdate: (details) {
-                    final delta = details.delta.dx;
-                    final newProgress =
-                        (slideProvider.slideProgress + delta / sliderWidth)
-                            .clamp(0.0, 1.0);
-
-                    slideProvider.updateSlideProgress(newProgress);
-
-                    if (newProgress >= 0.95) {
-                      Future.delayed(const Duration(milliseconds: 100), () {
-                        slideProvider.completePunch();
-                      });
+                    // Stop hint animation when user starts dragging
+                    if (slideProvider.slideProgress == 0) {
+                      _hintController.stop();
                     }
+                    
+                    final double dragAmount = details.primaryDelta!;
+                    final double newProgress = 
+                        (slideProvider.slideProgress + (dragAmount / sliderWidth))
+                            .clamp(0.0, 1.0);
+                    
+                    slideProvider.updateSlideProgress(newProgress);
                   },
                   onHorizontalDragEnd: (_) {
-                    if (slideProvider.slideProgress < 0.95) {
+                    if (slideProvider.slideProgress >= 0.8) {
+                      slideProvider.completePunch();
+                    } else {
                       slideProvider.updateSlideProgress(0.0);
+                      // Restart hint animation after reset
+                      _hintController.repeat(reverse: true);
                     }
                   },
                   child: Container(
@@ -158,40 +189,77 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
 
-                        /// Thumb
+                        /// Thumb WITH HINT ANIMATION
                         Positioned(
-                          left:
-                              (sliderWidth - 50) * slideProvider.slideProgress,
-                          child: Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
+                          left: (sliderWidth - 50) * slideProvider.slideProgress,
+                          child: AnimatedBuilder(
+                            animation: _hintAnimation,
+                            builder: (context, child) {
+                              // Only show hint when progress is 0
+                              final double extraOffset = 
+                                  slideProvider.slideProgress == 0 
+                                      ? _hintAnimation.value 
+                                      : 0;
+                              
+                              return Transform.translate(
+                                offset: Offset(extraOffset, 0),
+                                child: Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                      // Add glow effect during hint
+                                      if (slideProvider.slideProgress == 0)
+                                        BoxShadow(
+                                          color: slideProvider.isPunchInMode
+                                              ? Colors.blue.withOpacity(0.3)
+                                              : Colors.red.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          spreadRadius: 1,
+                                        ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    slideProvider.isPunchInMode
+                                        ? Icons.login
+                                        : Icons.logout,
+                                    color: slideProvider.isPunchInMode
+                                        ? Colors.blue
+                                        : Colors.red,
+                                  ),
                                 ),
-                              ],
-                            ),
-                            child: Icon(
-                              slideProvider.isPunchInMode
-                                  ? Icons.login
-                                  : Icons.logout,
-                              color: slideProvider.isPunchInMode
-                                  ? Colors.blue
-                                  : Colors.red,
-                            ),
+                              );
+                            },
                           ),
                         ),
 
-                        /// Center Text
+                        /// Center Text WITH ARROW HINTS
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              // 🔴 LEFT ARROW WITH ANIMATION
+                              AnimatedBuilder(
+                                animation: _hintAnimation,
+                                builder: (context, child) {
+                                  return Transform.translate(
+                                    offset: Offset(_hintAnimation.value, 0),
+                                    child: const Icon(
+                                      Icons.arrow_back_ios,
+                                      color: Colors.white70,
+                                      size: 14,
+                                    ),
+                                  );
+                                },
+                              ),
+                              
                               Icon(
                                 slideProvider.isPunchInMode
                                     ? Icons.login
@@ -199,6 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Colors.white70,
                                 size: 18,
                               ),
+                              
                               const SizedBox(width: 6),
                               Text(
                                 slideProvider.isPunchInMode
@@ -209,6 +278,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
+                              ),
+                              
+                              // 🔴 RIGHT ARROW WITH ANIMATION
+                              AnimatedBuilder(
+                                animation: _hintAnimation,
+                                builder: (context, child) {
+                                  return Transform.translate(
+                                    offset: Offset(_hintAnimation.value, 0),
+                                    child: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.white70,
+                                      size: 14,
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),

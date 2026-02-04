@@ -26,7 +26,7 @@ class SlideProvider extends ChangeNotifier {
   }
   
   void updateSlideProgress(double progress) {
-    _slideProgress = progress;
+    _slideProgress = progress.clamp(0.0, 1.0);
     notifyListeners();
   }
   
@@ -34,6 +34,8 @@ class SlideProvider extends ChangeNotifier {
     if (_punchCallback != null) {
       _punchCallback!(_isPunchInMode);
     }
-    hideSlideButton();
+    Future.delayed(const Duration(milliseconds: 500), () {
+      hideSlideButton();
+    });
   }
 }

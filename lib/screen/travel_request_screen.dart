@@ -410,7 +410,7 @@ class _TravelRequestScreenState extends State<TravelRequestScreen> {
                               ? SizedBox(
                                   height: screenHeight * 0.025,
                                   width: screenHeight * 0.025,
-                                  child: CircularProgressIndicator(
+                                  child: const CircularProgressIndicator(
                                     color: Colors.white,
                                     strokeWidth: 2,
                                   ),
