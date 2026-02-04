@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:management_app/screen/homemain_screen.dart';
 import 'package:management_app/screen/attendance_screen.dart';
@@ -142,7 +144,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
               const SizedBox(width: spacing),
 
-              /// 🔴 UPDATED: SLIDER WITH HINT ANIMATION
               SizedBox(
                 width: sliderWidth,
                 child: GestureDetector(

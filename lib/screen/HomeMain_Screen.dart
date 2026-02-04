@@ -67,19 +67,16 @@ class _HomemainScreenState extends State<HomemainScreen>
 
   Future<void> _initializeData() async {
     try {
-      await Future.wait([
-        Provider.of<ProfileProvider>(context, listen: false).loadProfile(),
-        Provider.of<EmployeeProvider>(
-          context,
-          listen: false,
-        ).loadEmployeeIdFromLocal(),
-        Provider.of<PunchProvider>(context, listen: false).loadDailyPunches(),
-      ]);
-
-      final employeeId = Provider.of<EmployeeProvider>(
+      final employeeProvider = Provider.of<EmployeeProvider>(
         context,
         listen: false,
-      ).employeeId;
+      );
+      
+      await employeeProvider.loadEmployeeIdFromLocal();
+      await Provider.of<ProfileProvider>(context, listen: false).loadProfile();
+      await Provider.of<PunchProvider>(context, listen: false).loadDailyPunches();
+
+      final employeeId = employeeProvider.employeeId;
       if (employeeId != null) {
         await Provider.of<AttendanceProvider>(
           context,
@@ -145,35 +142,29 @@ class _HomemainScreenState extends State<HomemainScreen>
         punchProvider.punchOutTime == null) {
       return [
         BoxShadow(
-          color: color.withOpacity(0.4),
-          blurRadius: 25,
-          spreadRadius: 3,
-          offset: const Offset(0, 8),
-        ),
-        BoxShadow(
-          color: color.withOpacity(0.2),
-          blurRadius: 40,
-          spreadRadius: 5,
-          offset: const Offset(0, 12),
+          color: color.withOpacity(0.3),
+          blurRadius: 15,
+          spreadRadius: 2,
+          offset: const Offset(0, 6),
         ),
       ];
     } else if (punchProvider.punchInTime == null) {
       return [
         BoxShadow(
-          color: color.withOpacity(0.3),
-          blurRadius: 20,
-          spreadRadius: 2,
-          offset: const Offset(0, 6),
+          color: color.withOpacity(0.2),
+          blurRadius: 10,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
         ),
       ];
     }
 
     return [
       BoxShadow(
-        color: color.withOpacity(0.3),
-        blurRadius: 20,
-        spreadRadius: 2,
-        offset: const Offset(0, 6),
+        color: color.withOpacity(0.2),
+        blurRadius: 8,
+        spreadRadius: 1,
+        offset: const Offset(0, 3),
       ),
     ];
   }
@@ -245,11 +236,10 @@ class _HomemainScreenState extends State<HomemainScreen>
 
       HapticFeedback.mediumImpact();
 
-      await _checkinService.checkIn(employeeId: employeeId, logType: logType);
-
       final utcNow = DateTime.now().toUtc();
       final riyadhNow = utcNow.add(const Duration(hours: 3));
 
+      // ✅ Save locally first
       if (isPunchIn) {
         await punchProvider.setPunchIn(utcNow);
         _successText =
@@ -260,6 +250,10 @@ class _HomemainScreenState extends State<HomemainScreen>
             "Checked out at ${DateFormat('hh:mm a').format(riyadhNow)}";
       }
 
+      // ✅ Send to server
+      await _checkinService.checkIn(employeeId: employeeId, logType: logType);
+
+      // Reload attendance
       final currentMonth = DateTime(utcNow.year, utcNow.month);
       await attendanceProvider.loadMonthAttendance(employeeId, currentMonth);
 
@@ -276,7 +270,7 @@ class _HomemainScreenState extends State<HomemainScreen>
       setState(() {
         _isPunching = false;
         _hasError = true;
-        _errorMessage = "Punch failed. Check connection";
+        _errorMessage = "Punch saved locally. Check connection";
       });
 
       Timer(const Duration(seconds: 3), () {
@@ -290,54 +284,70 @@ class _HomemainScreenState extends State<HomemainScreen>
     }
   }
 
-  Widget _buildTimeWidget(String time, String label, Color color) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.2)),
-          ),
-          child: Text(
+  Widget _buildTimeWidget(String time, String label, Color color, IconData icon) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.02,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.1)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: MediaQuery.of(context).size.width * 0.05),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.005),
+          Text(
             time,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: MediaQuery.of(context).size.width * 0.035,
               fontWeight: FontWeight.w700,
               color: color,
+              letterSpacing: 0.3,
             ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
+          SizedBox(height: MediaQuery.of(context).size.height * 0.002),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: MediaQuery.of(context).size.width * 0.028,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildProgressWidget(PunchProvider punchProvider) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     if (punchProvider.punchInTime == null) {
       return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            "Ready to start?",
+            "Ready to start your day?",
+            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: screenWidth * 0.04,
               color: Colors.blue.shade600,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.005),
           Text(
-            "Tap to begin your workday",
-            style: TextStyle(fontSize: 12, color: Colors.blue.shade400),
+            "Tap the fingerprint to begin",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: screenWidth * 0.032,
+              color: Colors.blue.shade400,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       );
@@ -345,49 +355,72 @@ class _HomemainScreenState extends State<HomemainScreen>
 
     if (punchProvider.punchOutTime == null) {
       return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             "Time to wrap up!",
+            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: screenWidth * 0.04,
               color: Colors.red.shade600,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.005),
           Text(
-            "Tap to end your shift",
-            style: TextStyle(fontSize: 12, color: Colors.red.shade400),
+            "Tap to end your productive shift",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: screenWidth * 0.032,
+              color: Colors.red.shade400,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       );
     }
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: Colors.green.shade600,
-              size: 16,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              "Shift completed",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.green.shade700,
-                fontWeight: FontWeight.w600,
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.04,
+            vertical: MediaQuery.of(context).size.height * 0.01,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.green.shade100),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                color: Colors.green.shade600,
+                size: screenWidth * 0.045,
               ),
-            ),
-          ],
+              SizedBox(width: screenWidth * 0.02),
+              Text(
+                "Shift completed",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.038,
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.008),
         Text(
           "Great work today!",
-          style: TextStyle(fontSize: 12, color: Colors.green.shade500),
+          style: TextStyle(
+            fontSize: screenWidth * 0.032,
+            color: Colors.green.shade500,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -396,282 +429,405 @@ class _HomemainScreenState extends State<HomemainScreen>
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height - mediaQuery.padding.top;
+    final screenHeight = mediaQuery.size.height;
     final screenWidth = mediaQuery.size.width;
-    final isSmallScreen = screenHeight < 600;
+    final isPortrait = screenHeight > screenWidth;
+    
+    // Calculate responsive sizes
+    final buttonSize = isPortrait 
+        ? screenWidth * 0.45  // Smaller for portrait
+        : screenHeight * 0.45; // Smaller for landscape
+    
+    final progressSize = buttonSize * 1.15;
+    final glowSize = buttonSize * 1.25;
+    
     final punchProvider = Provider.of<PunchProvider>(context);
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
+          physics: const BouncingScrollPhysics(),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: screenHeight),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.05,
-                vertical: screenHeight * 0.02,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(height: isSmallScreen ? 10 : 20),
-
-                  Consumer<ProfileProvider>(
-                    builder: (_, provider, __) {
-                      final user = provider.profileData;
-                      final imagePath = user?['user_image'];
-                      return Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () =>
-                                Navigator.pushNamed(context, '/settingScreen'),
-                            child: CircleAvatar(
-                              radius: isSmallScreen ? 20 : 22,
-                              backgroundColor: Colors.blue.shade50,
-                              child: CircleAvatar(
-                                radius: isSmallScreen ? 18 : 20,
-                                backgroundImage:
-                                    (imagePath != null && imagePath.isNotEmpty)
-                                    ? NetworkImage(
-                                        "https://ppecon.erpnext.com$imagePath",
-                                      )
-                                    : const AssetImage(
-                                            "assets/images/app_icon.png",
+            constraints: BoxConstraints(
+              minHeight: screenHeight - mediaQuery.padding.top - mediaQuery.padding.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Modern Header - Perfectly sized
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.05,
+                    vertical: screenHeight * 0.02,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDarkMode
+                          ? [
+                              Colors.grey.shade900,
+                              Colors.grey.shade800,
+                            ]
+                          : [
+                              Colors.blue.shade50,
+                              Colors.purple.shade50,
+                            ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(25),
+                      bottomRight: Radius.circular(25),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Profile Row - Compact
+                      Consumer<ProfileProvider>(
+                        builder: (_, provider, __) {
+                          final user = provider.profileData;
+                          final imagePath = user?['user_image'];
+                          return Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () =>
+                                    Navigator.pushNamed(context, '/settingScreen'),
+                                child: Container(
+                                  width: screenWidth * 0.12,
+                                  height: screenWidth * 0.12,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: CircleAvatar(
+                                    backgroundColor: Colors.blue.shade50,
+                                    backgroundImage: (imagePath != null &&
+                                            imagePath.isNotEmpty)
+                                        ? NetworkImage(
+                                            "https://ppecon.erpnext.com$imagePath",
                                           )
-                                          as ImageProvider,
+                                        : const AssetImage(
+                                                "assets/images/app_icon.png",
+                                              )
+                                            as ImageProvider,
+                                  ),
+                                ),
                               ),
+                              SizedBox(width: screenWidth * 0.03),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _greeting,
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.03,
+                                        color: isDarkMode
+                                            ? Colors.grey.shade300
+                                            : Colors.grey.shade700,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    SizedBox(height: screenHeight * 0.003),
+                                    Text(
+                                      user?['full_name'] ?? "Employee",
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.045,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDarkMode
+                                            ? Colors.white
+                                            : Colors.grey.shade900,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      SizedBox(height: screenHeight * 0.025),
+                      
+                      // Time Display - Perfectly responsive
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _currentTime,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.13,
+                              fontWeight: FontWeight.w900,
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : Colors.grey.shade900,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                          SizedBox(width: isSmallScreen ? 8 : 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _greeting,
-                                  style: TextStyle(
-                                    fontSize: isSmallScreen ? 11 : 12,
-                                    color: theme.textTheme.bodyMedium?.color
-                                        ?.withOpacity(0.6),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  user?['full_name'] ?? "Employee",
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: isSmallScreen ? 13 : 16,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ],
+                          SizedBox(height: screenHeight * 0.005),
+                          Text(
+                            _currentDate,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.035,
+                              color: isDarkMode
+                                  ? Colors.grey.shade300
+                                  : Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ],
-                      );
-                    },
-                  ),
-
-                  SizedBox(height: isSmallScreen ? 25 : 35),
-
-                  Column(
-                    children: [
-                      Text(
-                        _currentTime,
-                        style: TextStyle(
-                          fontSize: MediaQuery.of(context).size.width * 0.07,
-                          fontWeight: FontWeight.w800,
-                          color: theme.brightness == Brightness.dark
-                              ? Colors.white
-                              : Colors.black,
-                        ),
                       ),
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.01,
-                      ),
-                      Text(
-                        _currentDate,
-                        style: TextStyle(
-                          fontSize: MediaQuery.of(context).size.width * 0.032,
-                          color: theme.brightness == Brightness.dark
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      SizedBox(height: screenHeight * 0.02),
                     ],
                   ),
-                  SizedBox(height: isSmallScreen ? 25 : 35),
-
-                  Stack(
-                    alignment: Alignment.center,
+                ),
+                
+                // Main Content
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.05,
+                    vertical: screenHeight * 0.025,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        width: screenWidth * (isSmallScreen ? 0.65 : 0.58),
-                        height: screenWidth * (isSmallScreen ? 0.65 : 0.58),
-                        child: CircularProgressIndicator(
-                          value: punchProvider.progressValue().clamp(0.0, 1.0),
-                          strokeWidth: isSmallScreen ? 6 : 8,
-                          color: _punchButtonColor(punchProvider),
-                          backgroundColor: Colors.grey.shade200,
-                        ),
-                      ),
-
-                      if (punchProvider.punchInTime != null &&
-                          punchProvider.punchOutTime == null)
-                        ScaleTransition(
-                          scale: _pulseAnimation,
-                          child: Container(
-                            width: screenWidth * (isSmallScreen ? 0.63 : 0.56),
-                            height: screenWidth * (isSmallScreen ? 0.63 : 0.56),
+                      // Punch Circle - Perfectly sized for all screens
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Outer Glow
+                          Container(
+                            width: glowSize,
+                            height: glowSize,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.transparent,
-                              border: Border.all(
-                                color: Colors.red.withOpacity(0.3),
-                                width: isSmallScreen ? 2 : 3,
+                              gradient: RadialGradient(
+                                colors: [
+                                  _punchButtonColor(punchProvider)
+                                      .withOpacity(0.08),
+                                  Colors.transparent,
+                                ],
+                                radius: 0.8,
                               ),
                             ),
                           ),
-                        ),
-
-                      Material(
-                        color: Colors.transparent,
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          splashColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
-                          onTap: () {
-                            final slideProvider = Provider.of<SlideProvider>(
-                              context,
-                              listen: false,
-                            );
-                            if (!slideProvider.showSlideToPunch) {
-                              _onPunchTap();
-                            }
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            width: screenWidth * (isSmallScreen ? 0.55 : 0.48),
-                            height: screenWidth * (isSmallScreen ? 0.55 : 0.48),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: theme.cardColor,
-                              boxShadow: _getButtonShadows(punchProvider),
+                          
+                          // Progress Circle
+                          SizedBox(
+                            width: progressSize,
+                            height: progressSize,
+                            child: CircularProgressIndicator(
+                              value: punchProvider.progressValue().clamp(0.0, 1.0),
+                              strokeWidth: screenWidth * 0.015,
+                              color: _punchButtonColor(punchProvider),
+                              backgroundColor: Colors.grey.shade200,
+                              strokeCap: StrokeCap.round,
                             ),
-                            child: Center(
-                              child: _buildCenterContent(
-                                punchProvider,
-                                theme,
-                                isSmallScreen,
+                          ),
+                          
+                          // Pulsing Border for Punch Out
+                          if (punchProvider.punchInTime != null &&
+                              punchProvider.punchOutTime == null)
+                            ScaleTransition(
+                              scale: _pulseAnimation,
+                              child: Container(
+                                width: progressSize * 0.95,
+                                height: progressSize * 0.95,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.transparent,
+                                  border: Border.all(
+                                    color: Colors.red.withOpacity(0.25),
+                                    width: screenWidth * 0.008,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          
+                          // Main Button - Perfect size for all screens
+                          Material(
+                            color: Colors.transparent,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              borderRadius: BorderRadius.circular(buttonSize),
+                              onTap: () {
+                                final slideProvider = Provider.of<SlideProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                if (!slideProvider.showSlideToPunch) {
+                                  _onPunchTap();
+                                }
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                width: buttonSize,
+                                height: buttonSize,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: theme.cardColor,
+                                  boxShadow: _getButtonShadows(punchProvider),
+                                  border: Border.all(
+                                    color: _punchButtonColor(punchProvider)
+                                        .withOpacity(0.15),
+                                    width: screenWidth * 0.005,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: _buildCenterContent(
+                                    punchProvider,
+                                    theme,
+                                    buttonSize,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-
-                  SizedBox(height: isSmallScreen ? 20 : 30),
-
-                  Container(
-                    padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildTimeWidget(
-                          punchProvider.punchInTime == null
-                              ? "--:--"
-                              : DateFormat('hh:mm a').format(
-                                  punchProvider.punchInTime!.add(
-                                    const Duration(hours: 3),
-                                  ),
-                                ),
-                          "Punch In",
-                          Colors.blue,
-                        ),
-                        _buildTimeWidget(
-                          punchProvider.punchOutTime == null
-                              ? "--:--"
-                              : DateFormat('hh:mm a').format(
-                                  punchProvider.punchOutTime!.add(
-                                    const Duration(hours: 3),
-                                  ),
-                                ),
-                          "Punch Out",
-                          Colors.red,
-                        ),
-                        _buildTimeWidget(
-                          punchProvider.totalHours(),
-                          "Total",
-                          Colors.green,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: isSmallScreen ? 15 : 25),
-
-                  _buildProgressWidget(punchProvider),
-
-                  if (_hasError)
-                    Padding(
-                      padding: EdgeInsets.only(top: isSmallScreen ? 15 : 20),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isSmallScreen ? 12 : 16,
-                          vertical: isSmallScreen ? 8 : 12,
-                        ),
+                      
+                      SizedBox(height: screenHeight * 0.03),
+                      
+                      // Time Cards - Perfectly responsive
+                      Container(
+                        padding: EdgeInsets.all(screenWidth * 0.04),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.red.shade200),
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: theme.dividerColor.withOpacity(0.1),
+                          ),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            Icon(
-                              Icons.error_outline_rounded,
-                              color: Colors.red.shade600,
-                              size: isSmallScreen ? 18 : 20,
+                            _buildTimeWidget(
+                              punchProvider.punchInTime == null
+                                  ? "--:--"
+                                  : DateFormat('hh:mm a').format(
+                                      punchProvider.punchInTime!.add(
+                                        const Duration(hours: 3),
+                                      ),
+                                    ),
+                              "Punch In",
+                              Colors.blue,
+                              Icons.login_rounded,
                             ),
-                            SizedBox(width: isSmallScreen ? 6 : 10),
-                            Flexible(
-                              child: Text(
-                                _errorMessage,
-                                style: TextStyle(
-                                  color: Colors.red.shade700,
-                                  fontSize: isSmallScreen ? 12 : 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                            _buildTimeWidget(
+                              punchProvider.punchOutTime == null
+                                  ? "--:--"
+                                  : DateFormat('hh:mm a').format(
+                                      punchProvider.punchOutTime!.add(
+                                        const Duration(hours: 3),
+                                      ),
+                                    ),
+                              "Punch Out",
+                              Colors.red,
+                              Icons.logout_rounded,
+                            ),
+                            _buildTimeWidget(
+                              punchProvider.totalHours(),
+                              "Total",
+                              Colors.green,
+                              Icons.timer_rounded,
                             ),
                           ],
                         ),
                       ),
-                    ),
-
-                  SizedBox(height: mediaQuery.viewInsets.bottom > 0 ? 20 : 0),
-                ],
-              ),
+                      
+                      SizedBox(height: screenHeight * 0.025),
+                      
+                      // Progress Message
+                      _buildProgressWidget(punchProvider),
+                      
+                      // Error Message - Responsive
+                      if (_hasError)
+                        Padding(
+                          padding: EdgeInsets.only(top: screenHeight * 0.02),
+                          child: AnimatedSlide(
+                            duration: const Duration(milliseconds: 300),
+                            offset: _hasError ? Offset.zero : const Offset(0, -1),
+                            child: Container(
+                              padding: EdgeInsets.all(screenWidth * 0.04),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.red.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.error_outline_rounded,
+                                    color: Colors.red.shade600,
+                                    size: screenWidth * 0.06,
+                                  ),
+                                  SizedBox(width: screenWidth * 0.03),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          "Attention",
+                                          style: TextStyle(
+                                            color: Colors.red.shade800,
+                                            fontSize: screenWidth * 0.035,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        SizedBox(height: screenHeight * 0.002),
+                                        Text(
+                                          _errorMessage,
+                                          style: TextStyle(
+                                            color: Colors.red.shade700,
+                                            fontSize: screenWidth * 0.03,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      
+                      // Bottom spacing
+                      SizedBox(height: mediaQuery.viewInsets.bottom + screenHeight * 0.02),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -682,18 +838,22 @@ class _HomemainScreenState extends State<HomemainScreen>
   Widget _buildCenterContent(
     PunchProvider punchProvider,
     ThemeData theme,
-    bool isSmallScreen,
+    double buttonSize,
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final iconSize = buttonSize * 0.3;
+    
     if (_showSuccess) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.check_circle_rounded,
             color: Colors.green,
-            size: isSmallScreen ? 40 : 48,
+            size: iconSize * 0.8,
           ),
-          SizedBox(height: isSmallScreen ? 6 : 8),
+          SizedBox(height: buttonSize * 0.03),
           Text(
             _successText,
             textAlign: TextAlign.center,
@@ -701,7 +861,7 @@ class _HomemainScreenState extends State<HomemainScreen>
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              fontSize: isSmallScreen ? 12 : 13,
+              fontSize: screenWidth * 0.032,
               color: Colors.green,
             ),
           ),
@@ -712,21 +872,22 @@ class _HomemainScreenState extends State<HomemainScreen>
     if (_isPunching) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: isSmallScreen ? 32 : 40,
-            height: isSmallScreen ? 32 : 40,
+            width: iconSize * 0.6,
+            height: iconSize * 0.6,
             child: CircularProgressIndicator(
-              strokeWidth: isSmallScreen ? 2.5 : 3,
+              strokeWidth: screenWidth * 0.008,
               color: _punchButtonColor(punchProvider),
             ),
           ),
-          SizedBox(height: isSmallScreen ? 8 : 10),
+          SizedBox(height: buttonSize * 0.04),
           Text(
             "Processing...",
             style: TextStyle(
-              fontSize: isSmallScreen ? 12 : 13,
-              fontWeight: FontWeight.w600,
+              fontSize: screenWidth * 0.035,
+              fontWeight: FontWeight.w700,
               color: _punchButtonColor(punchProvider),
             ),
           ),
@@ -736,26 +897,39 @@ class _HomemainScreenState extends State<HomemainScreen>
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (punchProvider.punchInTime != null &&
             punchProvider.punchOutTime == null)
           ScaleTransition(
             scale: _pulseAnimation,
-            child: Icon(
-              Icons.fingerprint_rounded,
-              size: isSmallScreen ? 48 : 56,
-              color: _fingerprintColor(punchProvider),
+            child: ShaderMask(
+              shaderCallback: (bounds) {
+                return LinearGradient(
+                  colors: [
+                    Colors.red.shade400,
+                    Colors.red.shade600,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds);
+              },
+              child: Icon(
+                Icons.fingerprint_rounded,
+                size: iconSize,
+                color: Colors.white,
+              ),
             ),
           )
         else
           Icon(
             Icons.fingerprint_rounded,
-            size: isSmallScreen ? 44 : 52,
+            size: iconSize * 0.95,
             color: _fingerprintColor(punchProvider),
           ),
-
-        SizedBox(height: isSmallScreen ? 7 : 9),
-
+        
+        SizedBox(height: buttonSize * 0.05),
+        
         if (punchProvider.punchInTime != null &&
             punchProvider.punchOutTime == null)
           ShaderMask(
@@ -764,19 +938,18 @@ class _HomemainScreenState extends State<HomemainScreen>
                 colors: [
                   Colors.red.shade400,
                   Colors.red.shade600,
-                  Colors.red.shade400,
                 ],
-                stops: const [0.0, 0.5, 1.0],
-                tileMode: TileMode.mirror,
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ).createShader(bounds);
             },
             child: Text(
               _punchText(punchProvider),
               style: TextStyle(
                 fontWeight: FontWeight.w800,
-                fontSize: isSmallScreen ? 14 : 16,
+                fontSize: screenWidth * 0.04,
                 color: Colors.white,
-                letterSpacing: 0.5,
+                letterSpacing: 0.8,
               ),
             ),
           )
@@ -785,19 +958,19 @@ class _HomemainScreenState extends State<HomemainScreen>
             _punchText(punchProvider),
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              fontSize: isSmallScreen ? 14 : 15,
+              fontSize: screenWidth * 0.038,
               color: _fingerprintColor(punchProvider),
-              letterSpacing: 0.5,
+              letterSpacing: 0.6,
             ),
           ),
-
-        SizedBox(height: isSmallScreen ? 5 : 6),
-
+        
+        SizedBox(height: buttonSize * 0.03),
+        
         if (punchProvider.punchInTime == null)
           Text(
             "Start your day",
             style: TextStyle(
-              fontSize: isSmallScreen ? 10 : 11,
+              fontSize: screenWidth * 0.03,
               color: Colors.blue.shade400,
               fontWeight: FontWeight.w500,
             ),
@@ -806,7 +979,7 @@ class _HomemainScreenState extends State<HomemainScreen>
           Text(
             "End your shift",
             style: TextStyle(
-              fontSize: isSmallScreen ? 10 : 11,
+              fontSize: screenWidth * 0.03,
               color: Colors.red.shade400,
               fontWeight: FontWeight.w500,
             ),
@@ -815,7 +988,7 @@ class _HomemainScreenState extends State<HomemainScreen>
           Text(
             "Work completed",
             style: TextStyle(
-              fontSize: isSmallScreen ? 10 : 11,
+              fontSize: screenWidth * 0.03,
               color: Colors.green.shade500,
               fontWeight: FontWeight.w500,
             ),
