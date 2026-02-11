@@ -11,21 +11,17 @@ class AuthService {
   static Future<void> saveCookies() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('cookies', cookies);
-    print("Cookies saved successfully: $cookies");
   }
 
   static Future<void> loadCookies() async {
     final prefs = await SharedPreferences.getInstance();
     cookies = prefs.getStringList('cookies') ?? [];
-    print("Cookies loaded: $cookies");
   }
 
   void _updateCookies(http.Response response) {
     String? rawCookie = response.headers['set-cookie'];
     if (rawCookie != null) {
-      // FIXED: Properly parse multiple cookies
       if (rawCookie.contains('Path=/,')) {
-        // Handle multiple cookies format
         cookies = rawCookie.split('Path=/,').map((c) {
           String cookie = c.trim();
           if (cookie.contains(';')) {
@@ -34,7 +30,6 @@ class AuthService {
           return cookie;
         }).toList();
       } else {
-        // Handle single cookie
         if (rawCookie.contains(';')) {
           cookies = [rawCookie.split(';')[0]];
         } else {
@@ -49,12 +44,21 @@ class AuthService {
     Map<String, String> headers = {
       "Content-Type": "application/x-www-form-urlencoded",
     };
-    
     if (cookies.isNotEmpty) {
       headers["Cookie"] = cookies.join('; ');
     }
-    
     return headers;
+  }
+
+  String? _extractSidFromCookies() {
+    try {
+      for (final cookie in cookies) {
+        if (cookie.startsWith("sid=")) {
+          return cookie.replaceAll("sid=", "").trim();
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<Map<String, dynamic>> loginUser({
@@ -64,7 +68,6 @@ class AuthService {
     final url = Uri.parse("$baseUrl/api/method/login");
 
     try {
-      // Clear old cookies before new login
       cookies.clear();
       
       final response = await client.post(
@@ -74,16 +77,36 @@ class AuthService {
       );
 
       _updateCookies(response);
-
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data["message"] == "Logged In") {
-        // Save user info in shared preferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool("isLoggedIn", true);
         await prefs.setString("email", email);
-        await prefs.setString("password", password);
         await prefs.setString("full_name", data["full_name"] ?? "");
+        
+        String? employeeId;
+        
+        try {
+          final empResponse = await client.get(
+            Uri.parse(
+              '$baseUrl/api/resource/Employee'
+              '?filters=[["user_id","=","$email"]]'
+              '&fields=["name"]'
+            ),
+            headers: {
+              "Cookie": cookies.join(';'),
+            },
+          );
+          
+          final empJson = jsonDecode(empResponse.body);
+          if (empJson["data"] != null && empJson["data"].isNotEmpty) {
+            employeeId = empJson["data"][0]["name"];
+            await prefs.setString("employeeId", employeeId!);
+          }
+        // ignore: empty_catches
+        } catch (e) {
+        }
         
         return {
           "success": true,
@@ -91,32 +114,23 @@ class AuthService {
           "default_route": data["default_route"],
           "home_page": data["home_page"],
           "full_name": data["full_name"],
+          "employee_id": employeeId,
+          "sid": _extractSidFromCookies(),
+          "email": email,
         };
       }
 
       if (data["exc_type"] == "AuthenticationError") {
-        return {
-          "success": false,
-          "message": "Incorrect password",
-          "exc_type": "AuthenticationError",
-        };
+        return {"success": false, "message": "Incorrect password", "exc_type": "AuthenticationError"};
       }
 
       if (data["exc_type"] == "DoesNotExistError") {
-        return {
-          "success": false,
-          "message": "User does not exist",
-          "exc_type": "DoesNotExistError",
-        };
+        return {"success": false, "message": "User does not exist", "exc_type": "DoesNotExistError"};
       }
 
       return {"success": false, "message": data["message"] ?? "Login failed"};
     } catch (e) {
-      return {
-        "success": false,
-        "message": "Something went wrong",
-        "error": e.toString(),
-      };
+      return {"success": false, "message": "Something went wrong", "error": e.toString()};
     }
   }
 
@@ -124,7 +138,6 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
     final route = prefs.getString("home_page");
-
     if (isLoggedIn && route != null && route.isNotEmpty) {
       return route; 
     }
@@ -133,46 +146,27 @@ class AuthService {
 
   Future<Map<String, dynamic>> logoutUser() async {
     final url = Uri.parse("$baseUrl/api/method/logout");
-
     try {
-      final response = await client.get(url, headers: _buildHeaders());
-
+      await client.get(url, headers: _buildHeaders());
       cookies.clear();
       await saveCookies();
-      
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool("isLoggedIn", false);
-
-      if (response.statusCode == 200) {
-        return {"success": true, "message": "Logged out successfully"};
-      } else {
-        return {"success": false, "message": "Logout failed"};
-      }
+      return {"success": true, "message": "Logged out successfully"};
     } catch (e) {
       return {"success": false, "message": "Something went wrong"};
     }
   }
 
   Future<String> forgotPassword(String email) async {
-    const url =
-        "$baseUrl/api/method/frappe.core.doctype.user.user.reset_password";
-
+    const url = "$baseUrl/api/method/frappe.core.doctype.user.user.reset_password";
     final response = await http.post(
       Uri.parse(url),
       headers: {"Content-Type": "application/x-www-form-urlencoded"},
       body: {"user": email},
     );
-
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      final serverMessages = data["_server_messages"];
-
-      if (serverMessages != null) {
-        return "A password reset link has been sent to your registered email address.";
-      } else {
-        return "Request processed, but no confirmation message was received from the server.";
-      }
+      return "A password reset link has been sent to your registered email address.";
     } else if (response.statusCode == 404) {
       throw "User not found. Please check the email you entered.";
     } else if (response.statusCode == 500) {
@@ -200,7 +194,6 @@ class AuthService {
         "longitude": longitude,
       }),
     );
-
     return response.statusCode == 200 || response.statusCode == 201;
   }
 
@@ -222,7 +215,6 @@ class AuthService {
         "longitude": longitude,
       }),
     );
-
     return response.statusCode == 200 || response.statusCode == 201;
   }
 }

@@ -34,10 +34,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'color': Colors.blue,
     },
     {
-      'title': 'Leave Details',
-      'subtitle': 'View leave history',
-      'image': 'assets/images/leaverequestdetail.png',
-      'type': 'Leave_requestDetail',
+      'title': 'Employee Advance',
+      'subtitle': 'View advance history',
+      'image': 'assets/images/employeeAdvance.png',
+      'type': 'employee_Advance',
       'color': Colors.green,
     },
     {
@@ -632,7 +632,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                           
-                          Spacer(),
+                          const Spacer(),
                           
                           // Access indicator
                           Container(
@@ -682,8 +682,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'Leave_Request':
         Navigator.pushNamed(context, '/leaveRequest');
         break;
-      case 'Leave_requestDetail':
-        Navigator.pushNamed(context, '/leaveRequestDetail');
+      case 'employee_Advance':
+        Navigator.pushNamed(context, '/employeeAdvance');
         break;
       case 'Leave_Approval':
         Navigator.pushNamed(context, '/leaveApprovalScreen');
@@ -735,24 +735,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     physics: const BouncingScrollPhysics(),
                     child: Column(
                       children: [
-                        // Header section with background color
+                      
                         Container(
                           color: _isDarkMode ? Colors.grey[900] : const Color(0xFFF8FAFD),
                           child: _buildDashboardHeader(context, width, height),
                         ),
                         
-                        // Main content with background color
+                        
                         Container(
                           color: _isDarkMode ? Colors.grey[900] : const Color(0xFFF8FAFD),
                           child: Column(
                             children: [
-                              // Banner Slider
+                              
                               _buildBannerSlider(width, height),
                               
-                              // Modules Grid
+                          
                               _buildModuleGrid(width, height, context),
                               
-                              // Footer
+                           
                               Container(
                                 width: double.infinity,
                                 padding: EdgeInsets.symmetric(

@@ -51,14 +51,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: isDarkMode
-                          ? [
-                              Colors.grey[850]!,
-                              Colors.grey[900]!,
-                            ]
-                          : [
-                              Colors.blue.shade50,
-                              Colors.purple.shade50,
-                            ],
+                          ? [Colors.grey[850]!, Colors.grey[900]!]
+                          : [Colors.blue.shade50, Colors.purple.shade50],
                     ),
                     border: Border(
                       bottom: BorderSide(
@@ -135,7 +129,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         SizedBox(height: screenHeight * 0.03),
 
                         // Account Settings
-                        _buildSectionTitle("Account Settings", screenWidth, textColor),
+                        _buildSectionTitle(
+                          "Account Settings",
+                          screenWidth,
+                          textColor,
+                        ),
                         SizedBox(height: screenHeight * 0.015),
 
                         _buildSettingTile(
@@ -197,7 +195,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         SizedBox(height: screenHeight * 0.03),
 
                         // App Settings
-                        _buildSectionTitle("App Settings", screenWidth, textColor),
+                        _buildSectionTitle(
+                          "App Settings",
+                          screenWidth,
+                          textColor,
+                        ),
                         SizedBox(height: screenHeight * 0.015),
 
                         _buildToggleTile(
@@ -220,7 +222,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: Icons.language_rounded,
                           title: "Language",
                           value: selectedLanguage,
-                          options: const ["English", "Arabic", "Hindi", "Spanish"],
+                          options: const [
+                            "English",
+                            "Arabic",
+                            "Hindi",
+                            "Spanish",
+                          ],
                           iconColor: Colors.blue,
                           onChanged: (value) {
                             setState(() => selectedLanguage = value!);
@@ -315,9 +322,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const Profilescreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const Profilescreen()),
         );
       },
       child: Container(
@@ -347,14 +352,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: CircleAvatar(
                 backgroundColor: Colors.blue.shade50,
-                backgroundImage: (user != null &&
+                backgroundImage:
+                    (user != null &&
                         user['user_image'] != null &&
                         user['user_image'] != "")
                     ? NetworkImage(
                         "https://ppecon.erpnext.com${user['user_image']}",
                       )
                     : const AssetImage("assets/images/app_icon.png")
-                        as ImageProvider,
+                          as ImageProvider,
               ),
             ),
             SizedBox(width: screenWidth * 0.04),
@@ -477,11 +483,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: iconColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: screenWidth * 0.05,
-                  ),
+                  child: Icon(icon, color: iconColor, size: screenWidth * 0.05),
                 ),
                 SizedBox(width: screenWidth * 0.04),
                 Expanded(
@@ -560,11 +562,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: iconColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: screenWidth * 0.05,
-                ),
+                child: Icon(icon, color: iconColor, size: screenWidth * 0.05),
               ),
               SizedBox(width: screenWidth * 0.04),
               Expanded(
@@ -643,11 +641,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: iconColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: screenWidth * 0.05,
-                ),
+                child: Icon(icon, color: iconColor, size: screenWidth * 0.05),
               ),
               SizedBox(width: screenWidth * 0.04),
               Expanded(
@@ -806,32 +800,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
 
+    
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          padding: EdgeInsets.all(screenWidth * 0.05),
-          decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey[800]! : Colors.white,
-            borderRadius: BorderRadius.circular(screenWidth * 0.04),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(
-                color: Colors.blue,
-                strokeWidth: 3,
-              ),
-              SizedBox(height: screenWidth * 0.04),
-              Text(
-                "Logging out...",
-                style: TextStyle(
-                  fontSize: screenWidth * 0.038,
-                  color: isDarkMode ? Colors.white : Colors.grey[700],
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Center(
+          child: Container(
+            padding: EdgeInsets.all(screenWidth * 0.05),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey[800]! : Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.04),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  color: Colors.blue,
+                  strokeWidth: 3,
                 ),
-              ),
-            ],
+                SizedBox(height: screenWidth * 0.04),
+                Text(
+                  "Logging out...",
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.038,
+                    color: isDarkMode ? Colors.white : Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -840,14 +839,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final auth = AuthService();
     final result = await auth.logoutUser();
 
-    Navigator.pop(context); // Close loading dialog
+    Navigator.pop(context);
 
     // Show result dialog
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        Future.delayed(const Duration(seconds: 1), () {
+        // Auto navigate after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
           Navigator.pop(context);
           if (result["success"] == true) {
             Navigator.pushNamedAndRemoveUntil(
@@ -858,38 +858,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
         });
 
-        return AlertDialog(
+        return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(screenWidth * 0.04),
           ),
           backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                result["success"] ? Icons.check_circle : Icons.error,
-                size: screenWidth * 0.12,
-                color: result["success"] ? Colors.green : Colors.red,
-              ),
-              SizedBox(height: screenWidth * 0.04),
-              Text(
-                result["success"] ? "Logged Out!" : "Logout Failed",
-                style: TextStyle(
-                  fontSize: screenWidth * 0.045,
-                  fontWeight: FontWeight.w700,
-                  color: isDarkMode ? Colors.white : Colors.grey[900],
+          child: Padding(
+            padding: EdgeInsets.all(screenWidth * 0.04),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  result["success"] ? Icons.check_circle : Icons.error,
+                  size: screenWidth * 0.12,
+                  color: result["success"] ? Colors.green : Colors.red,
                 ),
-              ),
-              SizedBox(height: screenWidth * 0.02),
-              Text(
-                result["message"] ?? "",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: screenWidth * 0.035,
-                  color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                SizedBox(height: screenWidth * 0.04),
+                Text(
+                  result["success"]
+                      ? "Logged Out Successfully!"
+                      : "Logout Failed",
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.045,
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode ? Colors.white : Colors.grey[900],
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: screenWidth * 0.02),
+                Text(
+                  result["message"] ?? "",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

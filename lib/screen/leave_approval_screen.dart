@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:management_app/card_screen/leaverequest.dart';
@@ -562,9 +564,9 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.warning, color: Colors.orange),
+                          const Icon(Icons.warning, color: Colors.orange),
                           SizedBox(width: screenWidth * 0.03),
-                          Expanded(
+                          const Expanded(
                             child: Text(
                               "Employee ID not found. Showing all requests.",
                               style: TextStyle(color: Colors.orange),

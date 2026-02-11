@@ -9,10 +9,6 @@ class TravelRequestService {
   static const String _customTravelApi =
       "$_baseUrl/api/method/ppecon_erp.travel_request.travel_request.submit_travel_request_from_mobile";
 
-  // =====================================================
-  // SUBMIT TRAVEL REQUEST
-  // =====================================================
-
   static Future<String> submitTravelRequest({
     required String travelType,
     required String travelFunding,
@@ -152,9 +148,6 @@ class TravelRequestService {
     }
   }
 
-  // =====================================================
-  // STATUS HANDLER
-  // =====================================================
 
   static String _getDisplayStatus(String? workflowState, int? docstatus) {
     if (workflowState == "Direct Manager Approval") {
@@ -180,9 +173,7 @@ class TravelRequestService {
     return "Pending";
   }
 
-  // =====================================================
-  // COLOR HANDLER
-  // =====================================================
+
 
   static Color _getStatusColor(String? workflowState, int? docstatus) {
     final status =

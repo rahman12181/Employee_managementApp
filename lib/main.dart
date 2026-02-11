@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:management_app/card_screen/check_more.dart';
+import 'package:management_app/card_screen/employee_advance_screen.dart';
 import 'package:management_app/card_screen/leave_approval.dart';
 import 'package:management_app/card_screen/leaverequest.dart';
-import 'package:management_app/card_screen/leaverequestdetail.dart';
 import 'package:management_app/card_screen/regularization_lsiting.dart';
 import 'package:management_app/providers/attendance_provider.dart';
 import 'package:management_app/providers/employee_provider.dart';
@@ -144,7 +144,7 @@ class MyApp extends StatelessWidget {
         '/profileScreen': (_) => const Profilescreen(),
         '/attendanceScreen': (_) => const AttendanceScreen(),
         '/leaveRequest': (_) => const LeaveRequest(),
-        '/leaveRequestDetail': (_) => const LeaveRequestdetail(),
+        '/employeeAdvance': (_) => const EmployeeAdvanceScreen(),
         '/leaveApproval': (_) => const LeaveApproval(),
         '/attendanceRequest': (_) => const AttendanceRequestScreen(),
         '/travelRequest': (_) => const TravelRequestScreen(),

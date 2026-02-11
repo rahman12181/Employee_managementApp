@@ -432,11 +432,10 @@ class _HomemainScreenState extends State<HomemainScreen>
     final screenHeight = mediaQuery.size.height;
     final screenWidth = mediaQuery.size.width;
     final isPortrait = screenHeight > screenWidth;
-    
-    // Calculate responsive sizes
+  
     final buttonSize = isPortrait 
-        ? screenWidth * 0.45  // Smaller for portrait
-        : screenHeight * 0.45; // Smaller for landscape
+        ? screenWidth * 0.45 
+        : screenHeight * 0.45; 
     
     final progressSize = buttonSize * 1.15;
     final glowSize = buttonSize * 1.25;
@@ -457,7 +456,6 @@ class _HomemainScreenState extends State<HomemainScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Modern Header - Perfectly sized
                 Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: screenWidth * 0.05,
@@ -480,12 +478,12 @@ class _HomemainScreenState extends State<HomemainScreen>
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(25),
                       bottomRight: Radius.circular(25),
+                      
                     ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Profile Row - Compact
                       Consumer<ProfileProvider>(
                         builder: (_, provider, __) {
                           final user = provider.profileData;
@@ -563,8 +561,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                         },
                       ),
                       SizedBox(height: screenHeight * 0.025),
-                      
-                      // Time Display - Perfectly responsive
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -597,8 +593,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                     ],
                   ),
                 ),
-                
-                // Main Content
                 Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: screenWidth * 0.05,
@@ -607,11 +601,10 @@ class _HomemainScreenState extends State<HomemainScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Punch Circle - Perfectly sized for all screens
                       Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Outer Glow
+                          
                           Container(
                             width: glowSize,
                             height: glowSize,
@@ -628,7 +621,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                             ),
                           ),
                           
-                          // Progress Circle
+                         
                           SizedBox(
                             width: progressSize,
                             height: progressSize,
@@ -641,7 +634,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                             ),
                           ),
                           
-                          // Pulsing Border for Punch Out
+                        
                           if (punchProvider.punchInTime != null &&
                               punchProvider.punchOutTime == null)
                             ScaleTransition(
@@ -660,7 +653,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                               ),
                             ),
                           
-                          // Main Button - Perfect size for all screens
+                          
                           Material(
                             color: Colors.transparent,
                             shape: const CircleBorder(),
@@ -705,7 +698,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                       
                       SizedBox(height: screenHeight * 0.03),
                       
-                      // Time Cards - Perfectly responsive
+                     
                       Container(
                         padding: EdgeInsets.all(screenWidth * 0.04),
                         decoration: BoxDecoration(

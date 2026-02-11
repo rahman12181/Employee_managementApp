@@ -18,9 +18,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   
-  // 🔴 ADD ANIMATION CONTROLLER FOR HINT
   late AnimationController _hintController;
   late Animation<double> _hintAnimation;
+  
+  late PageController _pageController;
 
   static final List<Widget> _bottomNavigationScreens = [
     const HomemainScreen(),
@@ -33,7 +34,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     
-    // 🔴 INITIALIZE HINT ANIMATION
     _hintController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
@@ -45,15 +45,29 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         curve: Curves.easeInOut,
       ),
     );
+    
+    _pageController = PageController(initialPage: _selectedIndex);
   }
   
   @override
   void dispose() {
     _hintController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
   void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _onPageChanged(int index) {
     setState(() {
       _selectedIndex = index;
     });
@@ -66,13 +80,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-
-      body: Container(
-        color: theme.scaffoldBackgroundColor,
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
-        child: _bottomNavigationScreens[_selectedIndex],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        physics: const BouncingScrollPhysics(),
+        children: _bottomNavigationScreens,
       ),
-
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
@@ -124,7 +137,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
           return Row(
             children: [
-              /// ❌ Close Button
               GestureDetector(
                 onTap: slideProvider.hideSlideButton,
                 child: Container(
@@ -148,7 +160,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 width: sliderWidth,
                 child: GestureDetector(
                   onHorizontalDragUpdate: (details) {
-                    // Stop hint animation when user starts dragging
                     if (slideProvider.slideProgress == 0) {
                       _hintController.stop();
                     }
@@ -165,7 +176,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       slideProvider.completePunch();
                     } else {
                       slideProvider.updateSlideProgress(0.0);
-                      // Restart hint animation after reset
                       _hintController.repeat(reverse: true);
                     }
                   },
@@ -178,7 +188,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     child: Stack(
                       alignment: Alignment.centerLeft,
                       children: [
-                        /// Progress background
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 100),
                           width: sliderWidth * slideProvider.slideProgress,
@@ -190,13 +199,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
                         ),
 
-                        /// Thumb WITH HINT ANIMATION
                         Positioned(
                           left: (sliderWidth - 50) * slideProvider.slideProgress,
                           child: AnimatedBuilder(
                             animation: _hintAnimation,
                             builder: (context, child) {
-                              // Only show hint when progress is 0
                               final double extraOffset = 
                                   slideProvider.slideProgress == 0 
                                       ? _hintAnimation.value 
@@ -216,7 +223,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         blurRadius: 6,
                                         offset: const Offset(0, 3),
                                       ),
-                                      // Add glow effect during hint
                                       if (slideProvider.slideProgress == 0)
                                         BoxShadow(
                                           color: slideProvider.isPunchInMode
@@ -241,12 +247,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
                         ),
 
-                        /// Center Text WITH ARROW HINTS
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // 🔴 LEFT ARROW WITH ANIMATION
                               AnimatedBuilder(
                                 animation: _hintAnimation,
                                 builder: (context, child) {
@@ -281,12 +285,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ),
                               ),
                               
-                              // 🔴 RIGHT ARROW WITH ANIMATION
                               AnimatedBuilder(
                                 animation: _hintAnimation,
                                 builder: (context, child) {
                                   return Transform.translate(
-                                    offset: Offset(_hintAnimation.value, 0),
+                                    offset: Offset(-_hintAnimation.value, 0),
                                     child: const Icon(
                                       Icons.arrow_forward_ios,
                                       color: Colors.white70,
@@ -306,7 +309,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
               const SizedBox(width: spacing),
 
-              /// ✔ Check Icon
               AnimatedOpacity(
                 opacity: slideProvider.slideProgress > 0.7 ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),

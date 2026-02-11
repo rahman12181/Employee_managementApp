@@ -1,5 +1,8 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:management_app/screen/attendance_requests_list_screen.dart';
 import '../services/attendance_request_service.dart';
 import 'package:flutter/services.dart';
 
@@ -14,32 +17,32 @@ class AttendanceRequestScreen extends StatefulWidget {
 class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  
+
   DateTime selectedDate = DateTime.now();
   final TextEditingController explanationCtrl = TextEditingController();
-  
+
   String reason = "On Duty";
   bool isSubmitting = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
-  
+
   late double screenWidth;
   late double screenHeight;
   late bool isDarkMode;
-  
+
   double responsiveWidth(double v) => screenWidth * v;
   double responsiveFontSize(double v) => screenWidth * (v / 375);
-  
+
   final List<String> reasons = [
     "On Duty",
     "Missed Punch",
     "System Issue",
     "Medical Emergency",
     "Personal Reason",
-    "Transport Issue"
+    "Transport Issue",
   ];
-  
+
   final Map<String, IconData> reasonIcons = {
     "On Duty": Icons.work_outline,
     "Missed Punch": Icons.timer_outlined,
@@ -48,7 +51,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
     "Personal Reason": Icons.person_outline,
     "Transport Issue": Icons.directions_bus_outlined,
   };
-  
+
   final Map<String, Color> reasonColors = {
     "On Duty": Colors.blue,
     "Missed Punch": Colors.amber,
@@ -65,21 +68,15 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    
+
     _slideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animationController.forward();
     });
@@ -95,11 +92,13 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
   void _updateSystemNavigationBar() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         systemNavigationBarColor: isDark ? Colors.black : Colors.white,
-        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarDividerColor: Colors.transparent,
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
@@ -112,7 +111,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
   void dispose() {
     _animationController.dispose();
     explanationCtrl.dispose();
-    
+
     // Navigation bar ko default pe reset karna
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -120,7 +119,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
         statusBarColor: Colors.transparent,
       ),
     );
-    
+
     super.dispose();
   }
 
@@ -179,7 +178,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
     );
   }
 
-  Future<void> submitRequest() async {
+  Future<void> submitAttendanceRequest() async {
     if (!_formKey.currentState!.validate() || isSubmitting) return;
 
     // Add haptic feedback
@@ -201,7 +200,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
+          content: const Row(
             children: [
               Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 12),
@@ -234,12 +233,14 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
         SnackBar(
           content: Row(
             children: [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 12),
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  message.isEmpty ? "Request failed. Please try again." : message,
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                  message.isEmpty
+                      ? "Request failed. Please try again."
+                      : message,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -261,7 +262,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
   Future<void> _showSuccessAnimation() async {
     // Create an overlay entry for the success animation
     OverlayEntry? overlayEntry;
-    
+
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned.fill(
         child: Container(
@@ -370,7 +371,9 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
           side: BorderSide(
             color: isSelected
                 ? reasonColors[reasonOption]!
-                : isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                : isDarkMode
+                ? Colors.grey[700]!
+                : Colors.grey[300]!,
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
@@ -390,15 +393,21 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
     screenWidth = MediaQuery.of(context).size.width;
     screenHeight = MediaQuery.of(context).size.height;
     isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     // System navigation bar ko update karna
     _updateSystemNavigationBar();
 
     // Color scheme
-    final backgroundColor = isDarkMode ? Colors.grey[900]! : const Color(0xFFF8FAFD);
+    final backgroundColor = isDarkMode
+        ? Colors.grey[900]!
+        : const Color(0xFFF8FAFD);
     final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
-    final primaryColor = isDarkMode ? Colors.blue[300]! : const Color(0xFF2563EB);
-    final secondaryColor = isDarkMode ? Colors.blue[400]! : const Color(0xFF3B82F6);
+    final primaryColor = isDarkMode
+        ? Colors.blue[300]!
+        : const Color(0xFF2563EB);
+    final secondaryColor = isDarkMode
+        ? Colors.blue[400]!
+        : const Color(0xFF3B82F6);
     final textColor = isDarkMode ? Colors.white : Colors.black;
     final subtitleColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
     final shadowColor = isDarkMode
@@ -432,10 +441,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
             flexibleSpace: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    primaryColor,
-                    secondaryColor,
-                  ],
+                  colors: [primaryColor, secondaryColor],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   stops: const [0.0, 1.0],
@@ -449,23 +455,112 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                 ],
               ),
             ),
+            actions: [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white, size: 24),
+                color: isDarkMode ? Colors.grey[900] : Colors.white,
+                surfaceTintColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+                onSelected: (value) async {
+                  if (value == 'my_requests') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AttendanceRequestsListScreen(),
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'my_requests',
+                    height: 48,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? Colors.blue[800]!
+                                : Colors.blue[50]!,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.history,
+                            size: 18,
+                            color: isDarkMode
+                                ? Colors.blue[200]!
+                                : Colors.blue[700]!,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "My Requests",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.grey[900],
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "View attendance history",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
             systemOverlayStyle: SystemUiOverlayStyle(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
-              statusBarBrightness: isDarkMode ? Brightness.dark : Brightness.light,
+              statusBarIconBrightness: isDarkMode
+                  ? Brightness.light
+                  : Brightness.dark,
+              statusBarBrightness: isDarkMode
+                  ? Brightness.dark
+                  : Brightness.light,
               systemNavigationBarColor: Colors.transparent,
               systemNavigationBarDividerColor: Colors.transparent,
-              systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+              systemNavigationBarIconBrightness: isDarkMode
+                  ? Brightness.light
+                  : Brightness.dark,
             ),
           ),
           body: AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
-              statusBarBrightness: isDarkMode ? Brightness.dark : Brightness.light,
-              systemNavigationBarColor: isDarkMode ? Colors.black : Colors.white,
+              statusBarIconBrightness: isDarkMode
+                  ? Brightness.light
+                  : Brightness.dark,
+              statusBarBrightness: isDarkMode
+                  ? Brightness.dark
+                  : Brightness.light,
+              systemNavigationBarColor: isDarkMode
+                  ? Colors.black
+                  : Colors.white,
               systemNavigationBarDividerColor: Colors.transparent,
-              systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+              systemNavigationBarIconBrightness: isDarkMode
+                  ? Brightness.light
+                  : Brightness.dark,
             ),
             child: SafeArea(
               bottom: false,
@@ -501,9 +596,11 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                       const Color(0xFFF0F9FF),
                                     ],
                               begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                              end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(responsiveWidth(0.05)),
+                            borderRadius: BorderRadius.circular(
+                              responsiveWidth(0.05),
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: shadowColor,
@@ -533,7 +630,8 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                   SizedBox(width: screenWidth * 0.04),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           "Submit Your Request",
@@ -558,7 +656,9 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                               ),
                               SizedBox(height: screenHeight * 0.02),
                               Divider(
-                                color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                                color: isDarkMode
+                                    ? Colors.grey[700]
+                                    : Colors.grey[300],
                                 height: 1,
                               ),
                               SizedBox(height: screenHeight * 0.02),
@@ -567,7 +667,9 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                 style: TextStyle(
                                   fontSize: responsiveFontSize(11),
                                   fontStyle: FontStyle.italic,
-                                  color: isDarkMode ? Colors.amber[200] : Colors.amber[800],
+                                  color: isDarkMode
+                                      ? Colors.amber[200]
+                                      : Colors.amber[800],
                                 ),
                               ),
                             ],
@@ -578,7 +680,9 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                         Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(responsiveWidth(0.05)),
+                            borderRadius: BorderRadius.circular(
+                              responsiveWidth(0.05),
+                            ),
                           ),
                           color: cardColor,
                           child: Padding(
@@ -604,8 +708,9 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                       HapticFeedback.selectionClick();
                                       final picked = await showDatePicker(
                                         context: context,
-                                        firstDate:
-                                            DateTime.now().subtract(const Duration(days: 30)),
+                                        firstDate: DateTime.now().subtract(
+                                          const Duration(days: 30),
+                                        ),
                                         lastDate: DateTime.now(),
                                         initialDate: selectedDate,
                                         builder: (context, child) {
@@ -620,10 +725,12 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                                 onSurface: textColor,
                                               ),
                                               dialogTheme: DialogThemeData(
-                                                backgroundColor:
-                                                    isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                                                backgroundColor: isDarkMode
+                                                    ? const Color(0xFF1E1E1E)
+                                                    : Colors.white,
                                                 shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(20),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
                                                 ),
                                               ),
                                             ),
@@ -635,17 +742,21 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                         setState(() => selectedDate = picked);
                                       }
                                     },
-                                    borderRadius:
-                                        BorderRadius.circular(responsiveWidth(0.035)),
+                                    borderRadius: BorderRadius.circular(
+                                      responsiveWidth(0.035),
+                                    ),
                                     child: Container(
                                       padding: EdgeInsets.symmetric(
                                         horizontal: screenWidth * 0.04,
                                         vertical: screenHeight * 0.02,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
-                                        borderRadius:
-                                            BorderRadius.circular(responsiveWidth(0.035)),
+                                        color: isDarkMode
+                                            ? Colors.grey[800]
+                                            : Colors.grey[50],
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.035),
+                                        ),
                                         border: Border.all(
                                           color: isDarkMode
                                               ? Colors.grey[700]!
@@ -663,21 +774,27 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                           SizedBox(width: screenWidth * 0.03),
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   "Selected Date",
                                                   style: TextStyle(
-                                                    fontSize: responsiveFontSize(12),
+                                                    fontSize:
+                                                        responsiveFontSize(12),
                                                     color: subtitleColor,
                                                   ),
                                                 ),
-                                                SizedBox(height: screenHeight * 0.005),
+                                                SizedBox(
+                                                  height: screenHeight * 0.005,
+                                                ),
                                                 Text(
-                                                  DateFormat('EEEE, dd MMMM yyyy')
-                                                      .format(selectedDate),
+                                                  DateFormat(
+                                                    'EEEE, dd MMMM yyyy',
+                                                  ).format(selectedDate),
                                                   style: TextStyle(
-                                                    fontSize: responsiveFontSize(14),
+                                                    fontSize:
+                                                        responsiveFontSize(14),
                                                     fontWeight: FontWeight.w600,
                                                     color: textColor,
                                                   ),
@@ -756,7 +873,8 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                         "${explanationCtrl.text.length}/500",
                                         style: TextStyle(
                                           fontSize: responsiveFontSize(12),
-                                          color: explanationCtrl.text.length > 500
+                                          color:
+                                              explanationCtrl.text.length > 500
                                               ? Colors.red
                                               : subtitleColor,
                                         ),
@@ -771,37 +889,47 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                     width: double.infinity,
                                     height: screenHeight * 0.065,
                                     child: ElevatedButton(
-                                      onPressed: isSubmitting ? null : submitRequest,
+                                      onPressed: isSubmitting
+                                          ? null
+                                          : submitAttendanceRequest,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: primaryColor,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(responsiveWidth(0.035)),
+                                          borderRadius: BorderRadius.circular(
+                                            responsiveWidth(0.035),
+                                          ),
                                         ),
                                         elevation: 0,
                                         shadowColor: Colors.transparent,
-                                        animationDuration:
-                                            const Duration(milliseconds: 300),
+                                        animationDuration: const Duration(
+                                          milliseconds: 300,
+                                        ),
                                       ),
                                       child: Stack(
                                         alignment: Alignment.center,
                                         children: [
                                           AnimatedOpacity(
                                             opacity: isSubmitting ? 0 : 1,
-                                            duration: const Duration(milliseconds: 200),
+                                            duration: const Duration(
+                                              milliseconds: 200,
+                                            ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 Icon(
                                                   Icons.send_rounded,
                                                   size: screenWidth * 0.045,
                                                   color: Colors.white,
                                                 ),
-                                                SizedBox(width: screenWidth * 0.02),
+                                                SizedBox(
+                                                  width: screenWidth * 0.02,
+                                                ),
                                                 Text(
                                                   "Submit Request",
                                                   style: TextStyle(
-                                                    fontSize: screenWidth * 0.04,
+                                                    fontSize:
+                                                        screenWidth * 0.04,
                                                     fontWeight: FontWeight.w700,
                                                     color: Colors.white,
                                                     letterSpacing: 0.5,
@@ -817,8 +945,8 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 3,
                                                 color: Colors.white,
-                                                backgroundColor:
-                                                    Colors.white.withOpacity(0.3),
+                                                backgroundColor: Colors.white
+                                                    .withOpacity(0.3),
                                               ),
                                             ),
                                         ],
@@ -841,8 +969,9 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                             },
                                       style: TextButton.styleFrom(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(responsiveWidth(0.035)),
+                                          borderRadius: BorderRadius.circular(
+                                            responsiveWidth(0.035),
+                                          ),
                                         ),
                                         foregroundColor: subtitleColor,
                                       ),

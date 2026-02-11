@@ -15,8 +15,8 @@ class AttendanceService {
     final prefs = await SharedPreferences.getInstance();
     final cookies = prefs.getStringList("cookies");
 
-    if (cookies == null || cookies.isEmpty) {
-      throw Exception("Session expired");
+    if (cookies==null || cookies.isEmpty) {
+      throw Exception("session expired");
     }
 
     final df = DateFormat("yyyy-MM-dd");
