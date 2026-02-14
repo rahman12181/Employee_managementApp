@@ -1,12 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:management_app/model/leave_approved_model.dart';
+import 'package:intl/intl.dart';
 
-class LeaveDetailScreen extends StatelessWidget {
-  final LeaveApprovedModel leave;
+class TravelDetailScreen extends StatelessWidget {
+  final Map<String, dynamic> travelData;
 
-  const LeaveDetailScreen({super.key, required this.leave});
+  const TravelDetailScreen({super.key, required this.travelData});
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +27,17 @@ class LeaveDetailScreen extends StatelessWidget {
     final textColor = isDark ? Colors.white : Colors.black;
     final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
 
+    // Format date if available
+    String formatDate(String? dateStr) {
+      if (dateStr == null || dateStr.isEmpty) return 'N/A';
+      try {
+        final date = DateTime.parse(dateStr);
+        return DateFormat('dd MMM yyyy').format(date);
+      } catch (e) {
+        return dateStr;
+      }
+    }
+
     // Get status color
     Color getStatusColor(String status) {
       final statusLower = status.toLowerCase();
@@ -41,7 +52,8 @@ class LeaveDetailScreen extends StatelessWidget {
       return Colors.blue;
     }
 
-    final statusColor = getStatusColor(leave.status);
+    final status = travelData["status"] ?? travelData["workflow_state"] ?? "Pending";
+    final statusColor = getStatusColor(status);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -96,7 +108,7 @@ class LeaveDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Leave Details",
+                          "Travel Request",
                           style: TextStyle(
                             fontSize: responsiveFontSize(22),
                             fontWeight: FontWeight.w700,
@@ -105,7 +117,7 @@ class LeaveDetailScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          leave.employeeName,
+                          travelData["employee_name"] ?? "Employee Name",
                           style: TextStyle(
                             fontSize: responsiveFontSize(14),
                             color: Colors.white.withOpacity(0.9),
@@ -168,7 +180,7 @@ class LeaveDetailScreen extends StatelessWidget {
                                 ),
                                 SizedBox(height: responsiveHeight(0.005)),
                                 Text(
-                                  leave.status.toUpperCase(),
+                                  status.toUpperCase(),
                                   style: TextStyle(
                                     fontSize: responsiveFontSize(18),
                                     fontWeight: FontWeight.bold,
@@ -185,7 +197,7 @@ class LeaveDetailScreen extends StatelessWidget {
 
                     SizedBox(height: responsiveHeight(0.025)),
 
-                    // Employee Information Card
+                    // Request Details Card
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.all(responsiveWidth(0.04)),
@@ -208,18 +220,18 @@ class LeaveDetailScreen extends StatelessWidget {
                               Container(
                                 padding: EdgeInsets.all(responsiveWidth(0.02)),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
+                                  color: primaryColor.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  Icons.person_rounded,
-                                  color: Colors.blue,
+                                  Icons.description_rounded,
+                                  color: primaryColor,
                                   size: responsiveWidth(0.06),
                                 ),
                               ),
                               SizedBox(width: responsiveWidth(0.03)),
                               Text(
-                                "Employee Information",
+                                "Request Details",
                                 style: TextStyle(
                                   fontSize: responsiveFontSize(16),
                                   fontWeight: FontWeight.w700,
@@ -230,18 +242,27 @@ class LeaveDetailScreen extends StatelessWidget {
                           ),
                           SizedBox(height: responsiveHeight(0.02)),
                           _buildDetailItem(
-                            label: "Employee Name",
-                            value: leave.employeeName,
-                            icon: Icons.badge,
+                            label: "Purpose of Travel",
+                            value: travelData["purpose_of_travel"] ?? "N/A",
+                            icon: Icons.travel_explore,
                             color: Colors.blue,
                             responsiveWidth: responsiveWidth,
                             responsiveFontSize: responsiveFontSize,
                           ),
                           _buildDivider(),
                           _buildDetailItem(
-                            label: "Leave Type",
-                            value: leave.leaveType,
-                            icon: Icons.beach_access,
+                            label: "Travel Type",
+                            value: travelData["travel_type"] ?? "N/A",
+                            icon: Icons.flight_takeoff,
+                            color: Colors.orange,
+                            responsiveWidth: responsiveWidth,
+                            responsiveFontSize: responsiveFontSize,
+                          ),
+                          _buildDivider(),
+                          _buildDetailItem(
+                            label: "Travel Funding",
+                            value: travelData["travel_funding"] ?? "N/A",
+                            icon: Icons.account_balance_wallet,
                             color: Colors.green,
                             responsiveWidth: responsiveWidth,
                             responsiveFontSize: responsiveFontSize,
@@ -286,7 +307,7 @@ class LeaveDetailScreen extends StatelessWidget {
                               ),
                               SizedBox(width: responsiveWidth(0.03)),
                               Text(
-                                "Leave Period",
+                                "Date Information",
                                 style: TextStyle(
                                   fontSize: responsiveFontSize(16),
                                   fontWeight: FontWeight.w700,
@@ -297,18 +318,18 @@ class LeaveDetailScreen extends StatelessWidget {
                           ),
                           SizedBox(height: responsiveHeight(0.02)),
                           _buildDetailItem(
-                            label: "From Date",
-                            value: leave.fromDate,
-                            icon: Icons.calendar_today,
+                            label: "Created Date",
+                            value: formatDate(travelData["creation"] ?? travelData["posting_date"]),
+                            icon: Icons.edit_calendar,
                             color: Colors.purple,
                             responsiveWidth: responsiveWidth,
                             responsiveFontSize: responsiveFontSize,
                           ),
                           _buildDivider(),
                           _buildDetailItem(
-                            label: "To Date",
-                            value: leave.toDate,
-                            icon: Icons.calendar_today,
+                            label: "Posting Date",
+                            value: formatDate(travelData["posting_date"]),
+                            icon: Icons.post_add,
                             color: Colors.teal,
                             responsiveWidth: responsiveWidth,
                             responsiveFontSize: responsiveFontSize,
@@ -319,7 +340,7 @@ class LeaveDetailScreen extends StatelessWidget {
 
                     SizedBox(height: responsiveHeight(0.025)),
 
-                    // Reason Card
+                    // Reference Card
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.all(responsiveWidth(0.04)),
@@ -342,18 +363,18 @@ class LeaveDetailScreen extends StatelessWidget {
                               Container(
                                 padding: EdgeInsets.all(responsiveWidth(0.02)),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.1),
+                                  color: Colors.amber.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  Icons.description_rounded,
-                                  color: Colors.orange,
+                                  Icons.confirmation_number_rounded,
+                                  color: Colors.amber,
                                   size: responsiveWidth(0.06),
                                 ),
                               ),
                               SizedBox(width: responsiveWidth(0.03)),
                               Text(
-                                "Reason for Leave",
+                                "Reference Information",
                                 style: TextStyle(
                                   fontSize: responsiveFontSize(16),
                                   fontWeight: FontWeight.w700,
@@ -363,25 +384,22 @@ class LeaveDetailScreen extends StatelessWidget {
                             ],
                           ),
                           SizedBox(height: responsiveHeight(0.02)),
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.all(responsiveWidth(0.04)),
-                            decoration: BoxDecoration(
-                              color: backgroundColor,
-                              borderRadius: BorderRadius.circular(responsiveWidth(0.03)),
-                              border: Border.all(
-                                color: Colors.orange.withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              leave.reason.isEmpty ? "No reason provided" : leave.reason,
-                              style: TextStyle(
-                                fontSize: responsiveFontSize(15),
-                                color: textColor,
-                                height: 1.4,
-                              ),
-                            ),
+                          _buildDetailItem(
+                            label: "Document ID",
+                            value: travelData["name"] ?? "N/A",
+                            icon: Icons.numbers,
+                            color: Colors.amber,
+                            responsiveWidth: responsiveWidth,
+                            responsiveFontSize: responsiveFontSize,
+                          ),
+                          _buildDivider(),
+                          _buildDetailItem(
+                            label: "Employee ID",
+                            value: travelData["employee"] ?? "N/A",
+                            icon: Icons.badge,
+                            color: Colors.cyan,
+                            responsiveWidth: responsiveWidth,
+                            responsiveFontSize: responsiveFontSize,
                           ),
                         ],
                       ),

@@ -14,16 +14,23 @@ class LeaveRequest extends StatefulWidget {
   State<LeaveRequest> createState() => _LeaveRequestState();
 }
 
-class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderStateMixin {
+class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _showSuccessDialog = false;
   bool _showErrorDialog = false;
   String _errorMessage = "";
   String _successMessage = "";
-  late AnimationController _animationController;
+  
+  late AnimationController _mainController;
+  late AnimationController _bounceController;
+  late AnimationController _pulseController;
+  
   late Animation<double> _fadeAnimation;
-  late Animation<double> _slideAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _bounceAnimation;
+  late Animation<double> _pulseAnimation;
 
   final TextEditingController fromDateCtrl = TextEditingController();
   final TextEditingController toDateCtrl = TextEditingController();
@@ -35,7 +42,6 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
   String? selectedLeaveType;
   String compOff = "NO";
 
-  // Available leave types
   final List<Map<String, dynamic>> leaveTypes = [
     {"code": "CL", "name": "Casual Leave", "color": Colors.blue, "icon": Icons.beach_access},
     {"code": "SL", "name": "Sick Leave", "color": Colors.red, "icon": Icons.local_hospital},
@@ -46,29 +52,66 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _loadEmployeeData();
     
-    _animationController = AnimationController(
+    _mainController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
     );
-    
+
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _animationController,
+        parent: _mainController,
         curve: Curves.easeInOut,
       ),
     );
-    
-    _slideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
       CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOut,
+        parent: _mainController,
+        curve: Curves.easeOutCubic,
       ),
     );
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _bounceAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _bounceController,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(
+        parent: _pulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _pulseController.repeat(reverse: true);
+    
+    _loadEmployeeData();
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _animationController.forward();
+      _mainController.forward();
     });
   }
 
@@ -158,6 +201,7 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
 
   void _showSuccessPopup(String message) {
     HapticFeedback.mediumImpact();
+    _bounceController.forward();
     setState(() {
       _successMessage = message;
       _showSuccessDialog = true;
@@ -202,7 +246,6 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
   }
 
   Future<void> _submitLeave() async {
-    // Validate form
     if (!_formKey.currentState!.validate()) {
       HapticFeedback.mediumImpact();
       return;
@@ -213,14 +256,12 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
       return;
     }
 
-    // Check internet connection
     final hasNet = await _hasInternet();
     if (!hasNet) {
       _showErrorPopup("No internet connection. Please check your connection and try again.");
       return;
     }
 
-    // Validate dates
     try {
       final fromParts = fromDateCtrl.text.split("-");
       final toParts = toDateCtrl.text.split("-");
@@ -261,7 +302,6 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
     });
 
     try {
-      // Call the service to submit leave
       final result = await LeaveRequestService.submitLeave(
         employeeCode: empCodeCtrl.text.trim(),
         leaveType: LeaveRequestService.mapLeaveType(selectedLeaveType),
@@ -277,21 +317,12 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
       });
 
       if (result["success"] == true) {
-        // Success - show success message
         final successMsg = result["message"] ?? "Leave applied successfully!";
-        
         String displayMessage = successMsg;
-        
-        // Reset form on success
         _resetForm();
-        
         await Future.delayed(const Duration(milliseconds: 300));
-        
-        // Show success dialog with appropriate message
         _showSuccessPopup(displayMessage);
-        
       } else {
-        // Error - show error message
         await Future.delayed(const Duration(milliseconds: 300));
         _showErrorPopup(result["message"] ?? "Failed to apply leave. Please try again.");
       }
@@ -299,7 +330,6 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
       setState(() {
         _isLoading = false;
       });
-      
       await Future.delayed(const Duration(milliseconds: 300));
       _showErrorPopup("An error occurred: ${e.toString()}");
     }
@@ -366,7 +396,9 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _mainController.dispose();
+    _bounceController.dispose();
+    _pulseController.dispose();
     fromDateCtrl.dispose();
     toDateCtrl.dispose();
     reasonCtrl.dispose();
@@ -398,610 +430,602 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
       ),
       child: Scaffold(
         backgroundColor: backgroundColor,
-        body: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                SafeArea(
-                  bottom: false,
+        body: Stack(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Container(
+                color: backgroundColor,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
                   child: Container(
                     color: backgroundColor,
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Container(
-                        color: backgroundColor,
-                        width: width,
-                        child: Transform.translate(
-                          offset: Offset(0, _slideAnimation.value),
-                          child: Opacity(
-                            opacity: _fadeAnimation.value,
-                            child: Column(
-                              children: [
-                                // Header Section
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: width * 0.04,
-                                    vertical: height * 0.02,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        primaryColor,
-                                        secondaryColor,
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.only(
-                                      bottomLeft: Radius.circular(width * 0.08),
-                                      bottomRight: Radius.circular(width * 0.08),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        blurRadius: 20,
-                                        spreadRadius: 1,
-                                        offset: const Offset(0, 4),
-                                      ),
+                    width: width,
+                    child: Column(
+                      children: [
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: width * 0.04,
+                                  vertical: height * 0.02,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      primaryColor,
+                                      secondaryColor,
                                     ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          IconButton(
-                                            onPressed: () => Navigator.pop(context),
-                                            icon: Icon(
-                                              Icons.arrow_back_rounded,
+                                  borderRadius: BorderRadius.only(
+                                    bottomLeft: Radius.circular(width * 0.08),
+                                    bottomRight: Radius.circular(width * 0.08),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.15),
+                                      blurRadius: 20,
+                                      spreadRadius: 1,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        IconButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          icon: Icon(
+                                            Icons.arrow_back_rounded,
+                                            color: Colors.white,
+                                            size: width * 0.06,
+                                          ),
+                                        ),
+                                        Text(
+                                          "Leave Request",
+                                          style: TextStyle(
+                                            fontSize: width * 0.05,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        SizedBox(width: width * 0.06),
+                                      ],
+                                    ),
+                                    SizedBox(height: height * 0.01),
+                                    if (empNameCtrl.text.isNotEmpty)
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: width * 0.04,
+                                          vertical: height * 0.015,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(width * 0.03),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.person_outline,
                                               color: Colors.white,
                                               size: width * 0.06,
                                             ),
-                                          ),
-                                          Text(
-                                            "Leave Request",
-                                            style: TextStyle(
-                                              fontSize: width * 0.05,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                          SizedBox(width: width * 0.06),
-                                        ],
-                                      ),
-                                      SizedBox(height: height * 0.01),
-                                      if (empNameCtrl.text.isNotEmpty)
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: width * 0.04,
-                                            vertical: height * 0.015,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(width * 0.03),
-                                            border: Border.all(
-                                              color: Colors.white.withOpacity(0.2),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.person_outline,
-                                                color: Colors.white,
-                                                size: width * 0.06,
-                                              ),
-                                              SizedBox(width: width * 0.03),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      empNameCtrl.text,
-                                                      style: TextStyle(
-                                                        fontSize: width * 0.045,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Colors.white,
-                                                      ),
+                                            SizedBox(width: width * 0.03),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    empNameCtrl.text,
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.045,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white,
                                                     ),
-                                                    SizedBox(height: height * 0.005),
-                                                    Text(
-                                                      'ID: ${empCodeCtrl.text}',
-                                                      style: TextStyle(
-                                                        fontSize: width * 0.035,
-                                                        color: Colors.white.withOpacity(0.8),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: width * 0.03,
-                                                  vertical: height * 0.005,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white.withOpacity(0.15),
-                                                  borderRadius: BorderRadius.circular(width * 0.02),
-                                                ),
-                                                child: Text(
-                                                  'Employee',
-                                                  style: TextStyle(
-                                                    fontSize: width * 0.03,
-                                                    color: Colors.white,
                                                   ),
+                                                  SizedBox(height: height * 0.005),
+                                                  Text(
+                                                    'ID: ${empCodeCtrl.text}',
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.035,
+                                                      color: Colors.white.withOpacity(0.8),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: width * 0.03,
+                                                vertical: height * 0.005,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.15),
+                                                borderRadius: BorderRadius.circular(width * 0.02),
+                                              ),
+                                              child: Text(
+                                                'Employee',
+                                                style: TextStyle(
+                                                  fontSize: width * 0.03,
+                                                  color: Colors.white,
                                                 ),
                                               ),
-                                            ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: Container(
+                              color: backgroundColor,
+                              child: Card(
+                                elevation: 0,
+                                margin: EdgeInsets.all(width * 0.04),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(width * 0.05),
+                                ),
+                                color: cardColor,
+                                child: Padding(
+                                  padding: EdgeInsets.all(width * 0.04),
+                                  child: Form(
+                                    key: _formKey,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Select Leave Type",
+                                          style: TextStyle(
+                                            fontSize: width * 0.045,
+                                            fontWeight: FontWeight.w700,
+                                            color: textColor,
                                           ),
                                         ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Main Form
-                                Container(
-                                  color: backgroundColor,
-                                  child: Card(
-                                    elevation: 0,
-                                    margin: EdgeInsets.all(width * 0.04),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(width * 0.05),
-                                    ),
-                                    color: cardColor,
-                                    child: Padding(
-                                      padding: EdgeInsets.all(width * 0.04),
-                                      child: Form(
-                                        key: _formKey,
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            // Leave Type Selection
-                                            Text(
-                                              "Select Leave Type",
-                                              style: TextStyle(
-                                                fontSize: width * 0.045,
-                                                fontWeight: FontWeight.w700,
-                                                color: textColor,
-                                              ),
-                                            ),
-                                            SizedBox(height: height * 0.015),
-                                            Wrap(
-                                              spacing: width * 0.02,
-                                              runSpacing: height * 0.01,
-                                              children: leaveTypes.map((leaveType) {
-                                                final isSelected = selectedLeaveType == leaveType["code"];
-                                                final typeColor = leaveType["color"] as Color;
-                                                return ChoiceChip(
-                                                  label: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        leaveType["icon"] as IconData,
-                                                        size: width * 0.045,
-                                                        color: isSelected ? Colors.white : typeColor,
-                                                      ),
-                                                      SizedBox(width: width * 0.02),
-                                                      Text(
-                                                        leaveType["name"]!,
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.035,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: isSelected ? Colors.white : null,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  selected: isSelected,
-                                                  onSelected: (selected) {
-                                                    HapticFeedback.selectionClick();
-                                                    setState(() => selectedLeaveType = leaveType["code"]);
-                                                  },
-                                                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                                                  selectedColor: typeColor,
-                                                  side: BorderSide(
-                                                    color: isSelected
-                                                        ? typeColor
-                                                        : isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
-                                                    width: 1.5,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(width * 0.025),
-                                                  ),
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: width * 0.04,
-                                                    vertical: height * 0.012,
-                                                  ),
-                                                );
-                                              }).toList(),
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // Date Range
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        "From Date",
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.04,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: textColor,
-                                                        ),
-                                                      ),
-                                                      SizedBox(height: height * 0.01),
-                                                      TextFormField(
-                                                        controller: fromDateCtrl,
-                                                        readOnly: true,
-                                                        onTap: () => selectDate(fromDateCtrl),
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.04,
-                                                          color: textColor,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),
-                                                        decoration: _inputDecoration("DD-MM-YYYY", icon: Icons.calendar_month),
-                                                        validator: (value) =>
-                                                            value!.isEmpty ? "Please select from date" : null,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                SizedBox(width: width * 0.03),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        "To Date",
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.04,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: textColor,
-                                                        ),
-                                                      ),
-                                                      SizedBox(height: height * 0.01),
-                                                      TextFormField(
-                                                        controller: toDateCtrl,
-                                                        readOnly: true,
-                                                        onTap: () => selectDate(toDateCtrl),
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.04,
-                                                          color: textColor,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),
-                                                        decoration: _inputDecoration("DD-MM-YYYY", icon: Icons.calendar_month),
-                                                        validator: (value) =>
-                                                            value!.isEmpty ? "Please select to date" : null,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // Reason for Leave
-                                            Text(
-                                              "Reason for Leave",
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                fontWeight: FontWeight.w600,
-                                                color: textColor,
-                                              ),
-                                            ),
-                                            SizedBox(height: height * 0.01),
-                                            TextFormField(
-                                              controller: reasonCtrl,
-                                              maxLines: 4,
-                                              minLines: 3,
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                color: textColor,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              decoration: _inputDecoration(
-                                                "Explain your reason...",
-                                                icon: Icons.description_outlined,
-                                              ),
-                                              validator: (value) =>
-                                                  value!.isEmpty ? "Please enter reason for leave" : null,
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // Comp Off Selection
-                                            Text(
-                                              "Is it a Comp Off?",
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                fontWeight: FontWeight.w600,
-                                                color: textColor,
-                                              ),
-                                            ),
-                                            SizedBox(height: height * 0.01),
-                                            Row(
-                                              children: ["NO", "YES"].map((e) {
-                                                final isSelected = compOff == e;
-                                                return Expanded(
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      HapticFeedback.selectionClick();
-                                                      setState(() => compOff = e);
-                                                    },
-                                                    child: Container(
-                                                      margin: EdgeInsets.symmetric(horizontal: width * 0.01),
-                                                      padding: EdgeInsets.symmetric(vertical: height * 0.015),
-                                                      decoration: BoxDecoration(
-                                                        color: isSelected ? primaryColor : Colors.transparent,
-                                                        borderRadius: BorderRadius.circular(width * 0.025),
-                                                        border: Border.all(
-                                                          color: primaryColor,
-                                                          width: 2,
-                                                        ),
-                                                        boxShadow: isSelected
-                                                            ? [
-                                                                BoxShadow(
-                                                                  color: primaryColor.withOpacity(0.3),
-                                                                  blurRadius: 10,
-                                                                  spreadRadius: 2,
-                                                                ),
-                                                              ]
-                                                            : [],
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        children: [
-                                                          Icon(
-                                                            isSelected ? Icons.check_circle : Icons.circle_outlined,
-                                                            size: width * 0.05,
-                                                            color: isSelected ? Colors.white : primaryColor,
-                                                          ),
-                                                          SizedBox(width: width * 0.02),
-                                                          Text(
-                                                            e,
-                                                            style: TextStyle(
-                                                              fontSize: width * 0.04,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: isSelected ? Colors.white : primaryColor,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              }).toList(),
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // Incharge Replacement
-                                            Text(
-                                              "Incharge Replacement",
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                fontWeight: FontWeight.w600,
-                                                color: textColor,
-                                              ),
-                                            ),
-                                            SizedBox(height: height * 0.01),
-                                            TextFormField(
-                                              controller: inchargeCtrl,
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                color: textColor,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              decoration: _inputDecoration(
-                                                "Enter person name",
-                                                icon: Icons.person_add,
-                                              ),
-                                              validator: (value) =>
-                                                  value!.isEmpty ? "Please enter incharge replacement" : null,
-                                            ),
-
-                                            SizedBox(height: height * 0.04),
-
-                                            // Submit Button
-                                            SizedBox(
-                                              width: double.infinity,
-                                              height: height * 0.065,
-                                              child: ElevatedButton(
-                                                onPressed: _isLoading ? null : _submitLeave,
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: primaryColor,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(width * 0.035),
-                                                  ),
-                                                  elevation: 0,
-                                                  shadowColor: Colors.transparent,
-                                                ),
-                                                child: Stack(
-                                                  alignment: Alignment.center,
-                                                  children: [
-                                                    AnimatedOpacity(
-                                                      opacity: _isLoading ? 0 : 1,
-                                                      duration: const Duration(milliseconds: 200),
-                                                      child: Row(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        children: [
-                                                          Icon(
-                                                            Icons.send_rounded,
-                                                            size: width * 0.05,
-                                                            color: Colors.white,
-                                                          ),
-                                                          SizedBox(width: width * 0.02),
-                                                          Text(
-                                                            "Submit Leave Application",
-                                                            style: TextStyle(
-                                                              fontSize: width * 0.04,
-                                                              fontWeight: FontWeight.w700,
-                                                              color: Colors.white,
-                                                              letterSpacing: 0.5,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    if (_isLoading)
-                                                      SizedBox(
-                                                        width: width * 0.06,
-                                                        height: width * 0.06,
-                                                        child: CircularProgressIndicator(
-                                                          strokeWidth: 3,
-                                                          color: Colors.white,
-                                                          backgroundColor: Colors.white.withOpacity(0.3),
-                                                        ),
-                                                      ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-
-                                            SizedBox(height: height * 0.02),
-
-                                            // Cancel Button
-                                            SizedBox(
-                                              width: double.infinity,
-                                              height: height * 0.055,
-                                              child: TextButton(
-                                                onPressed: _isLoading
-                                                    ? null
-                                                    : () {
-                                                        HapticFeedback.lightImpact();
-                                                        Navigator.pop(context);
-                                                      },
-                                                style: TextButton.styleFrom(
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(width * 0.035),
-                                                  ),
-                                                  foregroundColor: subtitleColor,
-                                                ),
-                                                child: Text(
-                                                  "Cancel",
-                                                  style: TextStyle(
-                                                    fontSize: width * 0.04,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-
-                                            // Info Note
-                                            Container(
-                                              width: double.infinity,
-                                              padding: EdgeInsets.all(width * 0.04),
-                                              margin: EdgeInsets.only(top: height * 0.02),
-                                              decoration: BoxDecoration(
-                                                color: primaryColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(width * 0.03),
-                                                border: Border.all(
-                                                  color: primaryColor.withOpacity(0.2),
-                                                  width: 1.5,
-                                                ),
-                                              ),
-                                              child: Row(
+                                        SizedBox(height: height * 0.015),
+                                        Wrap(
+                                          spacing: width * 0.02,
+                                          runSpacing: height * 0.01,
+                                          children: leaveTypes.map((leaveType) {
+                                            final isSelected = selectedLeaveType == leaveType["code"];
+                                            final typeColor = leaveType["color"] as Color;
+                                            return ChoiceChip(
+                                              label: Row(
+                                                mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Icon(
-                                                    Icons.info_outline_rounded,
-                                                    size: width * 0.05,
-                                                    color: primaryColor,
+                                                    leaveType["icon"] as IconData,
+                                                    size: width * 0.045,
+                                                    color: isSelected ? Colors.white : typeColor,
                                                   ),
-                                                  SizedBox(width: width * 0.03),
-                                                  Expanded(
-                                                    child: Text(
-                                                      "Leave application will be sent to your manager for approval",
-                                                      style: TextStyle(
-                                                        fontSize: width * 0.035,
-                                                        color: textColor,
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
+                                                  SizedBox(width: width * 0.02),
+                                                  Text(
+                                                    leaveType["name"]!,
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.035,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: isSelected ? Colors.white : null,
                                                     ),
+                                                  ),
+                                                ],
+                                              ),
+                                              selected: isSelected,
+                                              onSelected: (selected) {
+                                                HapticFeedback.selectionClick();
+                                                setState(() => selectedLeaveType = leaveType["code"]);
+                                              },
+                                              backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                                              selectedColor: typeColor,
+                                              side: BorderSide(
+                                                color: isSelected
+                                                    ? typeColor
+                                                    : isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                                                width: 1.5,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(width * 0.025),
+                                              ),
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: width * 0.04,
+                                                vertical: height * 0.012,
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                        SizedBox(height: height * 0.025),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "From Date",
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.04,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: textColor,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: height * 0.01),
+                                                  TextFormField(
+                                                    controller: fromDateCtrl,
+                                                    readOnly: true,
+                                                    onTap: () => selectDate(fromDateCtrl),
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.04,
+                                                      color: textColor,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    decoration: _inputDecoration("DD-MM-YYYY", icon: Icons.calendar_month),
+                                                    validator: (value) =>
+                                                        value!.isEmpty ? "Please select from date" : null,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(width: width * 0.03),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "To Date",
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.04,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: textColor,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: height * 0.01),
+                                                  TextFormField(
+                                                    controller: toDateCtrl,
+                                                    readOnly: true,
+                                                    onTap: () => selectDate(toDateCtrl),
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.04,
+                                                      color: textColor,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    decoration: _inputDecoration("DD-MM-YYYY", icon: Icons.calendar_month),
+                                                    validator: (value) =>
+                                                        value!.isEmpty ? "Please select to date" : null,
                                                   ),
                                                 ],
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
+                                        SizedBox(height: height * 0.025),
+                                        Text(
+                                          "Reason for Leave",
+                                          style: TextStyle(
+                                            fontSize: width * 0.04,
+                                            fontWeight: FontWeight.w600,
+                                            color: textColor,
+                                          ),
+                                        ),
+                                        SizedBox(height: height * 0.01),
+                                        TextFormField(
+                                          controller: reasonCtrl,
+                                          maxLines: 4,
+                                          minLines: 3,
+                                          style: TextStyle(
+                                            fontSize: width * 0.04,
+                                            color: textColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          decoration: _inputDecoration(
+                                            "Explain your reason...",
+                                            icon: Icons.description_outlined,
+                                          ),
+                                          validator: (value) =>
+                                              value!.isEmpty ? "Please enter reason for leave" : null,
+                                        ),
+                                        SizedBox(height: height * 0.025),
+                                        Text(
+                                          "Is it a Comp Off?",
+                                          style: TextStyle(
+                                            fontSize: width * 0.04,
+                                            fontWeight: FontWeight.w600,
+                                            color: textColor,
+                                          ),
+                                        ),
+                                        SizedBox(height: height * 0.01),
+                                        Row(
+                                          children: ["NO", "YES"].map((e) {
+                                            final isSelected = compOff == e;
+                                            return Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  HapticFeedback.selectionClick();
+                                                  setState(() => compOff = e);
+                                                },
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(milliseconds: 300),
+                                                  curve: Curves.easeInOut,
+                                                  margin: EdgeInsets.symmetric(horizontal: width * 0.01),
+                                                  padding: EdgeInsets.symmetric(vertical: height * 0.015),
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected ? primaryColor : Colors.transparent,
+                                                    borderRadius: BorderRadius.circular(width * 0.025),
+                                                    border: Border.all(
+                                                      color: primaryColor,
+                                                      width: 2,
+                                                    ),
+                                                    boxShadow: isSelected
+                                                        ? [
+                                                            BoxShadow(
+                                                              color: primaryColor.withOpacity(0.3),
+                                                              blurRadius: 10,
+                                                              spreadRadius: 2,
+                                                            ),
+                                                          ]
+                                                        : [],
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        isSelected ? Icons.check_circle : Icons.circle_outlined,
+                                                        size: width * 0.05,
+                                                        color: isSelected ? Colors.white : primaryColor,
+                                                      ),
+                                                      SizedBox(width: width * 0.02),
+                                                      Text(
+                                                        e,
+                                                        style: TextStyle(
+                                                          fontSize: width * 0.04,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: isSelected ? Colors.white : primaryColor,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                        SizedBox(height: height * 0.025),
+                                        Text(
+                                          "Incharge Replacement",
+                                          style: TextStyle(
+                                            fontSize: width * 0.04,
+                                            fontWeight: FontWeight.w600,
+                                            color: textColor,
+                                          ),
+                                        ),
+                                        SizedBox(height: height * 0.01),
+                                        TextFormField(
+                                          controller: inchargeCtrl,
+                                          style: TextStyle(
+                                            fontSize: width * 0.04,
+                                            color: textColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          decoration: _inputDecoration(
+                                            "Enter person name",
+                                            icon: Icons.person_add,
+                                          ),
+                                          validator: (value) =>
+                                              value!.isEmpty ? "Please enter incharge replacement" : null,
+                                        ),
+                                        SizedBox(height: height * 0.04),
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 300),
+                                          curve: Curves.easeInOut,
+                                          width: double.infinity,
+                                          height: height * 0.065,
+                                          child: ElevatedButton(
+                                            onPressed: _isLoading ? null : _submitLeave,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: _isLoading
+                                                  ? Colors.grey.shade400
+                                                  : primaryColor,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(width * 0.035),
+                                              ),
+                                              elevation: _isLoading ? 0 : 5,
+                                              shadowColor: primaryColor.withOpacity(0.5),
+                                            ),
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                AnimatedOpacity(
+                                                  opacity: _isLoading ? 0 : 1,
+                                                  duration: const Duration(milliseconds: 200),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.send_rounded,
+                                                        size: width * 0.05,
+                                                        color: Colors.white,
+                                                      ),
+                                                      SizedBox(width: width * 0.02),
+                                                      Text(
+                                                        "Submit Leave Application",
+                                                        style: TextStyle(
+                                                          fontSize: width * 0.04,
+                                                          fontWeight: FontWeight.w700,
+                                                          color: Colors.white,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                if (_isLoading)
+                                                  SizedBox(
+                                                    width: width * 0.06,
+                                                    height: width * 0.06,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 3,
+                                                      color: Colors.white,
+                                                      backgroundColor: Colors.white.withOpacity(0.3),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(height: height * 0.02),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: height * 0.055,
+                                          child: TextButton(
+                                            onPressed: _isLoading
+                                                ? null
+                                                : () {
+                                                    HapticFeedback.lightImpact();
+                                                    Navigator.pop(context);
+                                                  },
+                                            style: TextButton.styleFrom(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(width * 0.035),
+                                              ),
+                                              foregroundColor: subtitleColor,
+                                            ),
+                                            child: Text(
+                                              "Cancel",
+                                              style: TextStyle(
+                                                fontSize: width * 0.04,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 300),
+                                          curve: Curves.easeInOut,
+                                          width: double.infinity,
+                                          padding: EdgeInsets.all(width * 0.04),
+                                          margin: EdgeInsets.only(top: height * 0.02),
+                                          decoration: BoxDecoration(
+                                            color: primaryColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(width * 0.03),
+                                            border: Border.all(
+                                              color: primaryColor.withOpacity(0.2),
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.info_outline_rounded,
+                                                size: width * 0.05,
+                                                color: primaryColor,
+                                              ),
+                                              SizedBox(width: width * 0.03),
+                                              Expanded(
+                                                child: Text(
+                                                  "Leave application will be sent to your manager for approval",
+                                                  style: TextStyle(
+                                                    fontSize: width * 0.035,
+                                                    color: textColor,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
-
-                // Success Dialog
-                if (_showSuccessDialog)
-                  Container(
-                    color: Colors.black.withOpacity(0.5),
-                    child: Center(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        width: width * 0.85,
-                        padding: EdgeInsets.all(width * 0.05),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(width * 0.06),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 30,
-                              spreadRadius: 5,
+              ),
+            ),
+            if (_showSuccessDialog)
+              Container(
+                color: Colors.black.withOpacity(0.5),
+                child: Center(
+                  child: ScaleTransition(
+                    scale: _bounceAnimation,
+                    child: Container(
+                      width: width * 0.85,
+                      padding: EdgeInsets.all(width * 0.05),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(width * 0.06),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.elasticOut,
+                            width: width * 0.2,
+                            height: width * 0.2,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.green.withOpacity(0.1),
+                              border: Border.all(color: Colors.green, width: 3),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 500),
-                              width: width * 0.2,
-                              height: width * 0.2,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.green.withOpacity(0.1),
-                                border: Border.all(color: Colors.green, width: 3),
-                              ),
-                              child: Icon(
-                                Icons.check,
-                                size: width * 0.1,
-                                color: Colors.green,
-                              ),
+                            child: Icon(
+                              Icons.check,
+                              size: width * 0.1,
+                              color: Colors.green,
                             ),
-                            SizedBox(height: height * 0.03),
-                            Text(
-                              "Success!",
-                              style: TextStyle(
-                                fontSize: width * 0.06,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
+                          ),
+                          SizedBox(height: height * 0.03),
+                          Text(
+                            "Success!",
+                            style: TextStyle(
+                              fontSize: width * 0.06,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
                             ),
-                            SizedBox(height: height * 0.015),
-                            Text(
-                              _successMessage,
-                              style: TextStyle(
-                                fontSize: width * 0.04,
-                                color: textColor,
-                                height: 1.4,
-                              ),
-                              textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: height * 0.015),
+                          Text(
+                            _successMessage,
+                            style: TextStyle(
+                              fontSize: width * 0.04,
+                              color: textColor,
+                              height: 1.4,
                             ),
-                            SizedBox(height: height * 0.03),
-                            SizedBox(
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: height * 0.03),
+                          ScaleTransition(
+                            scale: _pulseAnimation,
+                            child: SizedBox(
                               width: double.infinity,
                               height: height * 0.06,
                               child: ElevatedButton(
@@ -1022,123 +1046,124 @@ class _LeaveRequestState extends State<LeaveRequest> with SingleTickerProviderSt
                                 ),
                               ),
                             ),
-                            SizedBox(height: height * 0.01),
-                            TextButton(
-                              onPressed: _closeDialogs,
-                              child: Text(
-                                "Apply Another Leave",
-                                style: TextStyle(
-                                  color: primaryColor,
-                                  fontSize: width * 0.038,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          ),
+                          SizedBox(height: height * 0.01),
+                          TextButton(
+                            onPressed: _closeDialogs,
+                            child: Text(
+                              "Apply Another Leave",
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontSize: width * 0.038,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-
-                // Error Dialog
-                if (_showErrorDialog)
-                  Container(
-                    color: Colors.black.withOpacity(0.5),
-                    child: Center(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        width: width * 0.85,
-                        padding: EdgeInsets.all(width * 0.05),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(width * 0.06),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 30,
-                              spreadRadius: 5,
+                ),
+              ),
+            if (_showErrorDialog)
+              Container(
+                color: Colors.black.withOpacity(0.5),
+                child: Center(
+                  child: ScaleTransition(
+                    scale: _bounceAnimation,
+                    child: Container(
+                      width: width * 0.85,
+                      padding: EdgeInsets.all(width * 0.05),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(width * 0.06),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.elasticOut,
+                            width: width * 0.2,
+                            height: width * 0.2,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.red.withOpacity(0.1),
+                              border: Border.all(color: Colors.red, width: 3),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 500),
-                              width: width * 0.2,
-                              height: width * 0.2,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.red.withOpacity(0.1),
-                                border: Border.all(color: Colors.red, width: 3),
-                              ),
-                              child: Icon(
-                                Icons.error_outline,
-                                size: width * 0.1,
-                                color: Colors.red,
-                              ),
+                            child: Icon(
+                              Icons.error_outline,
+                              size: width * 0.1,
+                              color: Colors.red,
                             ),
-                            SizedBox(height: height * 0.03),
-                            Text(
-                              "Error",
-                              style: TextStyle(
-                                fontSize: width * 0.06,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red,
-                              ),
+                          ),
+                          SizedBox(height: height * 0.03),
+                          Text(
+                            "Error",
+                            style: TextStyle(
+                              fontSize: width * 0.06,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
                             ),
-                            SizedBox(height: height * 0.015),
-                            Text(
-                              _errorMessage,
-                              style: TextStyle(
-                                fontSize: width * 0.04,
-                                color: textColor,
-                                height: 1.4,
-                              ),
-                              textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: height * 0.015),
+                          Text(
+                            _errorMessage,
+                            style: TextStyle(
+                              fontSize: width * 0.04,
+                              color: textColor,
+                              height: 1.4,
                             ),
-                            SizedBox(height: height * 0.03),
-                            SizedBox(
-                              width: double.infinity,
-                              height: height * 0.06,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(width * 0.03),
-                                  ),
-                                ),
-                                onPressed: _closeDialogs,
-                                child: Text(
-                                  "Try Again",
-                                  style: TextStyle(
-                                    fontSize: width * 0.04,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: height * 0.03),
+                          SizedBox(
+                            width: double.infinity,
+                            height: height * 0.06,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(width * 0.03),
                                 ),
                               ),
-                            ),
-                            SizedBox(height: height * 0.01),
-                            TextButton(
                               onPressed: _closeDialogs,
                               child: Text(
-                                "Cancel",
+                                "Try Again",
                                 style: TextStyle(
-                                  color: subtitleColor,
-                                  fontSize: width * 0.038,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: width * 0.04,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          SizedBox(height: height * 0.01),
+                          TextButton(
+                            onPressed: _closeDialogs,
+                            child: Text(
+                              "Cancel",
+                              style: TextStyle(
+                                color: subtitleColor,
+                                fontSize: width * 0.038,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-              ],
-            );
-          },
+                ),
+              ),
+          ],
         ),
       ),
     );

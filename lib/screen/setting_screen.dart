@@ -6,6 +6,7 @@ import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/screen/change_password_screen.dart';
 import 'package:management_app/screen/profilescreen.dart';
 import 'package:management_app/services/auth_service.dart';
+import 'package:management_app/screen/goodbye_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -19,6 +20,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String selectedLanguage = "English";
   String selectedTheme = "Light";
 
+  // Get gradient colors based on theme
+  List<Color> _getHeaderGradientColors(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return isDarkMode
+        ? [Colors.grey.shade900, Colors.grey.shade800]
+        : [Colors.blue.shade50, Colors.purple.shade50];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -30,281 +39,291 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.grey[50]!;
     final textColor = isDarkMode ? Colors.white : Colors.grey[900]!;
     final subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[700]!;
+    final gradientColors = _getHeaderGradientColors(context);
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: SafeArea(
-        child: Consumer<ProfileProvider>(
-          builder: (context, provider, _) {
-            final user = provider.profileData;
+      body: Column(
+        children: [
+          // Fixed status bar with gradient
+          Container(
+            height: MediaQuery.of(context).padding.top,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: gradientColors,
+              ),
+            ),
+          ),
+          // Rest of the content
+          Expanded(
+            child: Consumer<ProfileProvider>(
+              builder: (context, provider, _) {
+                final user = provider.profileData;
 
-            return Column(
-              children: [
-                // Modern Header
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.05,
-                    vertical: screenHeight * 0.02,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDarkMode
-                          ? [Colors.grey[850]!, Colors.grey[900]!]
-                          : [Colors.blue.shade50, Colors.purple.shade50],
-                    ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: isDarkMode
-                            ? Colors.grey[700]!
-                            : Colors.grey[200]!,
-                        width: 1,
+                return Column(
+                  children: [
+                    // Header
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.05,
+                        vertical: screenHeight * 0.02,
                       ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: textColor,
-                          size: screenWidth * 0.05,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDarkMode
+                              ? [Colors.grey[850]!, Colors.grey[900]!]
+                              : [Colors.blue.shade50, Colors.purple.shade50],
                         ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      SizedBox(width: screenWidth * 0.02),
-                      Expanded(
-                        child: Text(
-                          "Settings",
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.055,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: isDarkMode
+                                ? Colors.grey[700]!
+                                : Colors.grey[200]!,
+                            width: 1,
                           ),
                         ),
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.red.withOpacity(0.3),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.logout_rounded,
-                            color: Colors.red,
-                            size: screenWidth * 0.05,
-                          ),
-                          onPressed: () => _showLogoutDialog(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.045,
-                      vertical: screenHeight * 0.025,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Profile Section
-                        _buildProfileSection(
-                          context,
-                          user,
-                          screenWidth,
-                          screenHeight,
-                          isDarkMode,
-                          textColor,
-                          subtitleColor,
-                        ),
-
-                        SizedBox(height: screenHeight * 0.03),
-
-                        // Account Settings
-                        _buildSectionTitle(
-                          "Account Settings",
-                          screenWidth,
-                          textColor,
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
-
-                        _buildSettingTile(
-                          context: context,
-                          icon: Icons.person_outline_rounded,
-                          title: "User Profile",
-                          subtitle: "View and edit your profile",
-                          iconColor: Colors.blue,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const Profilescreen(),
+                      child: Row(
+                        children: [
+                          SizedBox(width: screenWidth * 0.02),
+                          Expanded(
+                            child: Text(
+                              "Settings",
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.055,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
                               ),
-                            );
-                          },
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          isDarkMode: isDarkMode,
-                          textColor: textColor,
-                          subtitleColor: subtitleColor,
-                        ),
-
-                        _buildSettingTile(
-                          context: context,
-                          icon: Icons.lock_outline_rounded,
-                          title: "Change Password",
-                          subtitle: "Update your password",
-                          iconColor: Colors.purple,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ChangePasswordScreen(),
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.red.withOpacity(0.3),
+                                width: 1.5,
                               ),
-                            );
-                          },
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          isDarkMode: isDarkMode,
-                          textColor: textColor,
-                          subtitleColor: subtitleColor,
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.logout_rounded,
+                                color: Colors.red,
+                                size: screenWidth * 0.05,
+                              ),
+                              onPressed: () => _showLogoutDialog(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Scrollable content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.045,
+                          vertical: screenHeight * 0.025,
                         ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Profile Section
+                            _buildProfileSection(
+                              context,
+                              user,
+                              screenWidth,
+                              screenHeight,
+                              isDarkMode,
+                              textColor,
+                              subtitleColor,
+                            ),
 
-                        _buildSettingTile(
-                          context: context,
-                          icon: Icons.email_outlined,
-                          title: "Notification Email",
-                          subtitle: user?['email'] ?? "Not set",
-                          iconColor: Colors.orange,
-                          onTap: () {},
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          isDarkMode: isDarkMode,
-                          textColor: textColor,
-                          subtitleColor: subtitleColor,
-                        ),
+                            SizedBox(height: screenHeight * 0.03),
 
-                        SizedBox(height: screenHeight * 0.03),
+                            // Account Settings
+                            _buildSectionTitle(
+                              "Account Settings",
+                              screenWidth,
+                              textColor,
+                            ),
+                            SizedBox(height: screenHeight * 0.015),
 
-                        // App Settings
-                        _buildSectionTitle(
-                          "App Settings",
-                          screenWidth,
-                          textColor,
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
+                            _buildSettingTile(
+                              context: context,
+                              icon: Icons.person_outline_rounded,
+                              title: "User Profile",
+                              subtitle: "View and edit your profile",
+                              iconColor: Colors.blue,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const Profilescreen(),
+                                  ),
+                                );
+                              },
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              isDarkMode: isDarkMode,
+                              textColor: textColor,
+                              subtitleColor: subtitleColor,
+                            ),
 
-                        _buildToggleTile(
-                          icon: Icons.mic_none_outlined,
-                          title: "Voice Recognition",
-                          subtitle: "Enable voice commands",
-                          value: voiceEnabled,
-                          iconColor: Colors.green,
-                          onChanged: (value) {
-                            setState(() => voiceEnabled = value);
-                          },
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          isDarkMode: isDarkMode,
-                          textColor: textColor,
-                          subtitleColor: subtitleColor,
-                        ),
+                            _buildSettingTile(
+                              context: context,
+                              icon: Icons.lock_outline_rounded,
+                              title: "Change Password",
+                              subtitle: "Update your password",
+                              iconColor: Colors.purple,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ChangePasswordScreen(),
+                                  ),
+                                );
+                              },
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              isDarkMode: isDarkMode,
+                              textColor: textColor,
+                              subtitleColor: subtitleColor,
+                            ),
 
-                        _buildDropdownTile(
-                          icon: Icons.language_rounded,
-                          title: "Language",
-                          value: selectedLanguage,
-                          options: const [
-                            "English",
-                            "Arabic",
-                            "Hindi",
-                            "Spanish",
+                            _buildSettingTile(
+                              context: context,
+                              icon: Icons.email_outlined,
+                              title: "Notification Email",
+                              subtitle: user?['email'] ?? "Not set",
+                              iconColor: Colors.orange,
+                              onTap: () {},
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              isDarkMode: isDarkMode,
+                              textColor: textColor,
+                              subtitleColor: subtitleColor,
+                            ),
+
+                            SizedBox(height: screenHeight * 0.03),
+
+                            // App Settings
+                            _buildSectionTitle(
+                              "App Settings",
+                              screenWidth,
+                              textColor,
+                            ),
+                            SizedBox(height: screenHeight * 0.015),
+
+                            _buildToggleTile(
+                              icon: Icons.mic_none_outlined,
+                              title: "Voice Recognition",
+                              subtitle: "Enable voice commands",
+                              value: voiceEnabled,
+                              iconColor: Colors.green,
+                              onChanged: (value) {
+                                setState(() => voiceEnabled = value);
+                              },
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              isDarkMode: isDarkMode,
+                              textColor: textColor,
+                              subtitleColor: subtitleColor,
+                            ),
+
+                            _buildDropdownTile(
+                              icon: Icons.language_rounded,
+                              title: "Language",
+                              value: selectedLanguage,
+                              options: const [
+                                "English",
+                                "Arabic",
+                                "Hindi",
+                                "Spanish",
+                              ],
+                              iconColor: Colors.blue,
+                              onChanged: (value) {
+                                setState(() => selectedLanguage = value!);
+                              },
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              isDarkMode: isDarkMode,
+                              textColor: textColor,
+                              subtitleColor: subtitleColor,
+                            ),
+
+                            _buildDropdownTile(
+                              icon: Icons.brightness_6_outlined,
+                              title: "Theme",
+                              value: selectedTheme,
+                              options: const ["Light", "Dark", "System"],
+                              iconColor: Colors.amber,
+                              onChanged: (value) {
+                                setState(() => selectedTheme = value!);
+                              },
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              isDarkMode: isDarkMode,
+                              textColor: textColor,
+                              subtitleColor: subtitleColor,
+                            ),
+
+                            _buildToggleTile(
+                              icon: Icons.face_retouching_natural,
+                              title: "Face ID Login",
+                              subtitle: "Biometric authentication",
+                              value: faceIdEnabled,
+                              iconColor: Colors.pink,
+                              onChanged: (value) {
+                                setState(() => faceIdEnabled = value);
+                              },
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              isDarkMode: isDarkMode,
+                              textColor: textColor,
+                              subtitleColor: subtitleColor,
+                            ),
+
+                            SizedBox(height: screenHeight * 0.05),
+
+                            // App Info
+                            Center(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    "Version 1.0.0",
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.032,
+                                      color: subtitleColor,
+                                    ),
+                                  ),
+                                  SizedBox(height: screenHeight * 0.005),
+                                  Text(
+                                    "© 2024 Management App",
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.03,
+                                      color: subtitleColor.withOpacity(0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: screenHeight * 0.02),
                           ],
-                          iconColor: Colors.blue,
-                          onChanged: (value) {
-                            setState(() => selectedLanguage = value!);
-                          },
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          isDarkMode: isDarkMode,
-                          textColor: textColor,
-                          subtitleColor: subtitleColor,
                         ),
-
-                        _buildDropdownTile(
-                          icon: Icons.brightness_6_outlined,
-                          title: "Theme",
-                          value: selectedTheme,
-                          options: const ["Light", "Dark", "System"],
-                          iconColor: Colors.amber,
-                          onChanged: (value) {
-                            setState(() => selectedTheme = value!);
-                          },
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          isDarkMode: isDarkMode,
-                          textColor: textColor,
-                          subtitleColor: subtitleColor,
-                        ),
-
-                        _buildToggleTile(
-                          icon: Icons.face_retouching_natural,
-                          title: "Face ID Login",
-                          subtitle: "Biometric authentication",
-                          value: faceIdEnabled,
-                          iconColor: Colors.pink,
-                          onChanged: (value) {
-                            setState(() => faceIdEnabled = value);
-                          },
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          isDarkMode: isDarkMode,
-                          textColor: textColor,
-                          subtitleColor: subtitleColor,
-                        ),
-
-                        SizedBox(height: screenHeight * 0.05),
-
-                        // App Info
-                        Center(
-                          child: Column(
-                            children: [
-                              Text(
-                                "Version 1.0.0",
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.032,
-                                  color: subtitleColor,
-                                ),
-                              ),
-                              SizedBox(height: screenHeight * 0.005),
-                              Text(
-                                "© 2024 Management App",
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.03,
-                                  color: subtitleColor.withOpacity(0.6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        SizedBox(height: screenHeight * 0.02),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -719,12 +738,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Logout Confirmation Dialog
   Future<void> _showLogoutDialog(BuildContext context) async {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    await showDialog(
+    // Show confirmation dialog only
+    final bool? confirm = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(screenWidth * 0.04),
@@ -749,7 +771,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         content: Text(
-          "Are you sure you want to logout from your account?",
+          "Are you sure you want to logout?",
           style: TextStyle(
             fontSize: screenWidth * 0.038,
             color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
@@ -757,7 +779,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             style: TextButton.styleFrom(
               foregroundColor: isDarkMode ? Colors.grey[300] : Colors.grey[700],
               padding: EdgeInsets.symmetric(
@@ -766,15 +788,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             child: Text(
-              "Cancel",
+              "No",
               style: TextStyle(fontSize: screenWidth * 0.038),
             ),
           ),
           ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _performLogout(context);
-            },
+            onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
@@ -787,117 +806,95 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             child: Text(
-              "Logout",
+              "Yes",
               style: TextStyle(fontSize: screenWidth * 0.038),
             ),
           ),
         ],
       ),
     );
+
+    // If user confirms, proceed with logout
+    if (confirm == true) {
+      _performLogout(context);
+    }
   }
 
+  // Perform Logout - No loading dialog, directly navigate
   Future<void> _performLogout(BuildContext context) async {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Center(
-          child: Container(
-            padding: EdgeInsets.all(screenWidth * 0.05),
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.grey[800]! : Colors.white,
-              borderRadius: BorderRadius.circular(screenWidth * 0.04),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  color: Colors.blue,
-                  strokeWidth: 3,
-                ),
-                SizedBox(height: screenWidth * 0.04),
-                Text(
-                  "Logging out...",
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.038,
-                    color: isDarkMode ? Colors.white : Colors.grey[700],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
     final auth = AuthService();
     final result = await auth.logoutUser();
 
-    Navigator.pop(context);
+    if (context.mounted) {
+      if (result["success"] == true) {
+        // Direct navigation to GoodbyeScreen without any dialog
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const GoodbyeScreen()),
+          (route) => false, // This removes all previous routes
+        );
+      } else {
+        // Show error message if logout failed
+        _showErrorDialog(context, result["message"] ?? "Logout failed. Please try again.");
+      }
+    }
+  }
 
-    // Show result dialog
+  // Show Error Dialog if Logout Fails
+  void _showErrorDialog(BuildContext context, String message) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        // Auto navigate after 2 seconds
-        Future.delayed(const Duration(seconds: 2), () {
-          Navigator.pop(context);
-          if (result["success"] == true) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              "/loginScreen",
-              (route) => false,
-            );
-          }
-        });
-
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(screenWidth * 0.04),
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+        ),
+        backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+        title: Row(
+          children: [
+            Icon(
+              Icons.error_rounded,
+              color: Colors.red,
+              size: screenWidth * 0.06,
+            ),
+            SizedBox(width: screenWidth * 0.03),
+            Text(
+              "Error",
+              style: TextStyle(
+                fontSize: screenWidth * 0.045,
+                fontWeight: FontWeight.w700,
+                color: isDarkMode ? Colors.white : Colors.grey[900],
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: TextStyle(
+            fontSize: screenWidth * 0.038,
+            color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
           ),
-          backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
-          child: Padding(
-            padding: EdgeInsets.all(screenWidth * 0.04),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  result["success"] ? Icons.check_circle : Icons.error,
-                  size: screenWidth * 0.12,
-                  color: result["success"] ? Colors.green : Colors.red,
-                ),
-                SizedBox(height: screenWidth * 0.04),
-                Text(
-                  result["success"]
-                      ? "Logged Out Successfully!"
-                      : "Logout Failed",
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.045,
-                    fontWeight: FontWeight.w700,
-                    color: isDarkMode ? Colors.white : Colors.grey[900],
-                  ),
-                ),
-                SizedBox(height: screenWidth * 0.02),
-                Text(
-                  result["message"] ?? "",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.035,
-                    color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
-                  ),
-                ),
-              ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue,
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.04,
+                vertical: screenWidth * 0.025,
+              ),
+            ),
+            child: Text(
+              "OK",
+              style: TextStyle(fontSize: screenWidth * 0.038),
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

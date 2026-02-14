@@ -1,14 +1,15 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, unused_local_variable
 
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:management_app/card_screen/leaverequest.dart';
 import 'package:management_app/model/leave_approved_model.dart';
+import 'package:management_app/screen/travel_request_screen.dart';
 import 'package:management_app/services/leave_approved_service.dart';
 import 'package:management_app/services/travel_request_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'leave_detail_screen.dart';
-import 'travel_request_screen.dart';
+import 'travel_detail_screen.dart';
 
 class LeaveApprovalScreen extends StatefulWidget {
   const LeaveApprovalScreen({super.key});
@@ -17,7 +18,7 @@ class LeaveApprovalScreen extends StatefulWidget {
   State<LeaveApprovalScreen> createState() => _LeaveApprovalScreenState();
 }
 
-class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
+class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerProviderStateMixin {
   bool _isFabOpen = false;
   double _fabScale = 0.0;
   double _optionsOpacity = 0.0;
@@ -40,9 +41,75 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
   int _travelCount = 0;
   int _pendingCount = 0;
 
+  late AnimationController _mainController;
+  late AnimationController _bounceController;
+  late AnimationController _pulseController;
+  
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _bounceAnimation;
+  late Animation<double> _pulseAnimation;
+
   @override
   void initState() {
     super.initState();
+    
+    _mainController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _bounceAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _bounceController,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(
+        parent: _pulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _pulseController.repeat(reverse: true);
+    
     _loadEmployeeData().then((_) {
       if (_employeeId.isNotEmpty) {
         _fetchAllRequests(showLoading: true);
@@ -60,12 +127,19 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
         _fetchAllRequests(showLoading: false);
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mainController.forward();
+    });
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
     _searchController.dispose();
+    _mainController.dispose();
+    _bounceController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -157,11 +231,16 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
         final formattedTravels = userTravels.map((travel) {
           return {
             ...travel,
+            "type": "travel",
             "is_logged": true,
             "last_updated": DateTime.now().toIso8601String(),
             "status_color": _getStatusColor(travel["status"] ?? "Pending"),
             "status_bg_color": _getStatusBgColor(travel["status"] ?? "Pending"),
+            "icon": Icons.flight_takeoff,
             "icon_color": Colors.orange,
+            "title": travel["purpose_of_travel"] ?? "Travel Request",
+            "subtitle": travel["employee_name"] ?? "",
+            "created_date": travel["posting_date"] ?? "",
           };
         }).toList();
 
@@ -277,6 +356,9 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
   }
 
   void _toggleFabMenu() {
+    if (!_isFabOpen) {
+      _bounceController.forward();
+    }
     setState(() {
       _isFabOpen = !_isFabOpen;
       if (_isFabOpen) {
@@ -353,223 +435,382 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final padding = mediaQuery.padding;
+    final safeAreaTop = padding.top;
+    final safeAreaBottom = padding.bottom;
+    
+    double responsiveWidth(double percentage) => screenWidth * percentage;
+    double responsiveHeight(double percentage) => screenHeight * percentage;
+    double responsiveFontSize(double baseSize) => baseSize * (screenWidth / 375);
+
+    final primaryColor = isDark ? Colors.blue[300]! : const Color(0xFF2563EB);
+    final secondaryColor = isDark ? Colors.blue[400]! : const Color(0xFF3B82F6);
+    final backgroundColor = isDark ? Colors.grey[900]! : const Color(0xFFF8FAFD);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "My Requests",
-              style: TextStyle(fontSize: screenWidth * 0.045),
-            ),
-            if (_employeeName.isNotEmpty)
-              Text(
-                _employeeName,
-                style: TextStyle(
-                  fontSize: screenWidth * 0.03,
-                  color: Colors.white.withOpacity(0.8),
-                ),
-              ),
-          ],
-        ),
-        centerTitle: false,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, size: screenWidth * 0.06),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: isDark ? theme.cardColor : theme.primaryColor,
-        foregroundColor: isDark ? Colors.white : Colors.white,
-        elevation: 0,
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(
-                  _isRefreshing ? Icons.refresh : Icons.refresh,
-                  size: screenWidth * 0.06,
-                ),
-                onPressed: _isRefreshing ? null : _refreshData,
-                tooltip: "Refresh",
-              ),
-              if (_isRefreshing)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-
+      backgroundColor: backgroundColor,
       body: SafeArea(
+        top: true,
+        bottom: true,
         child: Stack(
           children: [
             Column(
               children: [
-                Padding(
-                  padding: EdgeInsets.all(screenWidth * 0.04),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _searchController,
-                        onChanged: _onSearchChanged,
-                        decoration: InputDecoration(
-                          hintText: "Search requests...",
-                          hintStyle: TextStyle(fontSize: screenWidth * 0.035),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            size: screenWidth * 0.05,
-                          ),
-                          filled: true,
-                          fillColor: isDark
-                              ? theme.cardColor
-                              : Colors.grey.shade100,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.04,
-                            vertical: screenHeight * 0.02,
-                          ),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear,
-                                    size: screenWidth * 0.05,
-                                  ),
-                                  onPressed: _clearSearch,
-                                )
-                              : null,
-                        ),
-                        style: TextStyle(fontSize: screenWidth * 0.04),
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: responsiveWidth(0.04),
+                        vertical: responsiveHeight(0.02),
                       ),
-
-                      SizedBox(height: screenHeight * 0.02),
-
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            Text(
-                              "Filter: ",
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.035,
-                                color: theme.hintColor,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [primaryColor, secondaryColor],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 20,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: IconButton(
+                              icon: Container(
+                                padding: EdgeInsets.all(responsiveWidth(0.01)),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: Colors.white,
+                                  size: responsiveWidth(0.05),
+                                ),
                               ),
+                              onPressed: () => Navigator.pop(context),
                             ),
-                            SizedBox(width: screenWidth * 0.02),
-                            Wrap(
-                              spacing: screenWidth * 0.02,
-                              children: ["All", "Leave", "Travel"].map((
-                                filter,
-                              ) {
-                                final isSelected = _selectedFilter == filter;
-                                return ChoiceChip(
-                                  label: Text(
-                                    filter,
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                "My Requests",
+                                style: TextStyle(
+                                  fontSize: responsiveFontSize(20),
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              if (_employeeName.isNotEmpty)
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: responsiveWidth(0.02),
+                                    vertical: responsiveHeight(0.002),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    _employeeName,
                                     style: TextStyle(
-                                      fontSize: screenWidth * 0.035,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : theme.hintColor,
+                                      fontSize: responsiveFontSize(12),
+                                      color: Colors.white.withOpacity(0.9),
                                     ),
                                   ),
-                                  selected: isSelected,
-                                  backgroundColor: isDark
-                                      ? Colors.grey[800]
-                                      : Colors.grey[200],
-                                  selectedColor: theme.primaryColor,
-                                  onSelected: (_) => _onFilterChanged(filter),
-                                );
-                              }).toList(),
+                                ),
+                            ],
+                          ),
+                          Stack(
+                            children: [
+                              ScaleTransition(
+                                scale: _scaleAnimation,
+                                child: IconButton(
+                                  icon: AnimatedRotation(
+                                    duration: const Duration(milliseconds: 500),
+                                    turns: _isRefreshing ? 1 : 0,
+                                    child: Icon(
+                                      Icons.refresh_rounded,
+                                      size: responsiveWidth(0.06),
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  onPressed: _isRefreshing ? null : _refreshData,
+                                  tooltip: "Refresh",
+                                ),
+                              ),
+                              if (_isRefreshing)
+                                Positioned(
+                                  right: responsiveWidth(0.02),
+                                  top: responsiveHeight(0.01),
+                                  child: ScaleTransition(
+                                    scale: _pulseAnimation,
+                                    child: Container(
+                                      width: responsiveWidth(0.015),
+                                      height: responsiveWidth(0.015),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.green,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Search and Filter Section
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Padding(
+                      padding: EdgeInsets.all(responsiveWidth(0.04)),
+                      child: Column(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: _onSearchChanged,
+                              decoration: InputDecoration(
+                                hintText: "Search requests...",
+                                hintStyle: TextStyle(
+                                  fontSize: responsiveFontSize(14),
+                                  color: subtitleColor,
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search_rounded,
+                                  size: responsiveWidth(0.05),
+                                  color: primaryColor,
+                                ),
+                                filled: true,
+                                fillColor: isDark ? cardColor : Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+                                  borderSide: BorderSide(
+                                    color: primaryColor,
+                                    width: 2,
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: responsiveWidth(0.04),
+                                  vertical: responsiveHeight(0.02),
+                                ),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(
+                                          Icons.clear_rounded,
+                                          size: responsiveWidth(0.05),
+                                          color: subtitleColor,
+                                        ),
+                                        onPressed: _clearSearch,
+                                      )
+                                    : null,
+                              ),
+                              style: TextStyle(
+                                fontSize: responsiveFontSize(16),
+                                color: textColor,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: responsiveHeight(0.02)),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                Text(
+                                  "Filter: ",
+                                  style: TextStyle(
+                                    fontSize: responsiveFontSize(14),
+                                    color: subtitleColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                SizedBox(width: responsiveWidth(0.02)),
+                                Wrap(
+                                  spacing: responsiveWidth(0.02),
+                                  children: ["All", "Leave", "Travel"].map((
+                                    filter,
+                                  ) {
+                                    final isSelected = _selectedFilter == filter;
+                                    final filterColor = filter == "Leave" 
+                                        ? Colors.green 
+                                        : filter == "Travel" 
+                                            ? Colors.orange 
+                                            : primaryColor;
+                                    return ChoiceChip(
+                                      label: Text(
+                                        filter,
+                                        style: TextStyle(
+                                          fontSize: responsiveFontSize(14),
+                                          color: isSelected
+                                              ? Colors.white
+                                              : subtitleColor,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        ),
+                                      ),
+                                      selected: isSelected,
+                                      backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                                      selectedColor: isSelected ? filterColor : null,
+                                      onSelected: (_) => _onFilterChanged(filter),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: responsiveWidth(0.04),
+                                        vertical: responsiveHeight(0.01),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Statistics Cards
+                if (!_isLoading && !_hasError && _allRequests.isNotEmpty)
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: responsiveWidth(0.04),
+                          vertical: responsiveHeight(0.01),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem(
+                              title: "Total",
+                              count: _totalCount.toString(),
+                              color: Colors.blue,
+                              icon: Icons.list_alt_rounded,
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              responsiveWidth: responsiveWidth,
+                              responsiveHeight: responsiveHeight,
+                              responsiveFontSize: responsiveFontSize,
+                            ),
+                            _buildStatItem(
+                              title: "Leaves",
+                              count: _leaveCount.toString(),
+                              color: Colors.green,
+                              icon: Icons.beach_access_rounded,
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              responsiveWidth: responsiveWidth,
+                              responsiveHeight: responsiveHeight,
+                              responsiveFontSize: responsiveFontSize,
+                            ),
+                            _buildStatItem(
+                              title: "Travel",
+                              count: _travelCount.toString(),
+                              color: Colors.orange,
+                              icon: Icons.flight_takeoff_rounded,
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              responsiveWidth: responsiveWidth,
+                              responsiveHeight: responsiveHeight,
+                              responsiveFontSize: responsiveFontSize,
+                            ),
+                            _buildStatItem(
+                              title: "Pending",
+                              count: _pendingCount.toString(),
+                              color: Colors.amber,
+                              icon: Icons.pending_rounded,
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              responsiveWidth: responsiveWidth,
+                              responsiveHeight: responsiveHeight,
+                              responsiveFontSize: responsiveFontSize,
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                if (!_isLoading && !_hasError && _allRequests.isNotEmpty)
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: screenHeight * 0.01,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatItem(
-                          title: "Total",
-                          count: _totalCount.toString(),
-                          color: Colors.blue,
-                          icon: Icons.list_alt,
-                          screenWidth: screenWidth,
-                        ),
-                        _buildStatItem(
-                          title: "Leaves",
-                          count: _leaveCount.toString(),
-                          color: Colors.green,
-                          icon: Icons.beach_access,
-                          screenWidth: screenWidth,
-                        ),
-                        _buildStatItem(
-                          title: "Travel",
-                          count: _travelCount.toString(),
-                          color: Colors.orange,
-                          icon: Icons.flight_takeoff,
-                          screenWidth: screenWidth,
-                        ),
-                        _buildStatItem(
-                          title: "Pending",
-                          count: _pendingCount.toString(),
-                          color: Colors.orange,
-                          icon: Icons.pending,
-                          screenWidth: screenWidth,
-                        ),
-                      ],
                     ),
                   ),
 
                 if (_isRefreshing)
                   LinearProgressIndicator(
                     minHeight: 2,
-                    backgroundColor: theme.primaryColor.withOpacity(0.2),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      theme.primaryColor,
-                    ),
+                    backgroundColor: primaryColor.withOpacity(0.2),
+                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                   ),
 
                 if (_employeeId.isEmpty && !_isLoading)
                   Padding(
-                    padding: EdgeInsets.all(screenWidth * 0.04),
+                    padding: EdgeInsets.all(responsiveWidth(0.04)),
                     child: Container(
-                      padding: EdgeInsets.all(screenWidth * 0.04),
+                      padding: EdgeInsets.all(responsiveWidth(0.04)),
                       decoration: BoxDecoration(
                         color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
                         border: Border.all(color: Colors.orange),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning, color: Colors.orange),
-                          SizedBox(width: screenWidth * 0.03),
-                          const Expanded(
+                          Icon(Icons.warning_amber_rounded, color: Colors.orange, size: responsiveWidth(0.05)),
+                          SizedBox(width: responsiveWidth(0.03)),
+                          Expanded(
                             child: Text(
                               "Employee ID not found. Showing all requests.",
-                              style: TextStyle(color: Colors.orange),
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: responsiveFontSize(14),
+                              ),
                             ),
                           ),
                         ],
@@ -583,11 +824,15 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     isDark,
                     screenWidth,
                     screenHeight,
+                    responsiveWidth,
+                    responsiveHeight,
+                    responsiveFontSize,
                   ),
                 ),
               ],
             ),
 
+            // FAB Menu Overlay
             if (_isFabOpen)
               GestureDetector(
                 onTap: _toggleFabMenu,
@@ -598,9 +843,10 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                 ),
               ),
 
+            // FAB Options
             Positioned(
-              bottom: screenHeight * 0.15,
-              right: screenWidth * 0.05,
+              bottom: responsiveHeight(0.15),
+              right: responsiveWidth(0.05),
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
                 opacity: _optionsOpacity,
@@ -609,23 +855,34 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                   scale: _fabScale,
                   child: Column(
                     children: [
-                      _buildFabOptionItem(
-                        icon: Icons.flight_takeoff_outlined,
-                        label: "Travel Request",
-                        color: Colors.blue,
-                        onTap: _navigateToTravelRequest,
-                        theme: theme,
-                        screenWidth: screenWidth,
+                      ScaleTransition(
+                        scale: _bounceAnimation,
+                        child: _buildFabOptionItem(
+                          icon: Icons.flight_takeoff_outlined,
+                          label: "Travel Request",
+                          color: Colors.blue,
+                          onTap: _navigateToTravelRequest,
+                          theme: theme,
+                          screenWidth: screenWidth,
+                          responsiveWidth: responsiveWidth,
+                          responsiveHeight: responsiveHeight,
+                          responsiveFontSize: responsiveFontSize,
+                        ),
                       ),
-                      SizedBox(height: screenHeight * 0.02),
-
-                      _buildFabOptionItem(
-                        icon: Icons.beach_access_outlined,
-                        label: "Create Leave",
-                        color: Colors.green,
-                        onTap: _navigateToLeaveRequest,
-                        theme: theme,
-                        screenWidth: screenWidth,
+                      SizedBox(height: responsiveHeight(0.02)),
+                      ScaleTransition(
+                        scale: _bounceAnimation,
+                        child: _buildFabOptionItem(
+                          icon: Icons.beach_access_outlined,
+                          label: "Create Leave",
+                          color: Colors.green,
+                          onTap: _navigateToLeaveRequest,
+                          theme: theme,
+                          screenWidth: screenWidth,
+                          responsiveWidth: responsiveWidth,
+                          responsiveHeight: responsiveHeight,
+                          responsiveFontSize: responsiveFontSize,
+                        ),
                       ),
                     ],
                   ),
@@ -633,23 +890,28 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
               ),
             ),
 
+            // Main FAB
             Positioned(
-              bottom: screenHeight * 0.03,
-              right: screenWidth * 0.05,
+              bottom: responsiveHeight(0.03),
+              right: responsiveWidth(0.05),
               child: GestureDetector(
                 onTap: _toggleFabMenu,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  width: screenWidth * 0.14,
-                  height: screenWidth * 0.14,
+                  width: responsiveWidth(0.14),
+                  height: responsiveWidth(0.14),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: theme.primaryColor,
+                    gradient: LinearGradient(
+                      colors: [primaryColor, secondaryColor],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.4 : 0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
+                        color: primaryColor.withOpacity(0.4),
+                        blurRadius: responsiveWidth(0.04),
+                        spreadRadius: responsiveWidth(0.005),
                         offset: const Offset(0, 4),
                       ),
                     ],
@@ -658,9 +920,9 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     duration: const Duration(milliseconds: 300),
                     turns: _isFabOpen ? 0.125 : 0,
                     child: Icon(
-                      _isFabOpen ? Icons.close : Icons.add,
+                      _isFabOpen ? Icons.close_rounded : Icons.add_rounded,
                       color: Colors.white,
-                      size: screenWidth * 0.06,
+                      size: responsiveWidth(0.06),
                     ),
                   ),
                 ),
@@ -678,31 +940,57 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     required Color color,
     required IconData icon,
     required double screenWidth,
+    required double screenHeight,
+    required double Function(double) responsiveWidth,
+    required double Function(double) responsiveHeight,
+    required double Function(double) responsiveFontSize,
   }) {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(screenWidth * 0.02),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: screenWidth * 0.05),
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: responsiveWidth(0.02),
+          vertical: responsiveHeight(0.01),
         ),
-        SizedBox(height: screenWidth * 0.01),
-        Text(
-          count,
-          style: TextStyle(
-            fontSize: screenWidth * 0.045,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        Text(
-          title,
-          style: TextStyle(fontSize: screenWidth * 0.03, color: Colors.grey),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(responsiveWidth(0.02)),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: responsiveWidth(0.05)),
+            ),
+            SizedBox(height: responsiveHeight(0.005)),
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: responsiveFontSize(18),
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: responsiveFontSize(10),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -711,19 +999,30 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     bool isDark,
     double screenWidth,
     double screenHeight,
+    double Function(double) responsiveWidth,
+    double Function(double) responsiveHeight,
+    double Function(double) responsiveFontSize,
   ) {
     if (_isLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: theme.primaryColor),
-            SizedBox(height: screenHeight * 0.02),
+            SizedBox(
+              width: responsiveWidth(0.15),
+              height: responsiveWidth(0.15),
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: theme.primaryColor,
+              ),
+            ),
+            SizedBox(height: responsiveHeight(0.02)),
             Text(
               "Loading your requests...",
               style: TextStyle(
                 color: theme.hintColor,
-                fontSize: screenWidth * 0.04,
+                fontSize: responsiveFontSize(16),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -733,53 +1032,71 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
 
     if (_hasError) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: screenWidth * 0.15,
-              color: Colors.red,
-            ),
-            SizedBox(height: screenHeight * 0.02),
-            Text(
-              "Failed to load requests",
-              style: TextStyle(
-                color: Colors.red,
-                fontSize: screenWidth * 0.04,
-                fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: EdgeInsets.all(responsiveWidth(0.04)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: EdgeInsets.all(responsiveWidth(0.05)),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red.withOpacity(0.1),
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  size: responsiveWidth(0.15),
+                  color: Colors.red,
+                ),
               ),
-            ),
-            SizedBox(height: screenHeight * 0.01),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
-              child: Text(
-                _errorMessage,
+              SizedBox(height: responsiveHeight(0.02)),
+              Text(
+                "Failed to load requests",
                 style: TextStyle(
-                  color: theme.hintColor,
-                  fontSize: screenWidth * 0.035,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.02),
-            ElevatedButton(
-              onPressed: _refreshData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.red,
+                  fontSize: responsiveFontSize(18),
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              child: Text(
-                "Try Again",
-                style: TextStyle(
-                  fontSize: screenWidth * 0.04,
-                  color: Colors.white,
+              SizedBox(height: responsiveHeight(0.01)),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: responsiveWidth(0.1)),
+                child: Text(
+                  _errorMessage,
+                  style: TextStyle(
+                    color: theme.hintColor,
+                    fontSize: responsiveFontSize(14),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
-            ),
-          ],
+              SizedBox(height: responsiveHeight(0.02)),
+              ScaleTransition(
+                scale: _pulseAnimation,
+                child: ElevatedButton(
+                  onPressed: _refreshData,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(responsiveWidth(0.025)),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: responsiveWidth(0.06),
+                      vertical: responsiveHeight(0.015),
+                    ),
+                  ),
+                  child: Text(
+                    "Try Again",
+                    style: TextStyle(
+                      fontSize: responsiveFontSize(16),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -791,36 +1108,39 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
           children: [
             Icon(
               _selectedFilter == "Travel"
-                  ? Icons.flight_takeoff
+                  ? Icons.flight_takeoff_rounded
                   : _selectedFilter == "Leave"
-                  ? Icons.beach_access
-                  : Icons.inbox_outlined,
-              size: screenWidth * 0.2,
+                      ? Icons.beach_access_rounded
+                      : Icons.inbox_outlined,
+              size: responsiveWidth(0.2),
               color: theme.hintColor,
             ),
-            SizedBox(height: screenHeight * 0.02),
+            SizedBox(height: responsiveHeight(0.02)),
             Text(
               _selectedFilter == "All"
                   ? "No requests found"
                   : "No $_selectedFilter requests",
               style: TextStyle(
                 color: theme.hintColor,
-                fontSize: screenWidth * 0.045,
-                fontWeight: FontWeight.w500,
+                fontSize: responsiveFontSize(18),
+                fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: screenHeight * 0.01),
+            SizedBox(height: responsiveHeight(0.01)),
             if (_searchController.text.isNotEmpty || _selectedFilter != "All")
               TextButton(
                 onPressed: () {
                   _searchController.clear();
                   _onFilterChanged("All");
                 },
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.primaryColor,
+                ),
                 child: Text(
                   "Clear filters",
                   style: TextStyle(
-                    color: theme.primaryColor,
-                    fontSize: screenWidth * 0.04,
+                    fontSize: responsiveFontSize(16),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -835,15 +1155,40 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
       },
       color: theme.primaryColor,
       child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         padding: EdgeInsets.only(
-          bottom: screenHeight * 0.15,
-          top: screenHeight * 0.01,
+          bottom: responsiveHeight(0.15),
+          top: responsiveHeight(0.01),
         ),
         itemCount: _filteredRequests.length,
         itemBuilder: (context, index) {
           final request = _filteredRequests[index];
-          return _buildRequestCard(request, theme, screenWidth, screenHeight);
+          return TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 500 + (index * 50)),
+            curve: Curves.easeOutBack,
+            builder: (context, double value, child) {
+              final double clampedValue = value.clamp(0.0, 1.0);
+              return Opacity(
+                opacity: clampedValue,
+                child: Transform.translate(
+                  offset: Offset(0, responsiveHeight(0.02) * (1 - clampedValue)),
+                  child: child,
+                ),
+              );
+            },
+            child: _buildRequestCard(
+              request, 
+              theme, 
+              screenWidth, 
+              screenHeight,
+              responsiveWidth,
+              responsiveHeight,
+              responsiveFontSize,
+            ),
+          );
         },
       ),
     );
@@ -854,6 +1199,9 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     ThemeData theme,
     double screenWidth,
     double screenHeight,
+    double Function(double) responsiveWidth,
+    double Function(double) responsiveHeight,
+    double Function(double) responsiveFontSize,
   ) {
     final type = request["type"];
     final data = request["data"];
@@ -868,227 +1216,188 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
 
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.04,
-        vertical: screenWidth * 0.015,
+        horizontal: responsiveWidth(0.04),
+        vertical: responsiveWidth(0.015),
       ),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        color: theme.cardColor,
-        child: InkWell(
-          onTap: () {
-            if (type == "leave") {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      LeaveDetailScreen(leave: data as LeaveApprovedModel),
-                ),
-              );
-            } else if (type == "travel") {
-              _showTravelDetailsDialog(data, theme, screenWidth);
-            }
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: EdgeInsets.all(screenWidth * 0.04),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Container(
-                            width: screenWidth * 0.1,
-                            height: screenWidth * 0.1,
-                            decoration: BoxDecoration(
-                              color: iconColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+          child: InkWell(
+            onTap: () {
+              if (type == "leave") {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        LeaveDetailScreen(leave: data as LeaveApprovedModel),
+                  ),
+                );
+              } else if (type == "travel") {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TravelDetailScreen(travelData: data),
+                  ),
+                );
+              }
+            },
+            borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+            child: Padding(
+              padding: EdgeInsets.all(responsiveWidth(0.04)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: responsiveWidth(0.1),
+                              height: responsiveWidth(0.1),
+                              decoration: BoxDecoration(
+                                color: iconColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                icon,
+                                size: responsiveWidth(0.05),
+                                color: iconColor,
+                              ),
                             ),
-                            child: Icon(
-                              icon,
-                              size: screenWidth * 0.05,
-                              color: iconColor,
-                            ),
-                          ),
-                          SizedBox(width: screenWidth * 0.03),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  type == "leave"
-                                      ? "LEAVE REQUEST"
-                                      : "TRAVEL REQUEST",
-                                  style: TextStyle(
-                                    color: theme.hintColor,
-                                    fontSize: screenWidth * 0.028,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                SizedBox(height: screenWidth * 0.005),
-                                Text(
-                                  title,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: screenWidth * 0.04,
-                                    color: theme.textTheme.bodyLarge?.color,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                                if (employeeName.isNotEmpty)
+                            SizedBox(width: responsiveWidth(0.03)),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    "Employee: $employeeName",
+                                    type == "leave"
+                                        ? "LEAVE REQUEST"
+                                        : "TRAVEL REQUEST",
                                     style: TextStyle(
-                                      fontSize: screenWidth * 0.032,
                                       color: theme.hintColor,
+                                      fontSize: responsiveFontSize(11),
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  SizedBox(height: responsiveHeight(0.005)),
+                                  Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: responsiveFontSize(16),
+                                      color: theme.textTheme.bodyLarge?.color,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
                                   ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.03,
-                            vertical: screenWidth * 0.015,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusBgColor,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: statusColor.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            status.toUpperCase(),
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: screenWidth * 0.028,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: screenWidth * 0.01),
-                        Row(
-                          children: [
-                            Icon(
-                              isLogged ? Icons.cloud_done : Icons.cloud_off,
-                              size: screenWidth * 0.03,
-                              color: isLogged ? Colors.green : Colors.grey,
-                            ),
-                            SizedBox(width: screenWidth * 0.01),
-                            Text(
-                              isLogged ? "Logged" : "Not Logged",
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.025,
-                                color: isLogged ? Colors.green : Colors.grey,
+                                  if (employeeName.isNotEmpty)
+                                    Text(
+                                      "Employee: $employeeName",
+                                      style: TextStyle(
+                                        fontSize: responsiveFontSize(13),
+                                        color: theme.hintColor,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: responsiveWidth(0.03),
+                              vertical: responsiveWidth(0.015),
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusBgColor,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: statusColor.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              status.toUpperCase(),
+                              style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: responsiveFontSize(11),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: responsiveHeight(0.01)),
+                          Row(
+                            children: [
+                              Icon(
+                                isLogged ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                                size: responsiveWidth(0.03),
+                                color: isLogged ? Colors.green : Colors.grey,
+                              ),
+                              SizedBox(width: responsiveWidth(0.01)),
+                              Text(
+                                isLogged ? "Logged" : "Not Logged",
+                                style: TextStyle(
+                                  fontSize: responsiveFontSize(10),
+                                  color: isLogged ? Colors.green : Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: responsiveHeight(0.04)),
+
+                  Divider(height: 1, color: theme.dividerColor.withOpacity(0.3)),
+
+                  SizedBox(height: responsiveHeight(0.04)),
+
+                  if (type == "leave")
+                    _buildLeaveDetails(
+                      data as LeaveApprovedModel,
+                      theme,
+                      screenWidth,
+                      responsiveWidth,
+                      responsiveHeight,
+                      responsiveFontSize,
+                    )
+                  else
+                    _buildTravelDetails(
+                      request, 
+                      theme, 
+                      screenWidth,
+                      responsiveWidth,
+                      responsiveHeight,
+                      responsiveFontSize,
                     ),
-                  ],
-                ),
-
-                SizedBox(height: screenWidth * 0.04),
-
-                Divider(height: 1, color: theme.dividerColor.withOpacity(0.3)),
-
-                SizedBox(height: screenWidth * 0.04),
-
-                if (type == "leave")
-                  _buildLeaveDetails(
-                    data as LeaveApprovedModel,
-                    theme,
-                    screenWidth,
-                  )
-                else
-                  _buildTravelDetails(request, theme, screenWidth),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _showTravelDetailsDialog(
-    Map<String, dynamic> travelData,
-    ThemeData theme,
-    double screenWidth,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Travel Request Details"),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow(
-                "Employee:",
-                travelData["employee_name"] ?? travelData["employee"] ?? "N/A",
-              ),
-              _buildDetailRow(
-                "Purpose:",
-                travelData["purpose_of_travel"] ?? "N/A",
-              ),
-              _buildDetailRow("Type:", travelData["travel_type"] ?? "N/A"),
-              _buildDetailRow(
-                "Funding:",
-                travelData["travel_funding"] ?? "N/A",
-              ),
-              _buildDetailRow(
-                "Status:",
-                travelData["status"] ?? travelData["workflow_state"] ?? "N/A",
-              ),
-              _buildDetailRow(
-                "Created:",
-                travelData["creation"] ?? travelData["posting_date"] ?? "N/A",
-              ),
-              _buildDetailRow("Document No:", travelData["name"] ?? "N/A"),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(value, style: TextStyle(color: Colors.grey[700])),
-          ),
-        ],
       ),
     );
   }
@@ -1097,6 +1406,9 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     LeaveApprovedModel leave,
     ThemeData theme,
     double screenWidth,
+    double Function(double) responsiveWidth,
+    double Function(double) responsiveHeight,
+    double Function(double) responsiveFontSize,
   ) {
     return Column(
       children: [
@@ -1111,16 +1423,16 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     "EMPLOYEE",
                     style: TextStyle(
                       color: theme.hintColor,
-                      fontSize: screenWidth * 0.025,
+                      fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(height: screenWidth * 0.01),
+                  SizedBox(height: responsiveHeight(0.01)),
                   Text(
                     leave.employeeName,
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: screenWidth * 0.035,
+                      fontSize: responsiveFontSize(14),
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -1128,7 +1440,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                 ],
               ),
             ),
-            SizedBox(width: screenWidth * 0.04),
+            SizedBox(width: responsiveWidth(0.04)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1137,23 +1449,23 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     "FROM DATE",
                     style: TextStyle(
                       color: theme.hintColor,
-                      fontSize: screenWidth * 0.025,
+                      fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(height: screenWidth * 0.01),
+                  SizedBox(height: responsiveHeight(0.01)),
                   Text(
                     leave.fromDate,
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: screenWidth * 0.035,
+                      fontSize: responsiveFontSize(14),
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(width: screenWidth * 0.04),
+            SizedBox(width: responsiveWidth(0.04)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1162,16 +1474,16 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     "TO DATE",
                     style: TextStyle(
                       color: theme.hintColor,
-                      fontSize: screenWidth * 0.025,
+                      fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(height: screenWidth * 0.01),
+                  SizedBox(height: responsiveHeight(0.01)),
                   Text(
                     leave.toDate,
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: screenWidth * 0.035,
+                      fontSize: responsiveFontSize(14),
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                   ),
@@ -1180,7 +1492,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
             ),
           ],
         ),
-        SizedBox(height: screenWidth * 0.03),
+        SizedBox(height: responsiveHeight(0.03)),
         if (leave.reason.isNotEmpty)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1189,15 +1501,15 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                 "REASON",
                 style: TextStyle(
                   color: theme.hintColor,
-                  fontSize: screenWidth * 0.025,
+                  fontSize: responsiveFontSize(10),
                   letterSpacing: 0.5,
                 ),
               ),
-              SizedBox(height: screenWidth * 0.01),
+              SizedBox(height: responsiveHeight(0.01)),
               Text(
                 leave.reason,
                 style: TextStyle(
-                  fontSize: screenWidth * 0.035,
+                  fontSize: responsiveFontSize(14),
                   color: theme.textTheme.bodyLarge?.color,
                 ),
                 maxLines: 2,
@@ -1213,6 +1525,9 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     Map<String, dynamic> travel,
     ThemeData theme,
     double screenWidth,
+    double Function(double) responsiveWidth,
+    double Function(double) responsiveHeight,
+    double Function(double) responsiveFontSize,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1227,16 +1542,16 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     "PURPOSE",
                     style: TextStyle(
                       color: theme.hintColor,
-                      fontSize: screenWidth * 0.025,
+                      fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(height: screenWidth * 0.01),
+                  SizedBox(height: responsiveHeight(0.01)),
                   Text(
                     travel["purpose_of_travel"] ?? "N/A",
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: screenWidth * 0.035,
+                      fontSize: responsiveFontSize(14),
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -1245,7 +1560,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                 ],
               ),
             ),
-            SizedBox(width: screenWidth * 0.04),
+            SizedBox(width: responsiveWidth(0.04)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1254,16 +1569,16 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     "TYPE",
                     style: TextStyle(
                       color: theme.hintColor,
-                      fontSize: screenWidth * 0.025,
+                      fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(height: screenWidth * 0.01),
+                  SizedBox(height: responsiveHeight(0.01)),
                   Text(
                     travel["travel_type"] ?? "N/A",
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: screenWidth * 0.035,
+                      fontSize: responsiveFontSize(14),
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                   ),
@@ -1272,7 +1587,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
             ),
           ],
         ),
-        SizedBox(height: screenWidth * 0.03),
+        SizedBox(height: responsiveHeight(0.03)),
         Row(
           children: [
             Expanded(
@@ -1283,23 +1598,23 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     "FUNDING",
                     style: TextStyle(
                       color: theme.hintColor,
-                      fontSize: screenWidth * 0.025,
+                      fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(height: screenWidth * 0.01),
+                  SizedBox(height: responsiveHeight(0.01)),
                   Text(
                     travel["travel_funding"] ?? "N/A",
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: screenWidth * 0.035,
+                      fontSize: responsiveFontSize(14),
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(width: screenWidth * 0.04),
+            SizedBox(width: responsiveWidth(0.04)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1308,16 +1623,16 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                     "REQUESTED ON",
                     style: TextStyle(
                       color: theme.hintColor,
-                      fontSize: screenWidth * 0.025,
+                      fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(height: screenWidth * 0.01),
+                  SizedBox(height: responsiveHeight(0.01)),
                   Text(
                     travel["posting_date"]?.toString().split(" ")[0] ?? "N/A",
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: screenWidth * 0.035,
+                      fontSize: responsiveFontSize(14),
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                   ),
@@ -1337,17 +1652,20 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
     required VoidCallback onTap,
     required ThemeData theme,
     required double screenWidth,
+    required double Function(double) responsiveWidth,
+    required double Function(double) responsiveHeight,
+    required double Function(double) responsiveFontSize,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.04,
-          vertical: screenWidth * 0.03,
+          horizontal: responsiveWidth(0.04),
+          vertical: responsiveWidth(0.03),
         ),
         decoration: BoxDecoration(
           color: theme.cardColor,
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(responsiveWidth(0.06)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
@@ -1360,24 +1678,24 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: screenWidth * 0.09,
-              height: screenWidth * 0.09,
+              width: responsiveWidth(0.09),
+              height: responsiveWidth(0.09),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: screenWidth * 0.05),
+              child: Icon(icon, color: color, size: responsiveWidth(0.05)),
             ),
-            SizedBox(width: screenWidth * 0.03),
+            SizedBox(width: responsiveWidth(0.03)),
             Text(
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: screenWidth * 0.038,
+                fontSize: responsiveFontSize(15),
                 color: theme.textTheme.bodyLarge?.color,
               ),
             ),
-            SizedBox(width: screenWidth * 0.02),
+            SizedBox(width: responsiveWidth(0.02)),
           ],
         ),
       ),

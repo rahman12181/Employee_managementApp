@@ -239,7 +239,6 @@ class _HomemainScreenState extends State<HomemainScreen>
       final utcNow = DateTime.now().toUtc();
       final riyadhNow = utcNow.add(const Duration(hours: 3));
 
-      // ✅ Save locally first
       if (isPunchIn) {
         await punchProvider.setPunchIn(utcNow);
         _successText =
@@ -250,10 +249,8 @@ class _HomemainScreenState extends State<HomemainScreen>
             "Checked out at ${DateFormat('hh:mm a').format(riyadhNow)}";
       }
 
-      // ✅ Send to server
       await _checkinService.checkIn(employeeId: employeeId, logType: logType);
 
-      // Reload attendance
       final currentMonth = DateTime(utcNow.year, utcNow.month);
       await attendanceProvider.loadMonthAttendance(employeeId, currentMonth);
 
@@ -432,6 +429,7 @@ class _HomemainScreenState extends State<HomemainScreen>
     final screenHeight = mediaQuery.size.height;
     final screenWidth = mediaQuery.size.width;
     final isPortrait = screenHeight > screenWidth;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
   
     final buttonSize = isPortrait 
         ? screenWidth * 0.45 
@@ -441,388 +439,400 @@ class _HomemainScreenState extends State<HomemainScreen>
     final glowSize = buttonSize * 1.25;
     
     final punchProvider = Provider.of<PunchProvider>(context);
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: screenHeight - mediaQuery.padding.top - mediaQuery.padding.bottom,
+    // Get gradient colors based on theme
+    final List<Color> headerGradientColors = isDarkMode
+        ? [
+            Colors.grey.shade900,
+            Colors.grey.shade800,
+          ]
+        : [
+            Colors.blue.shade50,
+            Colors.purple.shade50,
+          ];
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        // Make status bar transparent to show our gradient container behind it
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDarkMode ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: isDarkMode ? Colors.grey.shade900 : Colors.white,
+        systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Column(
+          children: [
+            // Status bar area with gradient (fixed at top)
+            Container(
+              height: mediaQuery.padding.top,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: headerGradientColors,
+                ),
+              ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.05,
-                    vertical: screenHeight * 0.02,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDarkMode
-                          ? [
-                              Colors.grey.shade900,
-                              Colors.grey.shade800,
-                            ]
-                          : [
-                              Colors.blue.shade50,
-                              Colors.purple.shade50,
-                            ],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(25),
-                      bottomRight: Radius.circular(25),
-                      
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Consumer<ProfileProvider>(
-                        builder: (_, provider, __) {
-                          final user = provider.profileData;
-                          final imagePath = user?['user_image'];
-                          return Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () =>
-                                    Navigator.pushNamed(context, '/settingScreen'),
-                                child: Container(
-                                  width: screenWidth * 0.12,
-                                  height: screenWidth * 0.12,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 1.5,
+            // Scrollable content with bounce effect (entire screen except status bar)
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                child: Column(
+                  children: [
+                    // Header content with gradient
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: headerGradientColors,
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(25),
+                          bottomRight: Radius.circular(25),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          top: screenHeight * 0.02,
+                          left: screenWidth * 0.05,
+                          right: screenWidth * 0.05,
+                          bottom: screenHeight * 0.02,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Consumer<ProfileProvider>(
+                              builder: (_, provider, __) {
+                                final user = provider.profileData;
+                                final imagePath = user?['user_image'];
+                                return Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () =>
+                                          Navigator.pushNamed(context, '/settingScreen'),
+                                      child: Container(
+                                        width: screenWidth * 0.12,
+                                        height: screenWidth * 0.12,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.1),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                        child: CircleAvatar(
+                                          backgroundColor: Colors.blue.shade50,
+                                          backgroundImage: (imagePath != null &&
+                                                  imagePath.isNotEmpty)
+                                              ? NetworkImage(
+                                                  "https://ppecon.erpnext.com$imagePath",
+                                                )
+                                              : const AssetImage(
+                                                      "assets/images/app_icon.png",
+                                                    )
+                                                  as ImageProvider,
+                                        ),
+                                      ),
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 3),
+                                    SizedBox(width: screenWidth * 0.03),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            _greeting,
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.03,
+                                              color: isDarkMode
+                                                  ? Colors.grey.shade300
+                                                  : Colors.grey.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          SizedBox(height: screenHeight * 0.003),
+                                          Text(
+                                            user?['full_name'] ?? "Employee",
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.045,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDarkMode
+                                                  ? Colors.white
+                                                  : Colors.grey.shade900,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            SizedBox(height: screenHeight * 0.025),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _currentTime,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.13,
+                                    fontWeight: FontWeight.w900,
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : Colors.grey.shade900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                SizedBox(height: screenHeight * 0.005),
+                                Text(
+                                  _currentDate,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.035,
+                                    color: isDarkMode
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade600,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: screenHeight * 0.02),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Main content
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.05,
+                        vertical: screenHeight * 0.025,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: glowSize,
+                                height: glowSize,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      _punchButtonColor(punchProvider)
+                                          .withOpacity(0.08),
+                                      Colors.transparent,
+                                    ],
+                                    radius: 0.8,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: progressSize,
+                                height: progressSize,
+                                child: CircularProgressIndicator(
+                                  value: punchProvider.progressValue().clamp(0.0, 1.0),
+                                  strokeWidth: screenWidth * 0.015,
+                                  color: _punchButtonColor(punchProvider),
+                                  backgroundColor: Colors.grey.shade200,
+                                  strokeCap: StrokeCap.round,
+                                ),
+                              ),
+                              if (punchProvider.punchInTime != null &&
+                                  punchProvider.punchOutTime == null)
+                                ScaleTransition(
+                                  scale: _pulseAnimation,
+                                  child: Container(
+                                    width: progressSize * 0.95,
+                                    height: progressSize * 0.95,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.transparent,
+                                      border: Border.all(
+                                        color: Colors.red.withOpacity(0.25),
+                                        width: screenWidth * 0.008,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              Material(
+                                color: Colors.transparent,
+                                shape: const CircleBorder(),
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  borderRadius: BorderRadius.circular(buttonSize),
+                                  onTap: () {
+                                    final slideProvider = Provider.of<SlideProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                    if (!slideProvider.showSlideToPunch) {
+                                      _onPunchTap();
+                                    }
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    width: buttonSize,
+                                    height: buttonSize,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Theme.of(context).cardColor,
+                                      boxShadow: _getButtonShadows(punchProvider),
+                                      border: Border.all(
+                                        color: _punchButtonColor(punchProvider)
+                                            .withOpacity(0.15),
+                                        width: screenWidth * 0.005,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: _buildCenterContent(
+                                        punchProvider,
+                                        Theme.of(context),
+                                        buttonSize,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: screenHeight * 0.03),
+                          Container(
+                            padding: EdgeInsets.all(screenWidth * 0.04),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: Theme.of(context).dividerColor.withOpacity(0.1),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildTimeWidget(
+                                  punchProvider.punchInTime == null
+                                      ? "--:--"
+                                      : DateFormat('hh:mm a').format(
+                                          punchProvider.punchInTime!.add(
+                                            const Duration(hours: 3),
+                                          ),
+                                        ),
+                                  "Punch In",
+                                  Colors.blue,
+                                  Icons.login_rounded,
+                                ),
+                                _buildTimeWidget(
+                                  punchProvider.punchOutTime == null
+                                      ? "--:--"
+                                      : DateFormat('hh:mm a').format(
+                                          punchProvider.punchOutTime!.add(
+                                            const Duration(hours: 3),
+                                          ),
+                                        ),
+                                  "Punch Out",
+                                  Colors.red,
+                                  Icons.logout_rounded,
+                                ),
+                                _buildTimeWidget(
+                                  punchProvider.totalHours(),
+                                  "Total",
+                                  Colors.green,
+                                  Icons.timer_rounded,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.025),
+                          _buildProgressWidget(punchProvider),
+                          if (_hasError)
+                            Padding(
+                              padding: EdgeInsets.only(top: screenHeight * 0.02),
+                              child: AnimatedSlide(
+                                duration: const Duration(milliseconds: 300),
+                                offset: _hasError ? Offset.zero : const Offset(0, -1),
+                                child: Container(
+                                  padding: EdgeInsets.all(screenWidth * 0.04),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: Colors.red.shade200,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline_rounded,
+                                        color: Colors.red.shade600,
+                                        size: screenWidth * 0.06,
+                                      ),
+                                      SizedBox(width: screenWidth * 0.03),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              "Attention",
+                                              style: TextStyle(
+                                                color: Colors.red.shade800,
+                                                fontSize: screenWidth * 0.035,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            SizedBox(height: screenHeight * 0.002),
+                                            Text(
+                                              _errorMessage,
+                                              style: TextStyle(
+                                                color: Colors.red.shade700,
+                                                fontSize: screenWidth * 0.03,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
-                                  child: CircleAvatar(
-                                    backgroundColor: Colors.blue.shade50,
-                                    backgroundImage: (imagePath != null &&
-                                            imagePath.isNotEmpty)
-                                        ? NetworkImage(
-                                            "https://ppecon.erpnext.com$imagePath",
-                                          )
-                                        : const AssetImage(
-                                                "assets/images/app_icon.png",
-                                              )
-                                            as ImageProvider,
-                                  ),
                                 ),
                               ),
-                              SizedBox(width: screenWidth * 0.03),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _greeting,
-                                      style: TextStyle(
-                                        fontSize: screenWidth * 0.03,
-                                        color: isDarkMode
-                                            ? Colors.grey.shade300
-                                            : Colors.grey.shade700,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    SizedBox(height: screenHeight * 0.003),
-                                    Text(
-                                      user?['full_name'] ?? "Employee",
-                                      style: TextStyle(
-                                        fontSize: screenWidth * 0.045,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDarkMode
-                                            ? Colors.white
-                                            : Colors.grey.shade900,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      SizedBox(height: screenHeight * 0.025),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _currentTime,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.13,
-                              fontWeight: FontWeight.w900,
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : Colors.grey.shade900,
-                              letterSpacing: 0.5,
                             ),
-                          ),
-                          SizedBox(height: screenHeight * 0.005),
-                          Text(
-                            _currentDate,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.035,
-                              color: isDarkMode
-                                  ? Colors.grey.shade300
-                                  : Colors.grey.shade600,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
+                          SizedBox(height: mediaQuery.viewInsets.bottom + screenHeight * 0.02),
                         ],
                       ),
-                      SizedBox(height: screenHeight * 0.02),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.05,
-                    vertical: screenHeight * 0.025,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          
-                          Container(
-                            width: glowSize,
-                            height: glowSize,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  _punchButtonColor(punchProvider)
-                                      .withOpacity(0.08),
-                                  Colors.transparent,
-                                ],
-                                radius: 0.8,
-                              ),
-                            ),
-                          ),
-                          
-                         
-                          SizedBox(
-                            width: progressSize,
-                            height: progressSize,
-                            child: CircularProgressIndicator(
-                              value: punchProvider.progressValue().clamp(0.0, 1.0),
-                              strokeWidth: screenWidth * 0.015,
-                              color: _punchButtonColor(punchProvider),
-                              backgroundColor: Colors.grey.shade200,
-                              strokeCap: StrokeCap.round,
-                            ),
-                          ),
-                          
-                        
-                          if (punchProvider.punchInTime != null &&
-                              punchProvider.punchOutTime == null)
-                            ScaleTransition(
-                              scale: _pulseAnimation,
-                              child: Container(
-                                width: progressSize * 0.95,
-                                height: progressSize * 0.95,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.transparent,
-                                  border: Border.all(
-                                    color: Colors.red.withOpacity(0.25),
-                                    width: screenWidth * 0.008,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          
-                          
-                          Material(
-                            color: Colors.transparent,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              borderRadius: BorderRadius.circular(buttonSize),
-                              onTap: () {
-                                final slideProvider = Provider.of<SlideProvider>(
-                                  context,
-                                  listen: false,
-                                );
-                                if (!slideProvider.showSlideToPunch) {
-                                  _onPunchTap();
-                                }
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                width: buttonSize,
-                                height: buttonSize,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: theme.cardColor,
-                                  boxShadow: _getButtonShadows(punchProvider),
-                                  border: Border.all(
-                                    color: _punchButtonColor(punchProvider)
-                                        .withOpacity(0.15),
-                                    width: screenWidth * 0.005,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: _buildCenterContent(
-                                    punchProvider,
-                                    theme,
-                                    buttonSize,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                      SizedBox(height: screenHeight * 0.03),
-                      
-                     
-                      Container(
-                        padding: EdgeInsets.all(screenWidth * 0.04),
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: theme.dividerColor.withOpacity(0.1),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildTimeWidget(
-                              punchProvider.punchInTime == null
-                                  ? "--:--"
-                                  : DateFormat('hh:mm a').format(
-                                      punchProvider.punchInTime!.add(
-                                        const Duration(hours: 3),
-                                      ),
-                                    ),
-                              "Punch In",
-                              Colors.blue,
-                              Icons.login_rounded,
-                            ),
-                            _buildTimeWidget(
-                              punchProvider.punchOutTime == null
-                                  ? "--:--"
-                                  : DateFormat('hh:mm a').format(
-                                      punchProvider.punchOutTime!.add(
-                                        const Duration(hours: 3),
-                                      ),
-                                    ),
-                              "Punch Out",
-                              Colors.red,
-                              Icons.logout_rounded,
-                            ),
-                            _buildTimeWidget(
-                              punchProvider.totalHours(),
-                              "Total",
-                              Colors.green,
-                              Icons.timer_rounded,
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      SizedBox(height: screenHeight * 0.025),
-                      
-                      // Progress Message
-                      _buildProgressWidget(punchProvider),
-                      
-                      // Error Message - Responsive
-                      if (_hasError)
-                        Padding(
-                          padding: EdgeInsets.only(top: screenHeight * 0.02),
-                          child: AnimatedSlide(
-                            duration: const Duration(milliseconds: 300),
-                            offset: _hasError ? Offset.zero : const Offset(0, -1),
-                            child: Container(
-                              padding: EdgeInsets.all(screenWidth * 0.04),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: Colors.red.shade200,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.error_outline_rounded,
-                                    color: Colors.red.shade600,
-                                    size: screenWidth * 0.06,
-                                  ),
-                                  SizedBox(width: screenWidth * 0.03),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          "Attention",
-                                          style: TextStyle(
-                                            color: Colors.red.shade800,
-                                            fontSize: screenWidth * 0.035,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        SizedBox(height: screenHeight * 0.002),
-                                        Text(
-                                          _errorMessage,
-                                          style: TextStyle(
-                                            color: Colors.red.shade700,
-                                            fontSize: screenWidth * 0.03,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      
-                      // Bottom spacing
-                      SizedBox(height: mediaQuery.viewInsets.bottom + screenHeight * 0.02),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -90,6 +90,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
+  List<Color> _getHeaderGradientColors(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return isDarkMode
+        ? [Colors.grey.shade900, Colors.grey.shade800]
+        : [Colors.blue.shade50, Colors.purple.shade50];
+  }
+
   Widget _buildCalendarDay(int day, DateTime date, BuildContext context) {
     final attendanceProvider = context.watch<AttendanceProvider>();
     final punchProvider = context.read<PunchProvider>();
@@ -487,6 +494,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final now = DateTime.now();
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final gradientColors = _getHeaderGradientColors(context);
 
     final canGoNext =
         _currentMonth.year < now.year ||
@@ -501,341 +509,367 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: RefreshIndicator.adaptive(
-          onRefresh: _refreshAttendance,
-          color: Colors.blue,
-          backgroundColor: theme.cardColor,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            slivers: [
-              // App Bar
-              SliverAppBar(
-                backgroundColor: theme.scaffoldBackgroundColor,
-                elevation: 0,
-                pinned: true,
-                floating: true,
-                title: Text(
-                  "Attendance",
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.05,
-                    fontWeight: FontWeight.w800,
-                    color: theme.textTheme.titleLarge?.color,
-                  ),
-                ),
-                centerTitle: false,
-                actions: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.refresh_rounded,
-                      size: screenWidth * 0.055,
-                    ),
-                    onPressed: _refreshAttendance,
-                    tooltip: 'Refresh',
-                  ),
-                ],
+      body: Column(
+        children: [
+          Container(
+            height: screenHeight * 0.015,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: gradientColors,
               ),
-
-              // Calendar Section
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.035),
-                  padding: EdgeInsets.all(screenWidth * 0.035),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+            ),
+          ),
+          // Rest of the content
+          Expanded(
+            child: RefreshIndicator.adaptive(
+              onRefresh: _refreshAttendance,
+              color: Colors.blue,
+              backgroundColor: theme.cardColor,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                slivers: [
+                  SliverAppBar(
+                    expandedHeight: 0, 
+                    toolbarHeight: kToolbarHeight, 
+                    backgroundColor: gradientColors.first,
+                    elevation: 0,
+                    pinned: true,
+                    floating: true,
+                    flexibleSpace: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: gradientColors,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      "Attendance",
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.w800,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    centerTitle: false,
+                    actions: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.refresh_rounded,
+                          size: screenWidth * 0.055,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                        onPressed: _refreshAttendance,
+                        tooltip: 'Refresh',
                       ),
                     ],
                   ),
-                  child: Column(
-                    children: [
-                      // Month Selector
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.02,
-                          vertical: screenHeight * 0.008,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                Icons.chevron_left_rounded,
-                                size: screenWidth * 0.055,
-                                color: theme.iconTheme.color,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _currentMonth = DateTime(
-                                    _currentMonth.year,
-                                    _currentMonth.month - 1,
-                                  );
-                                });
-                                _refreshAttendance();
-                              },
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
+
+                  // Calendar Section
+                  SliverToBoxAdapter(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.035),
+                      padding: EdgeInsets.all(screenWidth * 0.035),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Month Selector
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.02,
+                              vertical: screenHeight * 0.008,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.scaffoldBackgroundColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.chevron_left_rounded,
+                                    size: screenWidth * 0.055,
+                                    color: theme.iconTheme.color,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _currentMonth = DateTime(
+                                        _currentMonth.year,
+                                        _currentMonth.month - 1,
+                                      );
+                                    });
+                                    _refreshAttendance();
+                                  },
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: screenWidth * 0.04,
+                                    vertical: screenHeight * 0.008,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: isDarkMode
+                                          ? [
+                                              Colors.blue.shade800,
+                                              Colors.green.shade800,
+                                            ]
+                                          : [
+                                              Colors.blue.shade50,
+                                              Colors.purple.shade50,
+                                            ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    DateFormat('MMMM yyyy').format(_currentMonth),
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.04,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.black,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.2),
+                                          blurRadius: 2,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: screenWidth * 0.055,
+                                    color: canGoNext
+                                        ? theme.iconTheme.color
+                                        : theme.disabledColor,
+                                  ),
+                                  onPressed: canGoNext
+                                      ? () {
+                                          setState(() {
+                                            _currentMonth = DateTime(
+                                              _currentMonth.year,
+                                              _currentMonth.month + 1,
+                                            );
+                                          });
+                                          _refreshAttendance();
+                                        }
+                                      : null,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(height: screenHeight * 0.02),
+
+                          // Loading Indicator
+                          if (attendanceProvider.isLoading)
+                            LinearProgressIndicator(
+                              backgroundColor: theme.scaffoldBackgroundColor,
+                              color: Colors.blue,
+                              minHeight: 1.5,
                             ),
 
+                          // Error Message
+                          if (attendanceProvider.errorMessage != null)
                             Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.04,
-                                vertical: screenHeight * 0.008,
-                              ),
+                              padding: EdgeInsets.all(screenWidth * 0.03),
+                              margin: EdgeInsets.only(bottom: screenHeight * 0.015),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: isDarkMode
-                                      ? [
-                                          Colors.blue.shade800,
-                                          Colors.green.shade800,
-                                        ]
-                                      : [
-                                          Colors.blue.shade50,
-                                          Colors.purple.shade50,
-                                        ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 5,
-                                    offset: const Offset(0, 2),
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.red.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.error_outline_rounded,
+                                    size: screenWidth * 0.045,
+                                    color: Colors.red,
+                                  ),
+                                  SizedBox(width: screenWidth * 0.02),
+                                  Expanded(
+                                    child: Text(
+                                      attendanceProvider.errorMessage!,
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.032,
+                                        color: Colors.red.shade700,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: Text(
-                                DateFormat('MMMM yyyy').format(_currentMonth),
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.04,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 2,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
 
-                            IconButton(
-                              icon: Icon(
-                                Icons.chevron_right_rounded,
-                                size: screenWidth * 0.055,
-                                color: canGoNext
-                                    ? theme.iconTheme.color
-                                    : theme.disabledColor,
+                          SizedBox(height: screenHeight * 0.015),
+
+                          // Calendar Grid
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 7,
+                              crossAxisSpacing: screenWidth * 0.01,
+                              mainAxisSpacing: screenWidth * 0.01,
+                              childAspectRatio: 1,
+                            ),
+                            itemCount: daysInMonth,
+                            itemBuilder: (context, index) {
+                              final day = index + 1;
+                              final date = DateTime(
+                                _currentMonth.year,
+                                _currentMonth.month,
+                                day,
+                              );
+                              return _buildCalendarDay(day, date, context);
+                            },
+                          ),
+
+                          SizedBox(height: screenHeight * 0.025),
+
+                          // Legend
+                          Wrap(
+                            spacing: screenWidth * 0.02,
+                            runSpacing: screenHeight * 0.01,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              _buildLegend(Colors.green, "Completed"),
+                              _buildLegend(Colors.blue.shade600, "Overtime"),
+                              _buildLegend(Colors.orange, "Shortage"),
+                              _buildLegend(Colors.amber.shade600, "Checked In"),
+                              _buildLegend(Colors.red, "Absent"),
+                              _buildLegend(Colors.grey.withOpacity(0.3), "Future"),
+                              _buildLegendBorder(Colors.blue, "Today"),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Attendance Logs Title
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        screenWidth * 0.035,
+                        screenHeight * 0.025,
+                        screenWidth * 0.035,
+                        screenHeight * 0.015,
+                      ),
+                      child: Text(
+                        "Attendance Logs",
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.w700,
+                          color: theme.textTheme.titleLarge?.color,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Attendance Logs List
+                  if (monthlyLogs.isNotEmpty)
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        screenWidth * 0.035,
+                        0,
+                        screenWidth * 0.035,
+                        screenHeight * 0.03,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final log = monthlyLogs[index];
+                          final now = DateTime.now();
+                          final today = DateTime(now.year, now.month, now.day);
+
+                          if (log.date.isAtSameMomentAs(today)) {
+                            final punchProvider = context.read<PunchProvider>();
+                            if (punchProvider.punchInTime == null) {
+                              return const SizedBox.shrink();
+                            }
+                          }
+
+                          return _buildAttendanceLog(log);
+                        }, childCount: monthlyLogs.length),
+                      ),
+                    )
+                  else if (!attendanceProvider.isLoading)
+                    SliverToBoxAdapter(
+                      child: Container(
+                        margin: EdgeInsets.all(screenWidth * 0.035),
+                        padding: EdgeInsets.all(screenWidth * 0.05),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_rounded,
+                              size: screenWidth * 0.12,
+                              color: theme.disabledColor.withOpacity(0.5),
+                            ),
+                            SizedBox(height: screenHeight * 0.015),
+                            Text(
+                              "No attendance records",
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.038,
+                                color: theme.hintColor,
+                                fontWeight: FontWeight.w600,
                               ),
-                              onPressed: canGoNext
-                                  ? () {
-                                      setState(() {
-                                        _currentMonth = DateTime(
-                                          _currentMonth.year,
-                                          _currentMonth.month + 1,
-                                        );
-                                      });
-                                      _refreshAttendance();
-                                    }
-                                  : null,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
+                            ),
+                            SizedBox(height: screenHeight * 0.008),
+                            Text(
+                              "Attendance records will appear here",
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.032,
+                                color: theme.hintColor.withOpacity(0.7),
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
                       ),
-
-                      SizedBox(height: screenHeight * 0.02),
-
-                      // Loading Indicator
-                      if (attendanceProvider.isLoading)
-                        LinearProgressIndicator(
-                          backgroundColor: theme.scaffoldBackgroundColor,
-                          color: Colors.blue,
-                          minHeight: 1.5,
-                        ),
-
-                      // Error Message
-                      if (attendanceProvider.errorMessage != null)
-                        Container(
-                          padding: EdgeInsets.all(screenWidth * 0.03),
-                          margin: EdgeInsets.only(bottom: screenHeight * 0.015),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.red.shade200),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.error_outline_rounded,
-                                size: screenWidth * 0.045,
-                                color: Colors.red,
-                              ),
-                              SizedBox(width: screenWidth * 0.02),
-                              Expanded(
-                                child: Text(
-                                  attendanceProvider.errorMessage!,
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.032,
-                                    color: Colors.red.shade700,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      SizedBox(height: screenHeight * 0.015),
-
-                      // Calendar Grid
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 7,
-                          crossAxisSpacing: screenWidth * 0.01,
-                          mainAxisSpacing: screenWidth * 0.01,
-                          childAspectRatio: 1,
-                        ),
-                        itemCount: daysInMonth,
-                        itemBuilder: (context, index) {
-                          final day = index + 1;
-                          final date = DateTime(
-                            _currentMonth.year,
-                            _currentMonth.month,
-                            day,
-                          );
-                          return _buildCalendarDay(day, date, context);
-                        },
-                      ),
-
-                      SizedBox(height: screenHeight * 0.025),
-
-                      // Legend
-                      Wrap(
-                        spacing: screenWidth * 0.02,
-                        runSpacing: screenHeight * 0.01,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          _buildLegend(Colors.green, "Completed"),
-                          _buildLegend(Colors.blue.shade600, "Overtime"),
-                          _buildLegend(Colors.orange, "Shortage"),
-                          _buildLegend(Colors.amber.shade600, "Checked In"),
-                          _buildLegend(Colors.red, "Absent"),
-                          _buildLegend(Colors.grey.withOpacity(0.3), "Future"),
-                          _buildLegendBorder(Colors.blue, "Today"),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                ],
               ),
-
-              // Attendance Logs Title
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    screenWidth * 0.035,
-                    screenHeight * 0.025,
-                    screenWidth * 0.035,
-                    screenHeight * 0.015,
-                  ),
-                  child: Text(
-                    "Attendance Logs",
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.045,
-                      fontWeight: FontWeight.w700,
-                      color: theme.textTheme.titleLarge?.color,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Attendance Logs List
-              if (monthlyLogs.isNotEmpty)
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    screenWidth * 0.035,
-                    0,
-                    screenWidth * 0.035,
-                    screenHeight * 0.03,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final log = monthlyLogs[index];
-                      final now = DateTime.now();
-                      final today = DateTime(now.year, now.month, now.day);
-
-                      if (log.date.isAtSameMomentAs(today)) {
-                        final punchProvider = context.read<PunchProvider>();
-                        if (punchProvider.punchInTime == null) {
-                          return const SizedBox.shrink();
-                        }
-                      }
-
-                      return _buildAttendanceLog(log);
-                    }, childCount: monthlyLogs.length),
-                  ),
-                )
-              else if (!attendanceProvider.isLoading)
-                SliverToBoxAdapter(
-                  child: Container(
-                    margin: EdgeInsets.all(screenWidth * 0.035),
-                    padding: EdgeInsets.all(screenWidth * 0.05),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_rounded,
-                          size: screenWidth * 0.12,
-                          color: theme.disabledColor.withOpacity(0.5),
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
-                        Text(
-                          "No attendance records",
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.038,
-                            color: theme.hintColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(height: screenHeight * 0.008),
-                        Text(
-                          "Attendance records will appear here",
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.032,
-                            color: theme.hintColor.withOpacity(0.7),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

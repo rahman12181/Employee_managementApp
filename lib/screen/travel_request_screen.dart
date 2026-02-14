@@ -24,13 +24,18 @@ class _TravelRequestScreenState extends State<TravelRequestScreen>
   final descCtrl = TextEditingController();
 
   bool isLoading = false;
+  bool _isLoadingDropdowns = true; // New loading state for dropdowns
 
   String travelType = "International";
-  String travelFunding = "Fully Sponsored";
-  String purpose = "Business";
+  String travelFunding = "";
+  String purpose = "";
   String mode = "Flight";
 
-  // Options for dropdowns
+  // Dynamic lists from ERP
+  List<Map<String, dynamic>> fundingTypes = [];
+  List<Map<String, dynamic>> purposeTypes = [];
+
+  // Static options (remain same)
   final List<Map<String, dynamic>> travelTypes = [
     {
       'value': 'International',
@@ -43,27 +48,6 @@ class _TravelRequestScreenState extends State<TravelRequestScreen>
       'label': 'Domestic',
       'icon': Icons.home,
       'color': Colors.green
-    },
-  ];
-
-  final List<Map<String, dynamic>> fundingTypes = [
-    {
-      'value': 'Fully Sponsored',
-      'label': 'Fully Sponsored',
-      'icon': Icons.account_balance_wallet,
-      'color': Colors.purple
-    },
-    {
-      'value': 'Self Sponsored',
-      'label': 'Self Sponsored',
-      'icon': Icons.person,
-      'color': Colors.orange
-    },
-    {
-      'value': 'Partially Sponsored',
-      'label': 'Partially Sponsored',
-      'icon': Icons.account_balance,
-      'color': Colors.teal
     },
   ];
 
@@ -94,39 +78,6 @@ class _TravelRequestScreenState extends State<TravelRequestScreen>
     },
   ];
 
-  final List<Map<String, dynamic>> purposeTypes = [
-    {
-      'value': 'Business',
-      'label': 'Business Meeting',
-      'icon': Icons.business,
-      'color': Colors.blue
-    },
-    {
-      'value': 'Conference',
-      'label': 'Conference',
-      'icon': Icons.groups,
-      'color': Colors.purple
-    },
-    {
-      'value': 'Training',
-      'label': 'Training',
-      'icon': Icons.school,
-      'color': Colors.green
-    },
-    {
-      'value': 'Project',
-      'label': 'Project Work',
-      'icon': Icons.work,
-      'color': Colors.orange
-    },
-    {
-      'value': 'Personal',
-      'label': 'Personal',
-      'icon': Icons.person,
-      'color': Colors.red
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -149,9 +100,47 @@ class _TravelRequestScreenState extends State<TravelRequestScreen>
       ),
     );
     
+    // Load dropdown data from ERP
+    _loadDropdownData();
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animationController.forward();
     });
+  }
+
+  // New method to load dropdown data from ERP
+  Future<void> _loadDropdownData() async {
+    setState(() => _isLoadingDropdowns = true);
+
+    try {
+      // Load funding types and purpose types in parallel
+      final results = await Future.wait([
+        TravelRequestService.getFundingTypes(),
+        TravelRequestService.getPurposeTypes(),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          fundingTypes = results[0];
+          purposeTypes = results[1];
+          
+          // Set default selected values if available
+          if (fundingTypes.isNotEmpty) {
+            travelFunding = fundingTypes[0]['value'];
+          }
+          if (purposeTypes.isNotEmpty) {
+            purpose = purposeTypes[0]['value'];
+          }
+          
+          _isLoadingDropdowns = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading dropdowns: $e');
+      if (mounted) {
+        setState(() => _isLoadingDropdowns = false);
+      }
+    }
   }
 
   @override
@@ -232,13 +221,10 @@ class _TravelRequestScreenState extends State<TravelRequestScreen>
 
       if (!mounted) return;
 
-      // Show success dialog
       await _showSuccessDialog(message);
       
     } catch (e) {
       if (!mounted) return;
-
-      // Show error dialog
       await _showErrorDialog(e.toString());
       
     } finally {
@@ -572,6 +558,32 @@ class _TravelRequestScreenState extends State<TravelRequestScreen>
     );
   }
 
+  Widget _buildLoadingShimmer() {
+    final width = MediaQuery.of(context).size.width;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(width * 0.1),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              strokeWidth: 3,
+              color: Theme.of(context).primaryColor,
+            ),
+            SizedBox(height: width * 0.05),
+            Text(
+              "Loading options from ERP...",
+              style: TextStyle(
+                fontSize: width * 0.04,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -626,7 +638,7 @@ class _TravelRequestScreenState extends State<TravelRequestScreen>
                             opacity: _fadeAnimation.value,
                             child: Column(
                               children: [
-                                // Header Section
+                                // Header Section (SAME)
                                 Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: width * 0.04,
@@ -730,295 +742,308 @@ class _TravelRequestScreenState extends State<TravelRequestScreen>
                                     color: cardColor,
                                     child: Padding(
                                       padding: EdgeInsets.all(width * 0.04),
-                                      child: Form(
-                                        key: _formKey,
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            // Travel Type
-                                            _buildSelectionChips(
-                                              "Travel Type",
-                                              travelType,
-                                              travelTypes,
-                                              (value) => setState(() => travelType = value),
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // Travel Funding
-                                            _buildSelectionChips(
-                                              "Travel Funding",
-                                              travelFunding,
-                                              fundingTypes,
-                                              (value) => setState(() => travelFunding = value),
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // Purpose
-                                            _buildSelectionChips(
-                                              "Purpose of Travel",
-                                              purpose,
-                                              purposeTypes,
-                                              (value) => setState(() => purpose = value),
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // From and To Locations
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        "From Location",
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.04,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: textColor,
-                                                        ),
-                                                      ),
-                                                      SizedBox(height: height * 0.01),
-                                                      TextFormField(
-                                                        controller: fromCtrl,
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.04,
-                                                          color: textColor,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),
-                                                        decoration: _inputDecoration(
-                                                          "City, Country",
-                                                          icon: Icons.location_on,
-                                                        ),
-                                                        validator: (v) => v!.isEmpty ? "Required" : null,
-                                                      ),
-                                                    ],
+                                      child: _isLoadingDropdowns
+                                          ? _buildLoadingShimmer()
+                                          : Form(
+                                              key: _formKey,
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  
+                                                  _buildSelectionChips(
+                                                    "Travel Type",
+                                                    travelType,
+                                                    travelTypes,
+                                                    (value) => setState(() => travelType = value),
                                                   ),
-                                                ),
-                                                SizedBox(width: width * 0.03),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        "To Location",
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.04,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: textColor,
-                                                        ),
-                                                      ),
-                                                      SizedBox(height: height * 0.01),
-                                                      TextFormField(
-                                                        controller: toCtrl,
-                                                        style: TextStyle(
-                                                          fontSize: width * 0.04,
-                                                          color: textColor,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),
-                                                        decoration: _inputDecoration(
-                                                          "City, Country",
-                                                          icon: Icons.flag,
-                                                        ),
-                                                        validator: (v) => v!.isEmpty ? "Required" : null,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
 
-                                            SizedBox(height: height * 0.025),
+                                                  SizedBox(height: height * 0.025),
 
-                                            // Travel Mode
-                                            _buildSelectionChips(
-                                              "Mode of Travel",
-                                              mode,
-                                              travelModes,
-                                              (value) => setState(() => mode = value),
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // Departure Date
-                                            Text(
-                                              "Departure Date",
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                fontWeight: FontWeight.w600,
-                                                color: textColor,
-                                              ),
-                                            ),
-                                            SizedBox(height: height * 0.01),
-                                            TextFormField(
-                                              controller: dateCtrl,
-                                              readOnly: true,
-                                              onTap: pickDate,
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                color: textColor,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              decoration: _inputDecoration(
-                                                "Select departure date",
-                                                icon: Icons.calendar_month,
-                                              ),
-                                              validator: (v) => v!.isEmpty ? "Required" : null,
-                                            ),
-
-                                            SizedBox(height: height * 0.025),
-
-                                            // Description
-                                            Text(
-                                              "Additional Details",
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                fontWeight: FontWeight.w600,
-                                                color: textColor,
-                                              ),
-                                            ),
-                                            SizedBox(height: height * 0.01),
-                                            TextFormField(
-                                              controller: descCtrl,
-                                              style: TextStyle(
-                                                fontSize: width * 0.04,
-                                                color: textColor,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              maxLines: 4,
-                                              minLines: 3,
-                                              decoration: _inputDecoration(
-                                                "Enter any additional details or requirements...",
-                                                icon: Icons.notes,
-                                              ),
-                                            ),
-
-                                            SizedBox(height: height * 0.04),
-
-                                            // Submit Button
-                                            SizedBox(
-                                              width: double.infinity,
-                                              height: height * 0.065,
-                                              child: ElevatedButton(
-                                                onPressed: isLoading ? null : submit,
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: primaryColor,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(width * 0.035),
-                                                  ),
-                                                  elevation: 0,
-                                                  shadowColor: Colors.transparent,
-                                                ),
-                                                child: Stack(
-                                                  alignment: Alignment.center,
-                                                  children: [
-                                                    AnimatedOpacity(
-                                                      opacity: isLoading ? 0 : 1,
-                                                      duration: const Duration(milliseconds: 200),
-                                                      child: Row(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        children: [
-                                                          Icon(
-                                                            Icons.flight_takeoff_rounded,
-                                                            size: width * 0.05,
-                                                            color: Colors.white,
+                                                  fundingTypes.isEmpty
+                                                      ? const Center(
+                                                          child: Text(
+                                                            "No funding types available",
+                                                            style: TextStyle(color: Colors.red),
                                                           ),
-                                                          SizedBox(width: width * 0.02),
-                                                          Text(
-                                                            "Submit Travel Request",
-                                                            style: TextStyle(
-                                                              fontSize: width * 0.04,
-                                                              fontWeight: FontWeight.w700,
-                                                              color: Colors.white,
-                                                              letterSpacing: 0.5,
+                                                        )
+                                                      : _buildSelectionChips(
+                                                          "Travel Funding",
+                                                          travelFunding,
+                                                          fundingTypes,
+                                                          (value) => setState(() => travelFunding = value),
+                                                        ),
+
+                                                  SizedBox(height: height * 0.025),
+                                                  purposeTypes.isEmpty
+                                                      ? const Center(
+                                                          child: Text(
+                                                            "No purpose types available",
+                                                            style: TextStyle(color: Colors.red),
+                                                          ),
+                                                        )
+                                                      : _buildSelectionChips(
+                                                          "Purpose of Travel",
+                                                          purpose,
+                                                          purposeTypes,
+                                                          (value) => setState(() => purpose = value),
+                                                        ),
+
+                                                  SizedBox(height: height * 0.025),
+
+                                                  // From and To Locations (SAME)
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              "From Location",
+                                                              style: TextStyle(
+                                                                fontSize: width * 0.04,
+                                                                fontWeight: FontWeight.w600,
+                                                                color: textColor,
+                                                              ),
+                                                            ),
+                                                            SizedBox(height: height * 0.01),
+                                                            TextFormField(
+                                                              controller: fromCtrl,
+                                                              style: TextStyle(
+                                                                fontSize: width * 0.04,
+                                                                color: textColor,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                              decoration: _inputDecoration(
+                                                                "City, Country",
+                                                                icon: Icons.location_on,
+                                                              ),
+                                                              validator: (v) => v!.isEmpty ? "Required" : null,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: width * 0.03),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              "To Location",
+                                                              style: TextStyle(
+                                                                fontSize: width * 0.04,
+                                                                fontWeight: FontWeight.w600,
+                                                                color: textColor,
+                                                              ),
+                                                            ),
+                                                            SizedBox(height: height * 0.01),
+                                                            TextFormField(
+                                                              controller: toCtrl,
+                                                              style: TextStyle(
+                                                                fontSize: width * 0.04,
+                                                                color: textColor,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                              decoration: _inputDecoration(
+                                                                "City, Country",
+                                                                icon: Icons.flag,
+                                                              ),
+                                                              validator: (v) => v!.isEmpty ? "Required" : null,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+
+                                                  SizedBox(height: height * 0.025),
+
+                                                  // Travel Mode (Static)
+                                                  _buildSelectionChips(
+                                                    "Mode of Travel",
+                                                    mode,
+                                                    travelModes,
+                                                    (value) => setState(() => mode = value),
+                                                  ),
+
+                                                  SizedBox(height: height * 0.025),
+
+                                                  // Departure Date (SAME)
+                                                  Text(
+                                                    "Departure Date",
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.04,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: textColor,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: height * 0.01),
+                                                  TextFormField(
+                                                    controller: dateCtrl,
+                                                    readOnly: true,
+                                                    onTap: pickDate,
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.04,
+                                                      color: textColor,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    decoration: _inputDecoration(
+                                                      "Select departure date",
+                                                      icon: Icons.calendar_month,
+                                                    ),
+                                                    validator: (v) => v!.isEmpty ? "Required" : null,
+                                                  ),
+
+                                                  SizedBox(height: height * 0.025),
+
+                                                  // Description (SAME)
+                                                  Text(
+                                                    "Additional Details",
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.04,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: textColor,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: height * 0.01),
+                                                  TextFormField(
+                                                    controller: descCtrl,
+                                                    style: TextStyle(
+                                                      fontSize: width * 0.04,
+                                                      color: textColor,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    maxLines: 4,
+                                                    minLines: 3,
+                                                    decoration: _inputDecoration(
+                                                      "Enter any additional details or requirements...",
+                                                      icon: Icons.notes,
+                                                    ),
+                                                  ),
+
+                                                  SizedBox(height: height * 0.04),
+
+                                                  // Submit Button (SAME)
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    height: height * 0.065,
+                                                    child: ElevatedButton(
+                                                      onPressed: (isLoading || _isLoadingDropdowns) ? null : submit,
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: primaryColor,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(width * 0.035),
+                                                        ),
+                                                        elevation: 0,
+                                                        shadowColor: Colors.transparent,
+                                                      ),
+                                                      child: Stack(
+                                                        alignment: Alignment.center,
+                                                        children: [
+                                                          AnimatedOpacity(
+                                                            opacity: isLoading ? 0 : 1,
+                                                            duration: const Duration(milliseconds: 200),
+                                                            child: Row(
+                                                              mainAxisAlignment: MainAxisAlignment.center,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons.flight_takeoff_rounded,
+                                                                  size: width * 0.05,
+                                                                  color: Colors.white,
+                                                                ),
+                                                                SizedBox(width: width * 0.02),
+                                                                Text(
+                                                                  "Submit Travel Request",
+                                                                  style: TextStyle(
+                                                                    fontSize: width * 0.04,
+                                                                    fontWeight: FontWeight.w700,
+                                                                    color: Colors.white,
+                                                                    letterSpacing: 0.5,
+                                                                  ),
+                                                                ),
+                                                              ],
                                                             ),
                                                           ),
+                                                          if (isLoading)
+                                                            SizedBox(
+                                                              width: width * 0.06,
+                                                              height: width * 0.06,
+                                                              child: CircularProgressIndicator(
+                                                                strokeWidth: 3,
+                                                                color: Colors.white,
+                                                                backgroundColor: Colors.white.withOpacity(0.3),
+                                                              ),
+                                                            ),
                                                         ],
                                                       ),
                                                     ),
-                                                    if (isLoading)
-                                                      SizedBox(
-                                                        width: width * 0.06,
-                                                        height: width * 0.06,
-                                                        child: CircularProgressIndicator(
-                                                          strokeWidth: 3,
-                                                          color: Colors.white,
-                                                          backgroundColor: Colors.white.withOpacity(0.3),
+                                                  ),
+
+                                                  SizedBox(height: height * 0.02),
+
+                                                  // Cancel Button (SAME)
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    height: height * 0.055,
+                                                    child: TextButton(
+                                                      onPressed: isLoading
+                                                          ? null
+                                                          : () {
+                                                              HapticFeedback.lightImpact();
+                                                              Navigator.pop(context);
+                                                            },
+                                                      style: TextButton.styleFrom(
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(width * 0.035),
+                                                        ),
+                                                        foregroundColor: subtitleColor,
+                                                      ),
+                                                      child: Text(
+                                                        "Cancel",
+                                                        style: TextStyle(
+                                                          fontSize: width * 0.04,
+                                                          fontWeight: FontWeight.w600,
                                                         ),
                                                       ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-
-                                            SizedBox(height: height * 0.02),
-
-                                            // Cancel Button
-                                            SizedBox(
-                                              width: double.infinity,
-                                              height: height * 0.055,
-                                              child: TextButton(
-                                                onPressed: isLoading
-                                                    ? null
-                                                    : () {
-                                                        HapticFeedback.lightImpact();
-                                                        Navigator.pop(context);
-                                                      },
-                                                style: TextButton.styleFrom(
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(width * 0.035),
+                                                    ),
                                                   ),
-                                                  foregroundColor: subtitleColor,
-                                                ),
-                                                child: Text(
-                                                  "Cancel",
-                                                  style: TextStyle(
-                                                    fontSize: width * 0.04,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
 
-                                            // Info Note
-                                            Container(
-                                              width: double.infinity,
-                                              padding: EdgeInsets.all(width * 0.04),
-                                              margin: EdgeInsets.only(top: height * 0.02),
-                                              decoration: BoxDecoration(
-                                                color: primaryColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(width * 0.03),
-                                                border: Border.all(
-                                                  color: primaryColor.withOpacity(0.2),
-                                                  width: 1.5,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.info_outline_rounded,
-                                                    size: width * 0.05,
-                                                    color: primaryColor,
-                                                  ),
-                                                  SizedBox(width: width * 0.03),
-                                                  Expanded(
-                                                    child: Text(
-                                                      "Your travel request will be reviewed by the management team",
-                                                      style: TextStyle(
-                                                        fontSize: width * 0.035,
-                                                        color: textColor,
-                                                        fontWeight: FontWeight.w500,
+                                                  // Info Note (SAME)
+                                                  Container(
+                                                    width: double.infinity,
+                                                    padding: EdgeInsets.all(width * 0.04),
+                                                    margin: EdgeInsets.only(top: height * 0.02),
+                                                    decoration: BoxDecoration(
+                                                      color: primaryColor.withOpacity(0.1),
+                                                      borderRadius: BorderRadius.circular(width * 0.03),
+                                                      border: Border.all(
+                                                        color: primaryColor.withOpacity(0.2),
+                                                        width: 1.5,
                                                       ),
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.info_outline_rounded,
+                                                          size: width * 0.05,
+                                                          color: primaryColor,
+                                                        ),
+                                                        SizedBox(width: width * 0.03),
+                                                        Expanded(
+                                                          child: Text(
+                                                            "Your travel request will be reviewed by the management team",
+                                                            style: TextStyle(
+                                                              fontSize: width * 0.035,
+                                                              color: textColor,
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                 ],
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                      ),
                                     ),
                                   ),
                                 ),

@@ -2,37 +2,52 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:management_app/model/employee_advance_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EmployeeAdvanceService {
   static const String _baseUrl = "https://ppecon.erpnext.com/api";
-  static const Duration _timeoutDuration = Duration(seconds: 30);
+  static const Duration _timeout = Duration(seconds: 30);
 
-  // ================= GET SESSION TOKEN =================
+  // ================= SESSION =================
   Future<String?> _getSessionId() async {
     final prefs = await SharedPreferences.getInstance();
+    final sid = prefs.getString("authToken");
 
-    final token = prefs.getString("authToken"); // sid saved here
-
-    if (token != null && token.isNotEmpty) {
-      return token.trim();
+    if (sid != null && sid.isNotEmpty) {
+      return sid.trim();
     }
 
     return null;
   }
 
-  // ================= GET EMPLOYEE ID =================
+  // ================= EMPLOYEE ID =================
   Future<String> _getEmployeeId() async {
     final prefs = await SharedPreferences.getInstance();
+    final emp = prefs.getString("employeeId");
 
-    final employeeId = prefs.getString("employeeId");
-
-    if (employeeId != null && employeeId.isNotEmpty) {
-      return employeeId.trim();
+    if (emp != null && emp.isNotEmpty) {
+      return emp.trim();
     }
 
     throw Exception("Employee ID not found. Please login again.");
+  }
+
+  // ================= HEADERS =================
+  Future<Map<String, String>> _getHeaders() async {
+    final sid = await _getSessionId();
+
+    if (sid == null) {
+      throw Exception("Session expired. Please login again.");
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Cookie': 'sid=$sid',
+
+      // 🔥 VERY IMPORTANT (Fix 417)
+      'Expect': '',
+    };
   }
 
   // ================= SUBMIT ADVANCE =================
@@ -44,15 +59,7 @@ class EmployeeAdvanceService {
     bool repayFromSalary = true,
   }) async {
     try {
-      final sid = await _getSessionId();
-
-      if (sid == null) {
-        return {
-          'success': false,
-          'message': 'Session expired. Please login again.',
-        };
-      }
-
+      final headers = await _getHeaders();
       final employeeId = await _getEmployeeId();
 
       const endpoint =
@@ -60,8 +67,8 @@ class EmployeeAdvanceService {
 
       final url = Uri.parse('$_baseUrl$endpoint');
 
-      final requestBody = {
-        "employee": employeeId,
+      final body = {
+        "employee": employeeId, // ✅ REQUIRED
         "advance_amount": advanceAmount,
         "purpose": purpose,
         "advance_account": advanceAccount,
@@ -70,18 +77,8 @@ class EmployeeAdvanceService {
       };
 
       final response = await http
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-
-              // 🔥 IMPORTANT
-              'Cookie': 'sid=$sid',
-            },
-            body: jsonEncode(requestBody),
-          )
-          .timeout(_timeoutDuration);
+          .post(url, headers: headers, body: jsonEncode(body))
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -93,110 +90,84 @@ class EmployeeAdvanceService {
         };
       }
 
-      if (response.statusCode == 401 || response.statusCode == 403) {
-        return {
-          'success': false,
-          'message': 'Unauthorized. Please login again.',
-        };
-      }
-
       return {
         'success': false,
-        'message':
-            'Failed. Status: ${response.statusCode} ${response.reasonPhrase}',
+        'message': 'Failed (${response.statusCode})',
         'error': response.body,
       };
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error: ${e.toString()}',
-      };
+      return {'success': false, 'message': e.toString()};
     }
   }
 
-  // ================= GET APPLIED ADVANCES =================
-  Future<Map<String, dynamic>> getAppliedAdvances({
-    int limit = 50,
-    int offset = 0,
-  }) async {
+  // ================= FETCH ADVANCE HISTORY =================
+  Future<Map<String, dynamic>> getAppliedAdvances() async {
     try {
-      final sid = await _getSessionId();
-
-      if (sid == null) {
-        return {
-          'success': false,
-          'message': 'Session expired. Please login again.',
-          'data': [],
-        };
-      }
-
+      final headers = await _getHeaders();
       final employeeId = await _getEmployeeId();
 
-      const endpoint =
-          '/method/ppecon_erp.employee_advance.employee_advance.get_employee_advances';
+      final filters = jsonEncode([
+        ["employee", "=", employeeId],
+      ]);
 
-      final url = Uri.parse('$_baseUrl$endpoint');
+      final fields = jsonEncode([
+        "name",
+        "employee",
+        "employee_name",
+        "posting_date",
+        "advance_amount",
+        "status",
+        "workflow_state", 
+        "purpose",
+      ]);
 
-      final requestBody = {
-        "employee": employeeId,
-        "limit": limit,
-        "offset": offset,
-        "order_by": "posting_date desc",
-      };
+      final url = Uri.parse(
+        "$_baseUrl/resource/Employee Advance"
+        "?fields=${Uri.encodeComponent(fields)}"
+        "&filters=${Uri.encodeComponent(filters)}"
+        "&order_by=posting_date desc",
+      );
 
-      final response = await http
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-
-              // 🔥 IMPORTANT
-              'Cookie': 'sid=$sid',
-            },
-            body: jsonEncode(requestBody),
-          )
-          .timeout(_timeoutDuration);
+      final response = await http.get(url, headers: headers).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        if (data['message'] is List) {
-          final list = List<Map<String, dynamic>>.from(data['message']);
+        if (data["data"] is List) {
+          final list = List<Map<String, dynamic>>.from(data["data"]);
 
-          final advances = list
-              .map((e) => EmployeeAdvanceModel.fromJson(e))
-              .toList();
+          final mappedList = list.map((item) {
+            return {
+              ...item,
+              "status": item["workflow_state"] ?? item["status"] ?? "Draft",
+            };
+          }).toList();
 
           return {
-            'success': true,
-            'message': 'Data loaded',
-            'data':
-                advances.map((e) => e.toDisplayMap()).toList(),
-            'total': advances.length,
+            "success": true,
+            "message": "History loaded",
+            "data": mappedList,
+            "total": mappedList.length,
           };
         }
 
         return {
-          'success': true,
-          'message': 'No records found',
-          'data': [],
-          'total': 0,
+          "success": true,
+          "message": "No records found",
+          "data": [],
+          "total": 0,
         };
       }
 
       return {
-        'success': false,
-        'message':
-            'Failed. Status: ${response.statusCode}',
-        'data': [],
+        "success": false,
+        "message": "Failed (${response.statusCode})",
+        "error": response.body,
+        "data": [],
       };
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error: ${e.toString()}',
-        'data': [],
-      };
+
+      return {"success": false, "message": e.toString(), "data": []};
     }
   }
 
@@ -215,12 +186,7 @@ class EmployeeAdvanceService {
   Future<Map<String, dynamic>> getPaymentModes() async {
     return {
       'success': true,
-      'data': [
-        "Cash",
-        "Bank Transfer",
-        "Cheque",
-        "Online Payment",
-      ],
+      'data': ["Cash", "Bank Transfer", "Cheque", "Online Payment"],
     };
   }
 }

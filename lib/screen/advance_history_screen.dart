@@ -33,11 +33,14 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
-    
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
     _loadAdvances();
     _animationController.forward();
   }
@@ -68,7 +71,10 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
           _hasError = true;
           _isLoading = false;
         });
-        _showSnackbar(result['message'] ?? 'Failed to load advances', Colors.red);
+        _showSnackbar(
+          result['message'] ?? 'Failed to load advances',
+          Colors.red,
+        );
       }
     } catch (e) {
       setState(() {
@@ -85,12 +91,19 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
         content: Row(
           children: [
             Icon(
-              color == Colors.green ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+              color == Colors.green
+                  ? Icons.check_circle_rounded
+                  : Icons.error_outline_rounded,
               color: Colors.white,
               size: 20,
             ),
             const SizedBox(width: 12),
-            Expanded(child: Text(message, style: const TextStyle(fontWeight: FontWeight.w500))),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
           ],
         ),
         backgroundColor: color,
@@ -115,16 +128,22 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     }
   }
 
-  Color _getStatusBgColor(String status) {
+  Color _getStatusBgColor(String status, bool isDarkMode) {
     switch (status.toLowerCase()) {
       case 'approved':
-        return const Color(0xFF22C55E).withOpacity(0.1);
+        return isDarkMode
+            ? const Color(0xFF22C55E).withOpacity(0.2)
+            : const Color(0xFF22C55E).withOpacity(0.1);
       case 'rejected':
-        return const Color(0xFFEF4444).withOpacity(0.1);
+        return isDarkMode
+            ? const Color(0xFFEF4444).withOpacity(0.2)
+            : const Color(0xFFEF4444).withOpacity(0.1);
       case 'pending':
-        return const Color(0xFFF59E0B).withOpacity(0.1);
+        return isDarkMode
+            ? const Color(0xFFF59E0B).withOpacity(0.2)
+            : const Color(0xFFF59E0B).withOpacity(0.1);
       default:
-        return Colors.grey.shade100;
+        return isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100;
     }
   }
 
@@ -145,14 +164,17 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     if (_selectedFilter == 'All') return _advances;
     return _advances
         .where(
-          (adv) => adv['status'].toString().toLowerCase() == _selectedFilter.toLowerCase(),
+          (adv) =>
+              adv['status'].toString().toLowerCase() ==
+              _selectedFilter.toLowerCase(),
         )
         .toList();
   }
 
   double get _totalAmount {
     return _advances.fold(0, (sum, advance) {
-      final amount = double.tryParse(advance['advance_amount']?.toString() ?? '0') ?? 0;
+      final amount =
+          double.tryParse(advance['advance_amount']?.toString() ?? '0') ?? 0;
       return sum + amount;
     });
   }
@@ -161,7 +183,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     return _advances
         .where((a) => a['status'].toString().toLowerCase() == 'approved')
         .fold(0, (sum, advance) {
-          final amount = double.tryParse(advance['advance_amount']?.toString() ?? '0') ?? 0;
+          final amount =
+              double.tryParse(advance['advance_amount']?.toString() ?? '0') ??
+              0;
           return sum + amount;
         });
   }
@@ -174,7 +198,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey.shade50 : Colors.grey.shade50,
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0A0A0A)
+          : Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -202,7 +228,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.shade400.withOpacity(0.3),
+                        color: Colors.blue.shade400.withOpacity(
+                          isDarkMode ? 0.2 : 0.3,
+                        ),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -252,7 +280,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.03,
+                          ),
                         ),
                         child: IconButton(
                           icon: Icon(
@@ -273,12 +303,22 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             // Main Content
             Expanded(
               child: _isLoading
-                  ? _buildLoadingState(screenWidth, screenHeight, theme)
+                  ? _buildLoadingState(
+                      screenWidth,
+                      screenHeight,
+                      theme,
+                      isDarkMode,
+                    )
                   : _hasError
-                      ? _buildErrorState(screenWidth, screenHeight)
-                      : _advances.isEmpty
-                          ? _buildEmptyState(screenWidth, screenHeight, theme)
-                          : _buildContent(screenWidth, screenHeight, isDarkMode, theme),
+                  ? _buildErrorState(screenWidth, screenHeight, isDarkMode)
+                  : _advances.isEmpty
+                  ? _buildEmptyState(
+                      screenWidth,
+                      screenHeight,
+                      theme,
+                      isDarkMode,
+                    )
+                  : _buildContent(screenWidth, screenHeight, isDarkMode, theme),
             ),
           ],
         ),
@@ -286,7 +326,12 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     );
   }
 
-  Widget _buildLoadingState(double screenWidth, double screenHeight, ThemeData theme) {
+  Widget _buildLoadingState(
+    double screenWidth,
+    double screenHeight,
+    ThemeData theme,
+    bool isDarkMode,
+  ) {
     return Center(
       child: TweenAnimationBuilder(
         tween: Tween<double>(begin: 0, end: 1),
@@ -310,7 +355,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               'Loading your advances...',
               style: TextStyle(
                 fontSize: screenWidth * 0.045,
-                color: theme.hintColor,
+                color: isDarkMode ? Colors.grey.shade400 : theme.hintColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -319,7 +364,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               'Please wait a moment',
               style: TextStyle(
                 fontSize: screenWidth * 0.035,
-                color: theme.hintColor.withOpacity(0.7),
+                color: isDarkMode
+                    ? Colors.grey.shade500
+                    : theme.hintColor.withOpacity(0.7),
               ),
             ),
           ],
@@ -328,7 +375,11 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     );
   }
 
-  Widget _buildErrorState(double screenWidth, double screenHeight) {
+  Widget _buildErrorState(
+    double screenWidth,
+    double screenHeight,
+    bool isDarkMode,
+  ) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(screenWidth * 0.08),
@@ -340,13 +391,18 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.red.shade50, Colors.red.shade100],
+                  colors: isDarkMode
+                      ? [
+                          Colors.red.shade900.withOpacity(0.3),
+                          Colors.red.shade900.withOpacity(0.1),
+                        ]
+                      : [Colors.red.shade50, Colors.red.shade100],
                 ),
               ),
               child: Icon(
                 Icons.error_outline_rounded,
                 size: screenWidth * 0.15,
-                color: Colors.red.shade600,
+                color: isDarkMode ? Colors.red.shade300 : Colors.red.shade600,
               ),
             ),
             SizedBox(height: screenHeight * 0.03),
@@ -355,7 +411,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               style: TextStyle(
                 fontSize: screenWidth * 0.055,
                 fontWeight: FontWeight.w700,
-                color: Colors.red.shade700,
+                color: isDarkMode ? Colors.red.shade300 : Colors.red.shade700,
               ),
             ),
             SizedBox(height: screenHeight * 0.015),
@@ -364,7 +420,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: screenWidth * 0.04,
-                color: Colors.grey.shade600,
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                 height: 1.4,
               ),
             ),
@@ -372,7 +428,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             ElevatedButton(
               onPressed: _loadAdvances,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
+                backgroundColor: isDarkMode
+                    ? Colors.red.shade800
+                    : Colors.red.shade600,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.08,
@@ -381,7 +439,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 ),
-                elevation: 3,
+                elevation: isDarkMode ? 2 : 3,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -404,7 +462,12 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     );
   }
 
-  Widget _buildEmptyState(double screenWidth, double screenHeight, ThemeData theme) {
+  Widget _buildEmptyState(
+    double screenWidth,
+    double screenHeight,
+    ThemeData theme,
+    bool isDarkMode,
+  ) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(screenWidth * 0.08),
@@ -416,13 +479,18 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.blue.shade50, Colors.blue.shade100],
+                  colors: isDarkMode
+                      ? [
+                          Colors.blue.shade900.withOpacity(0.3),
+                          Colors.blue.shade900.withOpacity(0.1),
+                        ]
+                      : [Colors.blue.shade50, Colors.blue.shade100],
                 ),
               ),
               child: Icon(
                 Icons.account_balance_wallet_rounded,
                 size: screenWidth * 0.15,
-                color: Colors.blue.shade600,
+                color: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade600,
               ),
             ),
             SizedBox(height: screenHeight * 0.03),
@@ -431,7 +499,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               style: TextStyle(
                 fontSize: screenWidth * 0.055,
                 fontWeight: FontWeight.w700,
-                color: theme.textTheme.titleLarge?.color,
+                color: isDarkMode
+                    ? Colors.white
+                    : theme.textTheme.titleLarge?.color,
               ),
             ),
             SizedBox(height: screenHeight * 0.015),
@@ -440,7 +510,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: screenWidth * 0.04,
-                color: theme.hintColor,
+                color: isDarkMode ? Colors.grey.shade400 : theme.hintColor,
                 height: 1.4,
               ),
             ),
@@ -448,7 +518,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade600,
+                backgroundColor: isDarkMode
+                    ? Colors.blue.shade700
+                    : Colors.blue.shade600,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.08,
@@ -457,7 +529,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 ),
-                elevation: 3,
+                elevation: isDarkMode ? 2 : 3,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -486,9 +558,15 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     bool isDarkMode,
     ThemeData theme,
   ) {
-    final approvedCount = _advances.where((a) => a['status'].toString().toLowerCase() == 'approved').length;
-    final pendingCount = _advances.where((a) => a['status'].toString().toLowerCase() == 'pending').length;
-    final rejectedCount = _advances.where((a) => a['status'].toString().toLowerCase() == 'rejected').length;
+    final approvedCount = _advances
+        .where((a) => a['status'].toString().toLowerCase() == 'approved')
+        .length;
+    final pendingCount = _advances
+        .where((a) => a['status'].toString().toLowerCase() == 'pending')
+        .length;
+    final rejectedCount = _advances
+        .where((a) => a['status'].toString().toLowerCase() == 'rejected')
+        .length;
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -512,8 +590,10 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         value: _advances.length.toString(),
                         icon: Icons.list_alt_rounded,
                         color: Colors.blue,
-                        subtitle: '${_advances.length} Request${_advances.length != 1 ? 's' : ''}',
+                        subtitle:
+                            '${_advances.length} Request${_advances.length != 1 ? 's' : ''}',
                         amount: _totalAmount,
+                        isDarkMode: isDarkMode,
                       ),
                     ),
                     SizedBox(width: screenWidth * 0.03),
@@ -527,6 +607,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         color: Colors.green,
                         subtitle: '$approvedCount Approved',
                         amount: _approvedAmount,
+                        isDarkMode: isDarkMode,
                       ),
                     ),
                   ],
@@ -542,9 +623,12 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         value: pendingCount.toString(),
                         icon: Icons.pending_rounded,
                         color: Colors.orange,
-                        subtitle: pendingCount > 0 ? 'Awaiting review' : 'No pending',
+                        subtitle: pendingCount > 0
+                            ? 'Awaiting review'
+                            : 'No pending',
                         amount: 0,
                         showAmount: false,
+                        isDarkMode: isDarkMode,
                       ),
                     ),
                     SizedBox(width: screenWidth * 0.03),
@@ -556,9 +640,12 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         value: rejectedCount.toString(),
                         icon: Icons.cancel_rounded,
                         color: Colors.red,
-                        subtitle: rejectedCount > 0 ? 'Not approved' : 'No rejections',
+                        subtitle: rejectedCount > 0
+                            ? 'Not approved'
+                            : 'No rejections',
                         amount: 0,
                         showAmount: false,
+                        isDarkMode: isDarkMode,
                       ),
                     ),
                   ],
@@ -576,10 +663,12 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: ['All', 'Approved', 'Pending', 'Rejected'].map((filter) {
+                children: ['All', 'Approved', 'Pending', 'Rejected'].map((
+                  filter,
+                ) {
                   final isSelected = _selectedFilter == filter;
                   final statusColor = _getStatusColor(filter);
-                  
+
                   return Padding(
                     padding: EdgeInsets.only(right: screenWidth * 0.03),
                     child: FilterChip(
@@ -587,17 +676,27 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         filter,
                         style: TextStyle(
                           fontSize: screenWidth * 0.035,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected ? statusColor : theme.hintColor,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? statusColor
+                              : (isDarkMode
+                                    ? Colors.grey.shade400
+                                    : theme.hintColor),
                         ),
                       ),
                       selected: isSelected,
-                      selectedColor: _getStatusBgColor(filter),
+                      selectedColor: _getStatusBgColor(filter, isDarkMode),
                       checkmarkColor: statusColor,
                       onSelected: (selected) {
-                        setState(() => _selectedFilter = selected ? filter : 'All');
+                        setState(
+                          () => _selectedFilter = selected ? filter : 'All',
+                        );
                       },
-                      backgroundColor: isDarkMode ? Colors.grey.shade800 : Colors.white,
+                      backgroundColor: isDarkMode
+                          ? Colors.grey.shade800
+                          : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(screenWidth * 0.02),
                       ),
@@ -634,7 +733,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   style: TextStyle(
                     fontSize: screenWidth * 0.045,
                     fontWeight: FontWeight.w700,
-                    color: theme.textTheme.titleLarge?.color,
+                    color: isDarkMode
+                        ? Colors.white
+                        : theme.textTheme.titleLarge?.color,
                   ),
                 ),
                 Container(
@@ -643,7 +744,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                     vertical: screenHeight * 0.005,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: isDarkMode
+                        ? Colors.blue.shade900.withOpacity(0.3)
+                        : Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   ),
                   child: Row(
@@ -652,7 +755,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         'SAR',
                         style: TextStyle(
                           fontSize: screenWidth * 0.032,
-                          color: Colors.blue.shade700,
+                          color: isDarkMode
+                              ? Colors.blue.shade300
+                              : Colors.blue.shade700,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -660,7 +765,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                       Icon(
                         Icons.arrow_downward_rounded,
                         size: screenWidth * 0.04,
-                        color: Colors.blue.shade700,
+                        color: isDarkMode
+                            ? Colors.blue.shade300
+                            : Colors.blue.shade700,
                       ),
                     ],
                   ),
@@ -674,7 +781,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             child: RefreshIndicator.adaptive(
               onRefresh: _loadAdvances,
               color: Colors.blue,
-              backgroundColor: theme.cardColor,
+              backgroundColor: isDarkMode
+                  ? const Color(0xFF1E1E1E)
+                  : theme.cardColor,
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.04,
@@ -724,13 +833,17 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     required String subtitle,
     double amount = 0,
     bool showAmount = true,
+    required bool isDarkMode,
   }) {
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.035),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: isDarkMode ? color.withOpacity(0.15) : color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(screenWidth * 0.04),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(
+          color: isDarkMode ? color.withOpacity(0.3) : color.withOpacity(0.2),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -738,9 +851,15 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             padding: EdgeInsets.all(screenWidth * 0.025),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.15),
+              color: isDarkMode
+                  ? color.withOpacity(0.25)
+                  : color.withOpacity(0.15),
             ),
-            child: Icon(icon, color: color, size: screenWidth * 0.05),
+            child: Icon(
+              icon,
+              color: isDarkMode ? color.withOpacity(0.9) : color,
+              size: screenWidth * 0.05,
+            ),
           ),
           SizedBox(width: screenWidth * 0.03),
           Expanded(
@@ -755,7 +874,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                       style: TextStyle(
                         fontSize: screenWidth * 0.06,
                         fontWeight: FontWeight.w800,
-                        color: color,
+                        color: isDarkMode ? color.withOpacity(0.9) : color,
                       ),
                     ),
                     if (showAmount && amount > 0)
@@ -765,14 +884,18 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                           vertical: screenHeight * 0.003,
                         ),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                          color: isDarkMode
+                              ? color.withOpacity(0.25)
+                              : color.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.02,
+                          ),
                         ),
                         child: Text(
                           'SAR ${amount.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: screenWidth * 0.028,
-                            color: color,
+                            color: isDarkMode ? color.withOpacity(0.9) : color,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -785,7 +908,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   style: TextStyle(
                     fontSize: screenWidth * 0.032,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade600,
+                    color: isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.002),
@@ -793,7 +918,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   subtitle,
                   style: TextStyle(
                     fontSize: screenWidth * 0.028,
-                    color: Colors.grey.shade500,
+                    color: isDarkMode
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade500,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -813,7 +940,8 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     required bool isDarkMode,
     required ThemeData theme,
   }) {
-    final amount = double.tryParse(advance['advance_amount']?.toString() ?? '0') ?? 0;
+    final amount =
+        double.tryParse(advance['advance_amount']?.toString() ?? '0') ?? 0;
     final status = advance['status']?.toString() ?? 'Pending';
     final purpose = advance['purpose']?.toString() ?? 'No purpose specified';
     final date = advance['posting_date']?.toString() ?? '';
@@ -823,26 +951,38 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     final paymentMode = advance['mode_of_payment']?.toString() ?? 'N/A';
     final currency = advance['currency']?.toString() ?? 'SAR';
     final statusColor = _getStatusColor(status);
-    final statusBgColor = _getStatusBgColor(status);
+    final statusBgColor = _getStatusBgColor(status, isDarkMode);
 
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.015),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey.shade800 : Colors.white,
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(screenWidth * 0.04),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(
+          color: isDarkMode ? Colors.grey.shade800 : Colors.transparent,
+          width: 0.5,
+        ),
+        boxShadow: isDarkMode
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(screenWidth * 0.04),
-          onTap: () => _showAdvanceDetails(advance, screenWidth, screenHeight, theme),
+          onTap: () => _showAdvanceDetails(
+            advance,
+            screenWidth,
+            screenHeight,
+            theme,
+            isDarkMode,
+          ),
           child: Padding(
             padding: EdgeInsets.all(screenWidth * 0.04),
             child: Column(
@@ -881,7 +1021,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                             'ID: ${advance['name']?.toString() ?? 'N/A'}',
                             style: TextStyle(
                               fontSize: screenWidth * 0.03,
-                              color: theme.hintColor,
+                              color: isDarkMode
+                                  ? Colors.grey.shade400
+                                  : theme.hintColor,
                             ),
                           ),
                         ],
@@ -893,14 +1035,18 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         vertical: screenHeight * 0.005,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: isDarkMode
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(screenWidth * 0.02),
                       ),
                       child: Text(
                         formattedDate.split(' • ')[0],
                         style: TextStyle(
                           fontSize: screenWidth * 0.028,
-                          color: Colors.grey.shade700,
+                          color: isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade700,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -924,7 +1070,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                                 '$currency ',
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.032,
-                                  color: Colors.grey.shade600,
+                                  color: isDarkMode
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                               Text(
@@ -932,7 +1080,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.06,
                                   fontWeight: FontWeight.w800,
-                                  color: theme.textTheme.titleLarge?.color,
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : theme.textTheme.titleLarge?.color,
                                   letterSpacing: -0.5,
                                 ),
                               ),
@@ -943,7 +1093,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                             purpose,
                             style: TextStyle(
                               fontSize: screenWidth * 0.036,
-                              color: theme.hintColor,
+                              color: isDarkMode
+                                  ? Colors.grey.shade400
+                                  : theme.hintColor,
                               height: 1.3,
                             ),
                             maxLines: 2,
@@ -957,16 +1109,20 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                       padding: EdgeInsets.all(screenWidth * 0.025),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.blue.shade400, Colors.blue.shade600],
+                          colors: isDarkMode
+                              ? [Colors.blue.shade700, Colors.blue.shade900]
+                              : [Colors.blue.shade400, Colors.blue.shade600],
                         ),
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blue.shade400.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        boxShadow: isDarkMode
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: Colors.blue.shade400.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                       ),
                       child: Icon(
                         Icons.receipt_long_rounded,
@@ -986,7 +1142,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                     vertical: screenHeight * 0.012,
                   ),
                   decoration: BoxDecoration(
-                    color: theme.scaffoldBackgroundColor,
+                    color: isDarkMode
+                        ? const Color(0xFF2A2A2A)
+                        : theme.scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(screenWidth * 0.03),
                   ),
                   child: Row(
@@ -997,18 +1155,28 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         icon: Icons.payment_rounded,
                         label: paymentMode,
                         color: Colors.blue,
+                        isDarkMode: isDarkMode,
                       ),
                       _buildInfoChip(
                         screenWidth: screenWidth,
                         icon: Icons.account_balance_rounded,
-                        label: advance['advance_account']?.toString().split(' - ').last ?? 'N/A',
+                        label:
+                            advance['advance_account']
+                                ?.toString()
+                                .split(' - ')
+                                .last ??
+                            'N/A',
                         color: Colors.purple,
+                        isDarkMode: isDarkMode,
                       ),
                       _buildInfoChip(
                         screenWidth: screenWidth,
                         icon: Icons.access_time_rounded,
-                        label: DateFormat('hh:mm a').format(DateTime.parse(date)),
+                        label: DateFormat(
+                          'hh:mm a',
+                        ).format(DateTime.parse(date)),
                         color: Colors.orange,
+                        isDarkMode: isDarkMode,
                       ),
                     ],
                   ),
@@ -1026,6 +1194,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     required IconData icon,
     required String label,
     required Color color,
+    required bool isDarkMode,
   }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1033,7 +1202,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
         Icon(
           icon,
           size: screenWidth * 0.035,
-          color: color,
+          color: isDarkMode ? color.withOpacity(0.9) : color,
         ),
         SizedBox(width: screenWidth * 0.01),
         Flexible(
@@ -1042,7 +1211,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             style: TextStyle(
               fontSize: screenWidth * 0.03,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade700,
+              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -1056,8 +1225,10 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     double screenWidth,
     double screenHeight,
     ThemeData theme,
+    bool isDarkMode,
   ) {
-    final amount = double.tryParse(advance['advance_amount']?.toString() ?? '0') ?? 0;
+    final amount =
+        double.tryParse(advance['advance_amount']?.toString() ?? '0') ?? 0;
     final status = advance['status']?.toString() ?? 'Pending';
     final currency = advance['currency']?.toString() ?? 'SAR';
 
@@ -1065,177 +1236,225 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        margin: EdgeInsets.only(top: screenHeight * 0.05),
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
+      builder: (context) => SafeArea(
+        // Added SafeArea here
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.9, // Fixed height
+          margin: EdgeInsets.only(top: screenHeight * 0.02),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1E1E1E) : theme.cardColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              margin: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
-              width: screenWidth * 0.15,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2.5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                margin: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                width: screenWidth * 0.15,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? Colors.grey.shade700
+                      : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2.5),
+                ),
               ),
-            ),
-            
-            // Header
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(screenWidth * 0.03),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _getStatusBgColor(status),
-                    ),
-                    child: Icon(
-                      _getStatusIcon(status),
-                      color: _getStatusColor(status),
-                      size: screenWidth * 0.07,
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.04),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Advance Details',
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.055,
-                            fontWeight: FontWeight.w700,
-                            color: theme.textTheme.titleLarge?.color,
-                          ),
-                        ),
-                        SizedBox(height: screenHeight * 0.005),
-                        Text(
-                          'ID: ${advance['name'] ?? 'N/A'}',
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            color: theme.hintColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: theme.hintColor,
-                      size: screenWidth * 0.06,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            
-            Divider(height: screenHeight * 0.02, thickness: 1),
-            
-            // Details
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(screenWidth * 0.06),
-                child: Column(
+
+              // Header
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+                child: Row(
                   children: [
-                    _buildDetailItem(
-                      screenWidth: screenWidth,
-                      label: 'Advance Amount',
-                      value: '$currency ${amount.toStringAsFixed(2)}',
-                      icon: Icons.currency_rupee_rounded,
-                      color: Colors.blue,
+                    Container(
+                      padding: EdgeInsets.all(screenWidth * 0.03),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _getStatusBgColor(status, isDarkMode),
+                      ),
+                      child: Icon(
+                        _getStatusIcon(status),
+                        color: _getStatusColor(status),
+                        size: screenWidth * 0.07,
+                      ),
                     ),
-                    SizedBox(height: screenHeight * 0.015),
-                    _buildDetailItem(
-                      screenWidth: screenWidth,
-                      label: 'Status',
-                      value: status,
-                      icon: _getStatusIcon(status),
-                      color: _getStatusColor(status),
+                    SizedBox(width: screenWidth * 0.04),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Advance Details',
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.055,
+                              fontWeight: FontWeight.w700,
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : theme.textTheme.titleLarge?.color,
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.005),
+                          Text(
+                            'ID: ${advance['name'] ?? 'N/A'}',
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.035,
+                              color: isDarkMode
+                                  ? Colors.grey.shade400
+                                  : theme.hintColor,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    SizedBox(height: screenHeight * 0.015),
-                    _buildDetailItem(
-                      screenWidth: screenWidth,
-                      label: 'Purpose',
-                      value: advance['purpose']?.toString() ?? 'Not specified',
-                      icon: Icons.description_rounded,
-                      color: Colors.purple,
-                    ),
-                    SizedBox(height: screenHeight * 0.015),
-                    _buildDetailItem(
-                      screenWidth: screenWidth,
-                      label: 'Applied Date',
-                      value: advance['posting_date']?.toString() ?? 'N/A',
-                      icon: Icons.calendar_today_rounded,
-                      color: Colors.green,
-                    ),
-                    SizedBox(height: screenHeight * 0.015),
-                    _buildDetailItem(
-                      screenWidth: screenWidth,
-                      label: 'Payment Mode',
-                      value: advance['mode_of_payment']?.toString() ?? 'N/A',
-                      icon: Icons.payment_rounded,
-                      color: Colors.orange,
-                    ),
-                    SizedBox(height: screenHeight * 0.015),
-                    _buildDetailItem(
-                      screenWidth: screenWidth,
-                      label: 'Advance Account',
-                      value: advance['advance_account']?.toString() ?? 'N/A',
-                      icon: Icons.account_balance_rounded,
-                      color: Colors.teal,
-                    ),
-                    SizedBox(height: screenHeight * 0.015),
-                    _buildDetailItem(
-                      screenWidth: screenWidth,
-                      label: 'Repay from Salary',
-                      value: advance['repay_from_salary']?.toString() == '1' ? 'Yes' : 'No',
-                      icon: Icons.account_balance_wallet_rounded,
-                      color: Colors.amber,
+                    IconButton(
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: isDarkMode
+                            ? Colors.grey.shade400
+                            : theme.hintColor,
+                        size: screenWidth * 0.06,
+                      ),
+                      onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
-            ),
-            
-            // Close Button
-            Padding(
-              padding: EdgeInsets.all(screenWidth * 0.06),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.018),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                    ),
-                    elevation: 3,
+
+              Divider(
+                height: screenHeight * 0.02,
+                thickness: 1,
+                color: isDarkMode ? Colors.grey.shade800 : null,
+              ),
+
+              // Details - Now properly scrollable
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.all(screenWidth * 0.06),
+                  child: Column(
+                    children: [
+                      _buildDetailItem(
+                        screenWidth: screenWidth,
+                        label: 'Advance Amount',
+                        value: '$currency ${amount.toStringAsFixed(2)}',
+                        icon: Icons.currency_rupee_rounded,
+                        color: Colors.blue,
+                        isDarkMode: isDarkMode,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildDetailItem(
+                        screenWidth: screenWidth,
+                        label: 'Status',
+                        value: status,
+                        icon: _getStatusIcon(status),
+                        color: _getStatusColor(status),
+                        isDarkMode: isDarkMode,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildDetailItem(
+                        screenWidth: screenWidth,
+                        label: 'Purpose',
+                        value:
+                            advance['purpose']?.toString() ?? 'Not specified',
+                        icon: Icons.description_rounded,
+                        color: Colors.purple,
+                        isDarkMode: isDarkMode,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildDetailItem(
+                        screenWidth: screenWidth,
+                        label: 'Applied Date',
+                        value: DateFormat('dd MMM yyyy, hh:mm a').format(
+                          DateTime.parse(
+                            advance['posting_date']?.toString() ??
+                                DateTime.now().toString(),
+                          ),
+                        ),
+                        icon: Icons.calendar_today_rounded,
+                        color: Colors.green,
+                        isDarkMode: isDarkMode,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildDetailItem(
+                        screenWidth: screenWidth,
+                        label: 'Payment Mode',
+                        value: advance['mode_of_payment']?.toString() ?? 'N/A',
+                        icon: Icons.payment_rounded,
+                        color: Colors.orange,
+                        isDarkMode: isDarkMode,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildDetailItem(
+                        screenWidth: screenWidth,
+                        label: 'Advance Account',
+                        value:
+                            advance['advance_account']
+                                ?.toString()
+                                .split(' - ')
+                                .last ??
+                            'N/A',
+                        icon: Icons.account_balance_rounded,
+                        color: Colors.teal,
+                        isDarkMode: isDarkMode,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildDetailItem(
+                        screenWidth: screenWidth,
+                        label: 'Repay from Salary',
+                        value: advance['repay_from_salary']?.toString() == '1'
+                            ? 'Yes'
+                            : 'No',
+                        icon: Icons.account_balance_wallet_rounded,
+                        color: Colors.amber,
+                        isDarkMode: isDarkMode,
+                      ),
+                      SizedBox(height: screenHeight * 0.025),
+                    ],
                   ),
-                  child: Text(
-                    'Close',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.045,
-                      fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              // Close Button
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  screenWidth * 0.06,
+                  0,
+                  screenWidth * 0.06,
+                  screenHeight * 0.02,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDarkMode
+                          ? Colors.blue.shade700
+                          : Colors.blue.shade600,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        vertical: screenHeight * 0.018,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      ),
+                      elevation: isDarkMode ? 2 : 3,
+                    ),
+                    child: Text(
+                      'Close',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.045,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+              SizedBox(height: screenHeight * 0.01), // Extra padding at bottom
+            ],
+          ),
         ),
       ),
     );
@@ -1247,13 +1466,17 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     required String value,
     required IconData icon,
     required Color color,
+    required bool isDarkMode,
   }) {
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.04),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: isDarkMode ? color.withOpacity(0.1) : color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(screenWidth * 0.04),
-        border: Border.all(color: color.withOpacity(0.1)),
+        border: Border.all(
+          color: isDarkMode ? color.withOpacity(0.2) : color.withOpacity(0.1),
+          width: 0.5,
+        ),
       ),
       child: Row(
         children: [
@@ -1261,9 +1484,15 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             padding: EdgeInsets.all(screenWidth * 0.025),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.1),
+              color: isDarkMode
+                  ? color.withOpacity(0.2)
+                  : color.withOpacity(0.1),
             ),
-            child: Icon(icon, color: color, size: screenWidth * 0.05),
+            child: Icon(
+              icon,
+              color: isDarkMode ? color.withOpacity(0.9) : color,
+              size: screenWidth * 0.05,
+            ),
           ),
           SizedBox(width: screenWidth * 0.04),
           Expanded(
@@ -1274,7 +1503,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   label,
                   style: TextStyle(
                     fontSize: screenWidth * 0.032,
-                    color: Colors.grey.shade600,
+                    color: isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1284,7 +1515,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   style: TextStyle(
                     fontSize: screenWidth * 0.04,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
+                    color: isDarkMode ? Colors.white : Colors.grey.shade800,
                   ),
                 ),
               ],

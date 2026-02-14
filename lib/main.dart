@@ -4,7 +4,7 @@ import 'package:management_app/card_screen/check_more.dart';
 import 'package:management_app/card_screen/employee_advance_screen.dart';
 import 'package:management_app/card_screen/leave_approval.dart';
 import 'package:management_app/card_screen/leaverequest.dart';
-import 'package:management_app/card_screen/regularization_lsiting.dart';
+import 'package:management_app/card_screen/leave_balance_screen.dart';
 import 'package:management_app/providers/attendance_provider.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
@@ -30,7 +30,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  // Load cookies only (route decision splash karega)
   await AuthService.loadCookies();
 
   runApp(
@@ -148,7 +147,7 @@ class MyApp extends StatelessWidget {
         '/leaveApproval': (_) => const LeaveApproval(),
         '/attendanceRequest': (_) => const AttendanceRequestScreen(),
         '/travelRequest': (_) => const TravelRequestScreen(),
-        '/regularizationListing': (_) => const RegularizationLsiting(),
+        '/leaveBalaneceScreen': (_) => const LeaveBalanceScreen(),
         '/checkMore': (_) => const CheckMore(),
         '/leaveApprovalScreen': (_) => const LeaveApprovalScreen(),
       },

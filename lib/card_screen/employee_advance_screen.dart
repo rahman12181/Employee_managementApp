@@ -66,64 +66,87 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
     });
   }
 
-  Future<void> _loadDropdownData() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _loadingMessage = 'Loading accounts...';
-      });
-    }
+ Future<void> _loadDropdownData() async {
+  if (mounted) {
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = 'Loading accounts...';
+    });
+  }
 
-    try {
-      final accountsResult = await _advanceService.getAdvanceAccounts();
+  try {
+    final accountsResult = await _advanceService.getAdvanceAccounts();
 
-      if (accountsResult['success'] == true) {
-        final accountsData = accountsResult['data'] as List<dynamic>;
-        final accountsList = accountsData
+    if (accountsResult['success'] == true) {
+      final accountsData = accountsResult['data'] as List<dynamic>;
+      final accountsList = accountsData
+          .map((item) => item.toString())
+          .toList();
+
+      final requiredAccounts = [
+        "1610 - Employee Advances - PPE",
+        "1310 - Debtors - PPE",
+        "1611 - Employees Petty cash - PPE",
+        "1311 - Retention with Clients - PPE"
+      ];
+
+      for (var account in requiredAccounts) {
+        if (!accountsList.contains(account)) {
+          accountsList.add(account);
+        }
+      }
+      accountsList.sort();
+
+      setState(() => _loadingMessage = 'Loading payment modes...');
+      final paymentModesResult = await _advanceService.getPaymentModes();
+
+      if (paymentModesResult['success'] == true) {
+        final paymentModesData = paymentModesResult['data'] as List<dynamic>;
+        final paymentModesList = paymentModesData
             .map((item) => item.toString())
             .toList();
 
-        setState(() => _loadingMessage = 'Loading payment modes...');
-        final paymentModesResult = await _advanceService.getPaymentModes();
+        if (!paymentModesList.contains('Credit Card')) {
+          paymentModesList.add('Credit Card');
+        }
 
-        if (paymentModesResult['success'] == true) {
-          final paymentModesData = paymentModesResult['data'] as List<dynamic>;
-          final paymentModesList = paymentModesData
-              .map((item) => item.toString())
-              .toList();
-
-          if (mounted) {
-            setState(() {
-              _accounts = accountsList;
-              _paymentModes = paymentModesList;
-              _selectedAccount = accountsList.isNotEmpty
-                  ? accountsList[0]
-                  : null;
-              _selectedPaymentMode = paymentModesList.isNotEmpty
-                  ? paymentModesList[0]
-                  : null;
-              _isLoading = false;
-            });
-          }
-        } else {
-          _showErrorSnackbar('Failed to load payment modes');
-          _setDefaultData();
+        if (mounted) {
+          setState(() {
+            _accounts = accountsList;
+            _paymentModes = paymentModesList;
+            _selectedAccount = accountsList.isNotEmpty
+                ? accountsList[0]
+                : null;
+            _selectedPaymentMode = paymentModesList.isNotEmpty
+                ? paymentModesList[0]
+                : null;
+            _isLoading = false;
+          });
         }
       } else {
-        _showErrorSnackbar('Failed to load accounts');
+        _showErrorSnackbar('Failed to load payment modes');
         _setDefaultData();
       }
-    } catch (e) {
-      _showErrorSnackbar('Failed to load data: $e');
+    } else {
+      _showErrorSnackbar('Failed to load accounts');
       _setDefaultData();
     }
+  } catch (e) {
+    _showErrorSnackbar('Failed to load data: $e');
+    _setDefaultData();
   }
+}
 
   void _setDefaultData() {
     if (mounted) {
       setState(() {
-        _accounts = ["1610 - Employee Advances - PPE", "Cash - Petty Cash"];
-        _paymentModes = ["Cash", "Bank Transfer"];
+        _accounts = [
+          "1610 - Employee Advances - PPE",
+          "1310 - Debtors - PPE",
+          "1611 - Employees Petty cash - PPE",
+          "1311 - Retention with Clients - PPE"
+        ];
+        _paymentModes = ["Cash", "Bank Transfer", "Credit Card"];
         _selectedAccount = _accounts.isNotEmpty ? _accounts[0] : null;
         _selectedPaymentMode = _paymentModes.isNotEmpty
             ? _paymentModes[0]
@@ -436,7 +459,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -460,7 +483,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                   color: Colors.grey.shade600,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Container(
                 constraints: BoxConstraints(maxWidth: screenWidth * 0.5),
                 child: Text(
@@ -483,7 +506,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
 
   Widget _buildDivider(double screenWidth) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Divider(
         height: 1,
         color: Colors.grey.shade200,
