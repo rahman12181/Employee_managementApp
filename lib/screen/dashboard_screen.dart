@@ -15,7 +15,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> 
+class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final bool _isLoading = false;
   int currentIndex = 0;
@@ -24,7 +24,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   late AnimationController _greetingController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   String _greetingMessage = "";
   IconData _greetingIcon = Icons.wb_sunny;
 
@@ -36,7 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     'totalTravel': 0,
     'totalRequests': 0,
   };
-  
+
   bool _isLoadingStats = true;
   String _employeeId = "";
   String _employeeName = "";
@@ -108,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+
     _bannerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -123,15 +123,15 @@ class _DashboardScreenState extends State<DashboardScreen>
       CurvedAnimation(parent: _greetingController, curve: Curves.easeIn),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _greetingController, curve: Curves.easeOut));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(parent: _greetingController, curve: Curves.easeOut),
+        );
 
     _updateGreeting();
     _startBannerAnimation();
     _greetingController.forward();
-    
+
     // Load employee data and fetch stats
     _loadEmployeeData().then((_) {
       if (_employeeId.isNotEmpty) {
@@ -154,16 +154,16 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _fetchDashboardStats() async {
     setState(() => _isLoadingStats = true);
-    
+
     try {
       int totalLeaves = 0;
       int totalTravel = 0;
-      int leaveBalance = 18; 
+      int leaveBalance = 18;
 
       // Fetch Leaves Data
       try {
         final leaves = await LeaveApprovedService.fetchLeaves();
-        
+
         // Filter leaves for current user
         final userLeaves = leaves.where((leave) {
           return leave.employeeName.toLowerCase().contains(
@@ -175,15 +175,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         }).toList();
 
         totalLeaves = userLeaves.length;
-        
-      } catch (e) {
-       
-      }
+      } catch (e) {}
 
       // Fetch Travel Data
       try {
-        final travels = await TravelRequestService.getMyTravelRequests(_employeeId);
-        
+        final travels = await TravelRequestService.getMyTravelRequests(
+          _employeeId,
+        );
 
         final userTravels = travels.where((travel) {
           final travelEmpId = travel["employee"]?.toString() ?? "";
@@ -196,10 +194,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         }).toList();
 
         totalTravel = userTravels.length;
-        
-      } catch (e) {
-        
-      }
+      } catch (e) {}
 
       // Total requests
       int totalRequests = totalLeaves + totalTravel;
@@ -242,14 +237,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 5));
       if (!mounted) return false;
-      
+
       _bannerController.forward().then((_) {
         setState(() {
           currentIndex = (currentIndex + 1) % bannerImages.length;
         });
         _bannerController.reverse();
       });
-      
+
       return true;
     });
   }
@@ -265,9 +260,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         systemNavigationBarColor: _isDarkMode ? Colors.black : Colors.white,
-        systemNavigationBarIconBrightness: _isDarkMode ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: _isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: _isDarkMode ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness: _isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
       ),
     );
   }
@@ -293,10 +292,15 @@ class _DashboardScreenState extends State<DashboardScreen>
         : [const Color(0xFFE3F2FD), const Color(0xFFF3E5F5)];
   }
 
-  Widget _buildDashboardHeader(BuildContext context, double width, double height) {
+  Widget _buildDashboardHeader(
+    BuildContext context,
+    double width,
+    double height,
+  ) {
     final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final gradientColors = _getHeaderGradientColors();
-    
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -355,20 +359,20 @@ class _DashboardScreenState extends State<DashboardScreen>
                             radius: width * 0.06,
                             backgroundImage:
                                 (user != null &&
-                                        user['user_image'] != null &&
-                                        user['user_image'] != "")
-                                    ? NetworkImage(
-                                        "https://ppecon.erpnext.com${user['user_image']}",
-                                      )
-                                    : const AssetImage("assets/images/app_icon.png")
-                                        as ImageProvider,
+                                    user['user_image'] != null &&
+                                    user['user_image'] != "")
+                                ? NetworkImage(
+                                    "https://ppecon.erpnext.com${user['user_image']}",
+                                  )
+                                : const AssetImage("assets/images/app_icon.png")
+                                      as ImageProvider,
                           );
                         },
                       ),
                     ),
                   ),
                 ),
-                
+
                 // Logo with shimmer effect
                 TweenAnimationBuilder(
                   tween: Tween<double>(begin: 0, end: 1),
@@ -406,7 +410,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 padding: EdgeInsets.all(width * 0.015),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(width * 0.02),
+                                  borderRadius: BorderRadius.circular(
+                                    width * 0.02,
+                                  ),
                                 ),
                                 child: Image.asset(
                                   "assets/images/app_icon.png",
@@ -448,7 +454,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     );
                   },
                 ),
-                
+
                 // Notification icon without badge
                 Container(
                   decoration: BoxDecoration(
@@ -473,9 +479,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ],
             ),
-            
+
             SizedBox(height: height * 0.02),
-            
+
             // Animated welcome message with greeting
             SlideTransition(
               position: _slideAnimation,
@@ -486,8 +492,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                     final user = provider.profileData;
                     final fullName = user != null && user['full_name'] != null
                         ? user['full_name']
-                        : _employeeName.isNotEmpty ? _employeeName : 'User';
-                    
+                        : _employeeName.isNotEmpty
+                        ? _employeeName
+                        : 'User';
+
                     return Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(
@@ -518,7 +526,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             ),
                           ),
                           SizedBox(width: width * 0.03),
-                          
+
                           // Greeting Text and Full Name
                           Expanded(
                             child: Column(
@@ -528,7 +536,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   _greetingMessage,
                                   style: TextStyle(
                                     fontSize: width * 0.035,
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: isDark ? Colors.white : Colors.black,
                                     height: 1.2,
                                   ),
                                 ),
@@ -537,7 +545,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   style: TextStyle(
                                     fontSize: width * 0.045,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: isDark ? Colors.white : Colors.black,
                                     height: 1.2,
                                   ),
                                   maxLines: 1,
@@ -546,7 +554,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                               ],
                             ),
                           ),
-                          
+
                           // Date
                           Container(
                             padding: EdgeInsets.symmetric(
@@ -591,7 +599,20 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   String _getFormattedDate() {
     final now = DateTime.now();
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${now.day} ${months[now.month - 1]}';
   }
 
@@ -637,16 +658,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.4),
-                    ],
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
                   ),
                 ),
               ),
             ),
           ),
-          
+
           // Page Indicators
           Positioned(
             bottom: height * 0.015,
@@ -671,7 +689,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           ),
-          
+
           // Hint Text
           Positioned(
             bottom: height * 0.035,
@@ -703,7 +721,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Clean module grid WITHOUT any stats badges
   Widget _buildModuleGrid(double width, double height, BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: width * 0.04),
@@ -763,7 +781,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
           ),
-          
+
           // Grid of Modules - NO STATS BADGES
           GridView.builder(
             shrinkWrap: true,
@@ -779,7 +797,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             itemBuilder: (context, index) {
               final module = modules[index];
               final moduleColor = module['color'] as Color;
-              
+
               return TweenAnimationBuilder(
                 tween: Tween<double>(begin: 0, end: 1),
                 duration: Duration(milliseconds: 500 + (index * 100)),
@@ -802,14 +820,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: _isDarkMode
-                                  ? [
-                                      Colors.grey[850]!,
-                                      Colors.grey[900]!,
-                                    ]
-                                  : [
-                                      Colors.white,
-                                      Colors.grey[50]!,
-                                    ],
+                                  ? [Colors.grey[850]!, Colors.grey[900]!]
+                                  : [Colors.white, Colors.grey[50]!],
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -833,7 +845,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 Container(
                                   width: width * 0.12,
                                   height: width * 0.12,
-                                  margin: EdgeInsets.only(bottom: height * 0.01),
+                                  margin: EdgeInsets.only(
+                                    bottom: height * 0.01,
+                                  ),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -843,7 +857,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         moduleColor.withOpacity(0.05),
                                       ],
                                     ),
-                                    borderRadius: BorderRadius.circular(width * 0.03),
+                                    borderRadius: BorderRadius.circular(
+                                      width * 0.03,
+                                    ),
                                     border: Border.all(
                                       color: moduleColor.withOpacity(0.2),
                                       width: 1.5,
@@ -858,7 +874,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     ),
                                   ),
                                 ),
-                                
+
                                 // Module Title
                                 Text(
                                   module['title'],
@@ -870,16 +886,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                
+
                                 SizedBox(height: height * 0.005),
-                                
+
                                 // Module Subtitle
                                 Expanded(
                                   child: Text(
                                     module['subtitle'],
                                     style: TextStyle(
                                       fontSize: width * 0.03,
-                                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                                      color: theme.textTheme.bodySmall?.color
+                                          ?.withOpacity(0.7),
                                       fontWeight: FontWeight.w500,
                                       height: 1.3,
                                     ),
@@ -887,7 +904,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                
+
                                 // Access indicator
                                 Container(
                                   width: double.infinity,
@@ -896,7 +913,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   ),
                                   decoration: BoxDecoration(
                                     color: moduleColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(width * 0.015),
+                                    borderRadius: BorderRadius.circular(
+                                      width * 0.015,
+                                    ),
                                   ),
                                   child: Center(
                                     child: Text(
@@ -928,7 +947,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Quick Stats with only total counts (no pending)
   Widget _buildQuickStats(double width, double height, BuildContext context) {
     final theme = Theme.of(context);
-    
+
     if (_isLoadingStats) {
       return Container(
         width: double.infinity,
@@ -957,14 +976,12 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
             SizedBox(height: height * 0.02),
-            const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ],
         ),
       );
     }
-    
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
@@ -995,13 +1012,14 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
           ),
-          
+
           // Two rows of stats - only totals
           Row(
             children: [
               // Total Requests Card
               _buildStatCard(
-                width, height,
+                width,
+                height,
                 icon: Icons.list_alt,
                 label: "Total Requests",
                 value: "${_stats['totalRequests']}",
@@ -1009,10 +1027,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 color: Colors.blue,
               ),
               SizedBox(width: width * 0.03),
-              
+
               // Total Leaves Card
               _buildStatCard(
-                width, height,
+                width,
+                height,
                 icon: Icons.beach_access,
                 label: "Total Leaves",
                 value: "${_stats['totalLeaves']}",
@@ -1020,10 +1039,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 color: Colors.green,
               ),
               SizedBox(width: width * 0.03),
-              
+
               // Total Travel Card
               _buildStatCard(
-                width, height,
+                width,
+                height,
                 icon: Icons.flight_takeoff,
                 label: "Total Travel",
                 value: "${_stats['totalTravel']}",
@@ -1032,15 +1052,16 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ],
           ),
-          
+
           SizedBox(height: height * 0.015),
-          
+
           // Second Row
           Row(
             children: [
               // Leave Balance Card
               _buildStatCard(
-                width, height,
+                width,
+                height,
                 icon: Icons.balance,
                 label: "Leave Balance",
                 value: "${_stats['leaveBalance']}",
@@ -1048,10 +1069,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 color: Colors.purple,
               ),
               SizedBox(width: width * 0.03),
-              
+
               // Active Advances Card
               _buildStatCard(
-                width, height,
+                width,
+                height,
                 icon: Icons.attach_money,
                 label: "Active Advances",
                 value: "${_stats['activeAdvances']}",
@@ -1059,7 +1081,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 color: Colors.teal,
               ),
               SizedBox(width: width * 0.03),
-              
+
               // Placeholder for future stat
               Expanded(
                 child: Container(
@@ -1078,7 +1100,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildStatCard(double width, double height, {
+  Widget _buildStatCard(
+    double width,
+    double height, {
     required IconData icon,
     required String label,
     required String value,
@@ -1187,12 +1211,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: _isDarkMode ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness: _isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
         systemNavigationBarColor: _isDarkMode ? Colors.black : Colors.white,
-        systemNavigationBarIconBrightness: _isDarkMode ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: _isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: _isDarkMode ? Colors.grey[900] : const Color(0xFFF8FAFD),
+        backgroundColor: _isDarkMode
+            ? Colors.grey[900]
+            : const Color(0xFFF8FAFD),
         body: Column(
           children: [
             // Status bar area with gradient (fixed at top)
@@ -1229,18 +1259,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                           children: [
                             // Header content with gradient
                             _buildDashboardHeader(context, width, height),
-                            
+
                             // Banner Slider
                             _buildBannerSlider(width, height),
-                            
+
                             // Quick Stats Section with only totals
                             _buildQuickStats(width, height, context),
-                            
+
                             SizedBox(height: height * 0.02),
-                            
+
                             // Clean modules without stats
                             _buildModuleGrid(width, height, context),
-                            
+
                             // Bottom Info Bar
                             Container(
                               width: double.infinity,
@@ -1250,8 +1280,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                               ),
                               margin: EdgeInsets.only(top: height * 0.02),
                               decoration: BoxDecoration(
-                                color: _isDarkMode 
-                                    ? Colors.black.withOpacity(0.3) 
+                                color: _isDarkMode
+                                    ? Colors.black.withOpacity(0.3)
                                     : Colors.grey[50],
                                 borderRadius: BorderRadius.only(
                                   topLeft: Radius.circular(width * 0.05),
@@ -1263,7 +1293,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ),
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Row(
                                     children: [
@@ -1288,7 +1319,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       Icon(
                                         Icons.sync_rounded,
                                         size: width * 0.04,
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                       ),
                                       SizedBox(width: width * 0.015),
                                       Text(
@@ -1304,7 +1337,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ],
                               ),
                             ),
-                            
+
                             // Extra padding at bottom for smooth scrolling
                             SizedBox(height: height * 0.02),
                           ],

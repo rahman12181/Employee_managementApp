@@ -1,43 +1,120 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:management_app/services/auth_service.dart';
+import 'package:management_app/services/connectivity_service.dart';
+import 'package:intl/intl.dart';
 
 class CheckinService {
-  static const String _url =
-      "https://ppecon.erpnext.com/api/resource/Employee%20Checkin";
+  final ConnectivityService _connectivityService = ConnectivityService();
 
-  Future<void> checkIn({
+  Future<Map<String, dynamic>> checkIn({
     required String employeeId,
-    required String logType, 
-    double latitude = 0,
-    double longitude = 0,
+    required String logType,
+    required Position currentPosition,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final cookies = prefs.getStringList("cookies");
+    
+    print("🔍 CHECKIN SERVICE");
+    print("📍 Location: ${currentPosition.latitude}, ${currentPosition.longitude}");
 
-    if (cookies == null || cookies.isEmpty) {
-      throw Exception("Session expired. Please login again.");
-    }
+    try {
+      // Internet check
+      bool hasInternet = await _connectivityService.hasInternetConnection();
+      
+      if (!hasInternet) {
+        return {
+          'success': false,
+          'offlineMode': true,
+          'message': 'No internet connection. Punch saved locally.',
+        };
+      }
 
-    final response = await http.post(
-      Uri.parse(_url),
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Cookie": cookies.join("; "),
-      },
-      body: jsonEncode({
+      // Riyadh time
+      final riyadhTime = DateTime.now().toUtc().add(const Duration(hours: 3));
+      final formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(riyadhTime);
+
+      // API Body - Sirf employee ID, log type, time, location
+      Map<String, dynamic> requestBody = {
         "employee": employeeId,
-        "log_type": logType, 
-        "latitude": latitude,
-        "longitude": longitude,
-      }),
-    );
+        "log_type": logType,
+        "time": formattedTime,
+        "latitude": currentPosition.latitude,
+        "longitude": currentPosition.longitude,
+      };
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(
-        "Punch failed (${response.statusCode}): ${response.body}",
+      print("📦 REQUEST BODY: ${jsonEncode(requestBody)}");
+
+      // API Call
+      final apiResponse = await AuthService.client.post(
+        Uri.parse("https://ppecon.erpnext.com/api/resource/Employee%20Checkin"),
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": AuthService.cookies.join("; "),
+        },
+        body: jsonEncode(requestBody),
       );
+
+      print("📡 RESPONSE STATUS: ${apiResponse.statusCode}");
+      print("📡 RESPONSE BODY: ${apiResponse.body}");
+
+      // Parse response
+      Map<String, dynamic> responseData = {};
+      String message = '';
+      bool success = apiResponse.statusCode == 200 || apiResponse.statusCode == 201;
+
+      try {
+        responseData = jsonDecode(apiResponse.body);
+        
+        // Extract message from _server_messages
+        if (responseData['_server_messages'] != null) {
+          try {
+            var messages = jsonDecode(responseData['_server_messages']);
+            if (messages.isNotEmpty) {
+              var msgObj = jsonDecode(messages[0]);
+              message = msgObj['message'] ?? '';
+              
+              // Clean up message (remove emoji if needed)
+              message = message.replaceAll('✅', '').replaceAll('❌', '').trim();
+            }
+          } catch (_) {}
+        }
+        
+        // Agar message nahi mila to exception lo
+        if (message.isEmpty) {
+          message = responseData['exception'] ?? 
+                   responseData['message'] ??
+                   (success ? 'Punch successful' : 'Punch failed');
+        }
+      } catch (e) {
+        message = success ? 'Punch successful' : 'Punch failed';
+      }
+
+      return {
+        'success': success,
+        'message': message,
+        'data': responseData['data'],
+        'statusCode': apiResponse.statusCode,
+        'offlineMode': false,
+      };
+
+    } catch (e) {
+      print("❌ ERROR: $e");
+      return {
+        'success': false,
+        'message': 'Error: ${e.toString()}',
+        'offlineMode': false,
+      };
     }
+  }
+
+  // Checkout method
+  Future<Map<String, dynamic>> checkOut({
+    required String employeeId,
+    required Position currentPosition,
+  }) async {
+    return await checkIn(
+      employeeId: employeeId,
+      logType: "OUT",
+      currentPosition: currentPosition,
+    );
   }
 }

@@ -21,16 +21,15 @@ class PunchProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Get today's date in Riyadh for key (consistent with server)
+      // Get today's date in Riyadh for key
       final todayRiyadh = todayInRiyadh;
       final todayKey = DateFormat('yyyy-MM-dd').format(todayRiyadh);
       
       final inStr = prefs.getString("IN_$todayKey");
       final outStr = prefs.getString("OUT_$todayKey");
       
-      // Load as UTC times
-      _punchInTime = inStr != null ? DateTime.parse(inStr) : null;
-      _punchOutTime = outStr != null ? DateTime.parse(outStr) : null;
+      _punchInTime = inStr != null ? DateTime.parse(inStr).toUtc() : null;
+      _punchOutTime = outStr != null ? DateTime.parse(outStr).toUtc() : null;
       
       notifyListeners();
     } catch (e) {
@@ -42,18 +41,15 @@ class PunchProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Use Riyadh date for key (to match server date)
       final riyadhTime = toRiyadhTime(utcTime);
       final key = DateFormat('yyyy-MM-dd').format(riyadhTime);
       
       await prefs.setString("IN_$key", utcTime.toUtc().toIso8601String());
       
-      // Store UTC time in provider
-      _punchInTime = utcTime;
-      
-      // Clear punch out for today
-      await prefs.remove("OUT_$key");
+      _punchInTime = utcTime.toUtc();
       _punchOutTime = null;
+      
+      await prefs.remove("OUT_$key");
       
       notifyListeners();
     } catch (e) {
@@ -65,14 +61,12 @@ class PunchProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Use Riyadh date for key
       final riyadhTime = toRiyadhTime(utcTime);
       final key = DateFormat('yyyy-MM-dd').format(riyadhTime);
       
       await prefs.setString("OUT_$key", utcTime.toUtc().toIso8601String());
       
-      // Store UTC time in provider
-      _punchOutTime = utcTime;
+      _punchOutTime = utcTime.toUtc();
       
       notifyListeners();
     } catch (e) {

@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, unused_field
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -10,7 +10,11 @@ import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/providers/slide_provider.dart';
 import 'package:management_app/providers/attendance_provider.dart';
 import 'package:management_app/services/checkin_service.dart';
+import 'package:management_app/services/location_service.dart';
+import 'package:management_app/services/connectivity_service.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class HomemainScreen extends StatefulWidget {
   const HomemainScreen({super.key});
@@ -20,7 +24,7 @@ class HomemainScreen extends StatefulWidget {
 }
 
 class _HomemainScreenState extends State<HomemainScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   String _currentTime = '';
   String _currentDate = '';
   Timer? _timer;
@@ -28,6 +32,8 @@ class _HomemainScreenState extends State<HomemainScreen>
   Timer? _greetingTimer;
 
   final CheckinService _checkinService = CheckinService();
+  final LocationService _locationService = LocationService();
+  final ConnectivityService _connectivityService = ConnectivityService();
 
   bool _isPunching = false;
   bool _showSuccess = false;
@@ -35,8 +41,23 @@ class _HomemainScreenState extends State<HomemainScreen>
   bool _hasError = false;
   String _errorMessage = "";
 
+  // Location variables
+  Position? _currentPosition;
+  String _locationAddress = "Tap to fetch location";
+  bool _isLocationLoading = false;
+  String _locationError = "";
+  String _locationType = "";
+  Timer? _locationTimer;
+  bool _isFirstLocationFetch = true;
+
+  // Internet connectivity
+  bool _hasInternet = true;
+  ConnectivityResult _connectionType = ConnectivityResult.none;
+  StreamSubscription? _connectivitySubscription;
+
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
+  late AnimationController _glowAnimationController;
 
   @override
   void initState() {
@@ -45,6 +66,11 @@ class _HomemainScreenState extends State<HomemainScreen>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _glowAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
 
     _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
@@ -62,7 +88,43 @@ class _HomemainScreenState extends State<HomemainScreen>
       }
     });
 
+    // Initialize connectivity service
+    _connectivityService.initialize();
+    _checkInternetConnection();
+
+    _connectivitySubscription = _connectivityService.connectionStatus.listen((
+      result,
+    ) {
+      if (mounted) {
+        setState(() {
+          _connectionType = result;
+          _hasInternet = result != ConnectivityResult.none;
+        });
+      }
+    });
+
+    // Fetch location on init with delay to ensure UI is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchLocation();
+    });
+
+    // Refresh location periodically
+    _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      if (mounted) {
+        _fetchLocation();
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _initializeData());
+  }
+
+  Future<void> _checkInternetConnection() async {
+    bool hasInternet = await _connectivityService.hasInternetConnection();
+    ConnectivityResult type = await _connectivityService.getConnectionType();
+    setState(() {
+      _hasInternet = hasInternet;
+      _connectionType = type;
+    });
   }
 
   Future<void> _initializeData() async {
@@ -71,10 +133,13 @@ class _HomemainScreenState extends State<HomemainScreen>
         context,
         listen: false,
       );
-      
+
       await employeeProvider.loadEmployeeIdFromLocal();
       await Provider.of<ProfileProvider>(context, listen: false).loadProfile();
-      await Provider.of<PunchProvider>(context, listen: false).loadDailyPunches();
+      await Provider.of<PunchProvider>(
+        context,
+        listen: false,
+      ).loadDailyPunches();
 
       final employeeId = employeeProvider.employeeId;
       if (employeeId != null) {
@@ -84,6 +149,64 @@ class _HomemainScreenState extends State<HomemainScreen>
         ).loadMonthAttendance(employeeId, DateTime.now());
       }
     } catch (_) {}
+  }
+
+  Future<void> _fetchLocation() async {
+    // Don't fetch if already loading
+    if (_isLocationLoading) return;
+
+    setState(() {
+      _isLocationLoading = true;
+      _locationError = "";
+      _locationType = "";
+    });
+
+    final result = await _locationService.getCurrentLocation();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLocationLoading = false;
+      _isFirstLocationFetch = false;
+
+      if (result['success']) {
+        _currentPosition = result['position'];
+        _locationError = "";
+        _locationType = "success";
+
+        // Show coordinates immediately
+        _locationAddress =
+            "📍 ${result['position'].latitude.toStringAsFixed(6)}, ${result['position'].longitude.toStringAsFixed(6)}";
+
+        // Get address in background
+        _getAddressFromCoordinates(
+          result['position'].latitude,
+          result['position'].longitude,
+        );
+      } else {
+        _locationError = result['error'];
+        _locationType = result['type'];
+
+        // Set appropriate message based on error type
+        if (result['type'] == 'permission_denied' ||
+            result['type'] == 'permanent') {
+          _locationAddress = "Permission required";
+        } else if (result['type'] == 'gps_disabled') {
+          _locationAddress = "GPS is off";
+        } else {
+          _locationAddress = "Location unavailable";
+        }
+      }
+    });
+  }
+
+  Future<void> _getAddressFromCoordinates(double lat, double lng) async {
+    String address = await _locationService.getAddressFromLatLng(lat, lng);
+    if (mounted) {
+      setState(() {
+        _locationAddress = address;
+      });
+    }
   }
 
   String _getTimeBasedGreeting() {
@@ -112,7 +235,10 @@ class _HomemainScreenState extends State<HomemainScreen>
   void dispose() {
     _timer?.cancel();
     _greetingTimer?.cancel();
+    _locationTimer?.cancel();
+    _connectivitySubscription?.cancel();
     _animationController.dispose();
+    _glowAnimationController.dispose();
     super.dispose();
   }
 
@@ -169,6 +295,214 @@ class _HomemainScreenState extends State<HomemainScreen>
     ];
   }
 
+  // ==================== NEW DIALOGS (20% height, 70% width) ====================
+
+  void _showSuccessDialog({required String message, required bool isPunchIn}) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: screenWidth * 0.7,
+            height: screenHeight * 0.2,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isPunchIn ? Icons.login_rounded : Icons.logout_rounded,
+                      color: Colors.green.shade600,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    // Auto close after 2 seconds
+    Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  void _showErrorDialog(String message) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: screenWidth * 0.7,
+            height: screenHeight * 0.2,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    color: Colors.red.shade600,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    // Auto close after 2 seconds
+    Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  void _showInfoDialog(String message, {Color color = Colors.blue}) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: screenWidth * 0.7,
+            height: screenHeight * 0.2,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    color: color,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  // ==================== PUNCH LOGIC ====================
+
   Future<void> _onPunchTap() async {
     final punchProvider = Provider.of<PunchProvider>(context, listen: false);
     final slideProvider = Provider.of<SlideProvider>(context, listen: false);
@@ -180,36 +514,20 @@ class _HomemainScreenState extends State<HomemainScreen>
       });
     }
 
-    if (punchProvider.punchInTime != null &&
-        punchProvider.punchOutTime != null) {
-      _showError("You have already completed work today");
+    // Check if already completed
+    if (punchProvider.punchInTime != null && punchProvider.punchOutTime != null) {
+      _showInfoDialog('You have already completed your shift today');
       return;
     }
 
     HapticFeedback.lightImpact();
 
-    if (punchProvider.punchInTime != null &&
-        punchProvider.punchOutTime == null) {
+    // Show slide button for punch in/out
+    if (punchProvider.punchInTime != null && punchProvider.punchOutTime == null) {
       slideProvider.showSlideButton(false, _performPunch);
     } else if (punchProvider.punchInTime == null) {
       slideProvider.showSlideButton(true, _performPunch);
     }
-  }
-
-  void _showError(String message) {
-    setState(() {
-      _hasError = true;
-      _errorMessage = message;
-    });
-
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _hasError = false;
-          _errorMessage = "";
-        });
-      }
-    });
   }
 
   Future<void> _performPunch(bool isPunchIn) async {
@@ -225,6 +543,17 @@ class _HomemainScreenState extends State<HomemainScreen>
 
     if (employeeId == null || _isPunching) return;
 
+    // Double check if already punched
+    if (isPunchIn && punchProvider.punchInTime != null) {
+      _showInfoDialog('Already checked in today');
+      return;
+    }
+
+    if (!isPunchIn && punchProvider.punchOutTime != null) {
+      _showInfoDialog('Already checked out today');
+      return;
+    }
+
     final logType = isPunchIn ? "IN" : "OUT";
 
     try {
@@ -239,36 +568,182 @@ class _HomemainScreenState extends State<HomemainScreen>
       final utcNow = DateTime.now().toUtc();
       final riyadhNow = utcNow.add(const Duration(hours: 3));
 
-      if (isPunchIn) {
-        await punchProvider.setPunchIn(utcNow);
-        _successText =
-            "Checked in at ${DateFormat('hh:mm a').format(riyadhNow)}";
-      } else {
-        await punchProvider.setPunchOut(utcNow);
-        _successText =
-            "Checked out at ${DateFormat('hh:mm a').format(riyadhNow)}";
+      // Get fresh location
+      Position? freshPosition;
+      bool locationSuccess = false;
+
+      try {
+        setState(() {
+          _isLocationLoading = true;
+          _locationError = "";
+        });
+
+        final locationResult = await _locationService.getCurrentLocation();
+
+        if (locationResult['success']) {
+          freshPosition = locationResult['position'];
+
+          // Validate coordinates
+          if (freshPosition!.latitude != 0 || freshPosition.longitude != 0) {
+            locationSuccess = true;
+
+            setState(() {
+              _currentPosition = freshPosition;
+              _locationError = "";
+              _locationType = "success";
+              _locationAddress =
+                  "📍 ${freshPosition!.latitude.toStringAsFixed(6)}, ${freshPosition.longitude.toStringAsFixed(6)}";
+            });
+
+            _getAddressFromCoordinates(
+              freshPosition.latitude,
+              freshPosition.longitude,
+            );
+          } else {
+            setState(() {
+              _locationError = "Invalid location";
+              _locationType = "error";
+              _locationAddress = "Location unavailable";
+            });
+            locationSuccess = false;
+          }
+        } else {
+          setState(() {
+            _locationError = locationResult['error'];
+            _locationType = locationResult['type'];
+            _locationAddress = "Location unavailable";
+          });
+          locationSuccess = false;
+        }
+      } catch (e) {
+        debugPrint("Error getting location: $e");
+        setState(() {
+          _locationError = "Failed to get location";
+          _locationAddress = "Location unavailable";
+        });
+        locationSuccess = false;
+      } finally {
+        setState(() {
+          _isLocationLoading = false;
+        });
       }
 
-      await _checkinService.checkIn(employeeId: employeeId, logType: logType);
+      // If location failed, show error and stop
+      if (!locationSuccess || freshPosition == null) {
+        setState(() {
+          _isPunching = false;
+          _hasError = true;
+          _errorMessage = _locationError.isNotEmpty
+              ? _locationError
+              : "Cannot punch without valid location";
+        });
 
-      final currentMonth = DateTime(utcNow.year, utcNow.month);
-      await attendanceProvider.loadMonthAttendance(employeeId, currentMonth);
+        Timer(const Duration(seconds: 3), () {
+          if (mounted) {
+            setState(() {
+              _hasError = false;
+              _errorMessage = "";
+            });
+          }
+        });
 
-      setState(() => _showSuccess = true);
+        return;
+      }
 
-      Timer(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _showSuccess = false);
+      // Call ERP API with location
+      final result = await _checkinService.checkIn(
+        employeeId: employeeId,
+        logType: logType,
+        currentPosition: freshPosition,
+      );
+
+      setState(() {
+        _isPunching = false;
       });
 
-      Timer(const Duration(milliseconds: 500), () {
-        if (mounted) setState(() => _isPunching = false);
-      });
-    } catch (_) {
+      // Handle offline mode
+      if (result['offlineMode'] == true) {
+        _successText = isPunchIn 
+            ? "✓ Checked in (Offline Mode)"
+            : "✓ Checked out (Offline Mode)";
+
+        setState(() {
+          _showSuccess = true;
+        });
+
+        // Save locally
+        if (isPunchIn) {
+          await punchProvider.setPunchIn(utcNow);
+        } else {
+          await punchProvider.setPunchOut(utcNow);
+        }
+
+        _showInfoDialog(result['message'] ?? 'Punch saved offline', color: Colors.orange);
+
+        Timer(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _showSuccess = false);
+        });
+      }
+      // Handle successful punch
+      else if (result['success']) {
+        // Save locally
+        if (isPunchIn) {
+          await punchProvider.setPunchIn(utcNow);
+        } else {
+          await punchProvider.setPunchOut(utcNow);
+        }
+
+        _successText = isPunchIn
+            ? "Checked in at ${DateFormat('hh:mm a').format(riyadhNow)}"
+            : "Checked out at ${DateFormat('hh:mm a').format(riyadhNow)}";
+
+        setState(() {
+          _showSuccess = true;
+        });
+
+        // Show success dialog
+        _showSuccessDialog(
+          message: result['message'] ?? _successText,
+          isPunchIn: isPunchIn,
+        );
+
+        Timer(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _showSuccess = false);
+        });
+
+        _fetchLocation();
+
+        final currentMonth = DateTime(utcNow.year, utcNow.month);
+        await attendanceProvider.loadMonthAttendance(employeeId, currentMonth);
+      }
+      // Handle other errors
+      else {
+        setState(() {
+          _hasError = true;
+          _errorMessage = result['message'] ?? "Punch failed";
+        });
+
+        // Show error dialog
+        _showErrorDialog(result['message'] ?? 'Punch failed');
+
+        Timer(const Duration(seconds: 3), () {
+          if (mounted) {
+            setState(() {
+              _hasError = false;
+              _errorMessage = "";
+            });
+          }
+        });
+      }
+
+    } catch (e) {
       setState(() {
         _isPunching = false;
         _hasError = true;
-        _errorMessage = "Punch saved locally. Check connection";
+        _errorMessage = "An error occurred";
       });
+
+      _showErrorDialog('Error: $e');
 
       Timer(const Duration(seconds: 3), () {
         if (mounted) {
@@ -281,7 +756,12 @@ class _HomemainScreenState extends State<HomemainScreen>
     }
   }
 
-  Widget _buildTimeWidget(String time, String label, Color color, IconData icon) {
+  Widget _buildTimeWidget(
+    String time,
+    String label,
+    Color color,
+    IconData icon,
+  ) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: MediaQuery.of(context).size.width * 0.02,
@@ -295,7 +775,11 @@ class _HomemainScreenState extends State<HomemainScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: MediaQuery.of(context).size.width * 0.05),
+          Icon(
+            icon,
+            color: color,
+            size: MediaQuery.of(context).size.width * 0.05,
+          ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.005),
           Text(
             time,
@@ -320,9 +804,211 @@ class _HomemainScreenState extends State<HomemainScreen>
     );
   }
 
+  Widget _buildLocationWidget() {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    if (_isLocationLoading) {
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: 8,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "Fetching location...",
+              style: TextStyle(
+                fontSize: screenWidth * 0.03,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_locationError.isNotEmpty) {
+      Color errorColor = Colors.red;
+      IconData errorIcon = Icons.error_outline_rounded;
+      String buttonText = "Settings";
+      VoidCallback? onTap;
+
+      switch (_locationType) {
+        case 'gps_disabled':
+          errorColor = Colors.orange;
+          errorIcon = Icons.gps_off_rounded;
+          buttonText = "Enable GPS";
+          onTap = () => _locationService.openLocationSettings();
+          break;
+        case 'denied':
+          errorColor = Colors.orange;
+          errorIcon = Icons.location_off_rounded;
+          buttonText = "Allow Permission";
+          onTap = () => _locationService.requestLocationPermission().then(
+            (_) => _fetchLocation(),
+          );
+          break;
+        case 'permanent':
+          errorColor = Colors.red;
+          errorIcon = Icons.security_rounded;
+          buttonText = "Open Settings";
+          onTap = () => _locationService.openAppSettings();
+          break;
+        case 'timeout':
+          errorColor = Colors.orange;
+          errorIcon = Icons.timer_off_rounded;
+          buttonText = "Retry";
+          onTap = () => _fetchLocation();
+          break;
+        default:
+          errorColor = Colors.red;
+          errorIcon = Icons.error_outline_rounded;
+          buttonText = "Retry";
+          onTap = () => _fetchLocation();
+      }
+
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: 8,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(errorIcon, size: 16, color: errorColor),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                _locationError,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.03,
+                  color: errorColor,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+              ),
+            ),
+            GestureDetector(
+              onTap: onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: errorColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  buttonText,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.025,
+                    color: errorColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical: 8,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.location_on_rounded,
+                  size: 14,
+                  color: Colors.green.shade600,
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    _locationAddress,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.03,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInternetStatusWidget() {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    if (!_hasInternet) {
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: 8,
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.red.shade200),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.wifi_off_rounded,
+                size: 14,
+                color: Colors.red.shade600,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                "No Internet Connection",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.03,
+                  color: Colors.red.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
   Widget _buildProgressWidget(PunchProvider punchProvider) {
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     if (punchProvider.punchInTime == null) {
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -430,30 +1116,19 @@ class _HomemainScreenState extends State<HomemainScreen>
     final screenWidth = mediaQuery.size.width;
     final isPortrait = screenHeight > screenWidth;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-  
-    final buttonSize = isPortrait 
-        ? screenWidth * 0.45 
-        : screenHeight * 0.45; 
-    
+
+    final buttonSize = isPortrait ? screenWidth * 0.45 : screenHeight * 0.45;
     final progressSize = buttonSize * 1.15;
     final glowSize = buttonSize * 1.25;
-    
+
     final punchProvider = Provider.of<PunchProvider>(context);
 
-    // Get gradient colors based on theme
     final List<Color> headerGradientColors = isDarkMode
-        ? [
-            Colors.grey.shade900,
-            Colors.grey.shade800,
-          ]
-        : [
-            Colors.blue.shade50,
-            Colors.purple.shade50,
-          ];
+        ? [Colors.grey.shade900, Colors.grey.shade800]
+        : [Colors.blue.shade50, Colors.purple.shade50];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        // Make status bar transparent to show our gradient container behind it
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
         statusBarBrightness: isDarkMode ? Brightness.dark : Brightness.light,
@@ -464,7 +1139,6 @@ class _HomemainScreenState extends State<HomemainScreen>
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Column(
           children: [
-            // Status bar area with gradient (fixed at top)
             Container(
               height: mediaQuery.padding.top,
               decoration: BoxDecoration(
@@ -475,7 +1149,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                 ),
               ),
             ),
-            // Scrollable content with bounce effect (entire screen except status bar)
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(
@@ -483,7 +1156,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                 ),
                 child: Column(
                   children: [
-                    // Header content with gradient
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -514,8 +1186,10 @@ class _HomemainScreenState extends State<HomemainScreen>
                                 return Row(
                                   children: [
                                     GestureDetector(
-                                      onTap: () =>
-                                          Navigator.pushNamed(context, '/settingScreen'),
+                                      onTap: () => Navigator.pushNamed(
+                                        context,
+                                        '/settingScreen',
+                                      ),
                                       child: Container(
                                         width: screenWidth * 0.12,
                                         height: screenWidth * 0.12,
@@ -592,9 +1266,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                                   style: TextStyle(
                                     fontSize: screenWidth * 0.13,
                                     fontWeight: FontWeight.w900,
-                                    color: isDarkMode
-                                        ? Colors.white
-                                        : Colors.grey.shade900,
+                                    color: isDarkMode ? Colors.white : Colors.grey.shade900,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -603,9 +1275,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                                   _currentDate,
                                   style: TextStyle(
                                     fontSize: screenWidth * 0.035,
-                                    color: isDarkMode
-                                        ? Colors.grey.shade300
-                                        : Colors.grey.shade600,
+                                    color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.3,
                                   ),
@@ -617,7 +1287,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                         ),
                       ),
                     ),
-                    // Main content
                     Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: screenWidth * 0.05,
@@ -636,8 +1305,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      _punchButtonColor(punchProvider)
-                                          .withOpacity(0.08),
+                                      _punchButtonColor(punchProvider).withOpacity(0.08),
                                       Colors.transparent,
                                     ],
                                     radius: 0.8,
@@ -696,8 +1364,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                                       color: Theme.of(context).cardColor,
                                       boxShadow: _getButtonShadows(punchProvider),
                                       border: Border.all(
-                                        color: _punchButtonColor(punchProvider)
-                                            .withOpacity(0.15),
+                                        color: _punchButtonColor(punchProvider).withOpacity(0.15),
                                         width: screenWidth * 0.005,
                                       ),
                                     ),
@@ -766,7 +1433,11 @@ class _HomemainScreenState extends State<HomemainScreen>
                               ],
                             ),
                           ),
-                          SizedBox(height: screenHeight * 0.025),
+                          SizedBox(height: screenHeight * 0.015),
+                          _buildInternetStatusWidget(),
+                          SizedBox(height: screenHeight * 0.015),
+                          _buildLocationWidget(),
+                          SizedBox(height: screenHeight * 0.015),
                           _buildProgressWidget(punchProvider),
                           if (_hasError)
                             Padding(
@@ -824,7 +1495,9 @@ class _HomemainScreenState extends State<HomemainScreen>
                                 ),
                               ),
                             ),
-                          SizedBox(height: mediaQuery.viewInsets.bottom + screenHeight * 0.02),
+                          SizedBox(
+                            height: mediaQuery.viewInsets.bottom + screenHeight * 0.02,
+                          ),
                         ],
                       ),
                     ),
@@ -845,7 +1518,7 @@ class _HomemainScreenState extends State<HomemainScreen>
   ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final iconSize = buttonSize * 0.3;
-    
+
     if (_showSuccess) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -909,10 +1582,7 @@ class _HomemainScreenState extends State<HomemainScreen>
             child: ShaderMask(
               shaderCallback: (bounds) {
                 return LinearGradient(
-                  colors: [
-                    Colors.red.shade400,
-                    Colors.red.shade600,
-                  ],
+                  colors: [Colors.red.shade400, Colors.red.shade600],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ).createShader(bounds);
@@ -930,18 +1600,15 @@ class _HomemainScreenState extends State<HomemainScreen>
             size: iconSize * 0.95,
             color: _fingerprintColor(punchProvider),
           ),
-        
+
         SizedBox(height: buttonSize * 0.05),
-        
+
         if (punchProvider.punchInTime != null &&
             punchProvider.punchOutTime == null)
           ShaderMask(
             shaderCallback: (bounds) {
               return LinearGradient(
-                colors: [
-                  Colors.red.shade400,
-                  Colors.red.shade600,
-                ],
+                colors: [Colors.red.shade400, Colors.red.shade600],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ).createShader(bounds);
@@ -966,9 +1633,9 @@ class _HomemainScreenState extends State<HomemainScreen>
               letterSpacing: 0.6,
             ),
           ),
-        
+
         SizedBox(height: buttonSize * 0.03),
-        
+
         if (punchProvider.punchInTime == null)
           Text(
             "Start your day",
@@ -995,7 +1662,7 @@ class _HomemainScreenState extends State<HomemainScreen>
               color: Colors.green.shade500,
               fontWeight: FontWeight.w500,
             ),
-          ),
+          ), 
       ],
     );
   }

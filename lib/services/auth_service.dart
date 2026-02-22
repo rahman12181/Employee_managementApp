@@ -176,45 +176,4 @@ class AuthService {
     }
   }
 
-  Future<bool> employeeCheckIn({
-    required String employeeId,
-    double latitude = 0,
-    double longitude = 0,
-  }) async {
-    final response = await AuthService.client.post(
-      Uri.parse("https://ppecon.erpnext.com/api/resource/Employee Checkin"),
-      headers: {
-        "Content-Type": "application/json",
-        "Cookie": AuthService.cookies.join("; "),
-      },
-      body: jsonEncode({
-        "employee": employeeId,
-        "log_type": "IN",
-        "latitude": latitude,
-        "longitude": longitude,
-      }),
-    );
-    return response.statusCode == 200 || response.statusCode == 201;
-  }
-
-  Future<bool> employeeCheckOut({
-    required String employeeId,
-    double latitude = 0,
-    double longitude = 0,
-  }) async {
-    final response = await AuthService.client.post(
-      Uri.parse("https://ppecon.erpnext.com/api/resource/Employee Checkin"),
-      headers: {
-        "Content-Type": "application/json",
-        "Cookie": AuthService.cookies.join("; "),
-      },
-      body: jsonEncode({
-        "employee": employeeId,
-        "log_type": "OUT",
-        "latitude": latitude,
-        "longitude": longitude,
-      }),
-    );
-    return response.statusCode == 200 || response.statusCode == 201;
-  }
 }
