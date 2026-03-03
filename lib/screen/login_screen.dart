@@ -30,6 +30,24 @@ class _LoginScreenState extends State<LoginScreen>
   late Animation<Offset> _slideAnimation;
   late Animation<double> _scaleAnimation;
 
+  // Sky Blue Color Palette - Matching HomemainScreen
+  static const Color skyBlue = Color(0xFF87CEEB); // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE); // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0); // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0); // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
+  // Get header gradient colors based on theme (matching homemain)
+  List<Color> _getHeaderGradientColors(bool isDarkMode) {
+    return isDarkMode
+        ? [charcoal, slate, const Color(0xFF1E1E2E)]
+        : [skyBlue, mediumSky, deepSky];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -69,20 +87,206 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  // ================= ERROR DIALOG HELPER =================
+  // ================= PREMIUM ERROR DIALOG =================
   void _showErrorDialog(BuildContext context, String title, String message) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: screenWidth * 0.8,
+          padding: EdgeInsets.all(screenWidth * 0.05),
+          decoration: BoxDecoration(
+            color: isDarkMode ? slate : pureWhite,
+            borderRadius: BorderRadius.circular(screenWidth * 0.06),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.3),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.2),
+                blurRadius: 30,
+                spreadRadius: 5,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.white,
+                  size: screenWidth * 0.08,
+                ),
+              ),
+              SizedBox(height: screenWidth * 0.04),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.06,
+                  fontWeight: FontWeight.w800,
+                  color: isDarkMode ? pureWhite : charcoal,
+                ),
+              ),
+              SizedBox(height: screenWidth * 0.02),
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.038,
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenWidth * 0.05),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.3),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        "OK",
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  // ================= PREMIUM SUCCESS DIALOG =================
+  void _showSuccessDialog(String fullName) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (dialogContext) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.pop(dialogContext);
+            Navigator.pushReplacementNamed(context, "/homeScreen");
+          }
+        });
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: screenWidth * 0.8,
+            padding: EdgeInsets.all(screenWidth * 0.05),
+            decoration: BoxDecoration(
+              color: isDarkMode ? slate : pureWhite,
+              borderRadius: BorderRadius.circular(screenWidth * 0.06),
+              border: Border.all(
+                color: skyBlue.withOpacity(0.3),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: skyBlue.withOpacity(0.2),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(screenWidth * 0.04),
+                  decoration: BoxDecoration(
+                    color: skyBlue,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: skyBlue.withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.white,
+                    size: screenWidth * 0.08,
+                  ),
+                ),
+                SizedBox(height: screenWidth * 0.04),
+                Text(
+                  "Success",
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.06,
+                    fontWeight: FontWeight.w800,
+                    color: isDarkMode ? pureWhite : charcoal,
+                  ),
+                ),
+                SizedBox(height: screenWidth * 0.02),
+                Text(
+                  "Welcome, $fullName!",
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04,
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: screenHeight * 0.03),
+                SizedBox(
+                  width: screenWidth * 0.1,
+                  height: screenWidth * 0.1,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -93,6 +297,7 @@ class _LoginScreenState extends State<LoginScreen>
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
     EdgeInsets screenPadding = MediaQuery.of(context).padding;
+    final gradientColors = _getHeaderGradientColors(isDarkMode);
 
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
@@ -111,876 +316,790 @@ class _LoginScreenState extends State<LoginScreen>
       return screenWidth * percentage;
     }
 
-    final backgroundColor = isDarkMode ? Colors.grey[900] : Colors.white;
-    final textColor = isDarkMode ? Colors.white : Colors.black;
-    final hintTextColor = isDarkMode
-        ? Colors.grey[400]
-        : const Color.fromARGB(255, 96, 93, 93);
-    final borderColor = isDarkMode ? Colors.grey[700] : Colors.grey.shade300;
-    final focusedBorderColor = isDarkMode
-        ? Colors.blue[300]!
-        : const Color(0xFF2563EB);
-    final dividerColor = isDarkMode ? Colors.grey[700] : Colors.grey.shade400;
-    final dialogBgColor = isDarkMode ? Colors.grey[800] : Colors.white;
-    final dialogTextColor = isDarkMode ? Colors.white : Colors.black;
+    final backgroundColor = isDarkMode ? charcoal : offWhite;
+    final textColor = isDarkMode ? pureWhite : charcoal;
+    final hintTextColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600]!;
+    final borderColor = isDarkMode ? slate : Colors.grey[300]!;
+    final focusedBorderColor = skyBlue;
 
-    // Gradient colors for premium feel
-    final gradientColors = isDarkMode
-        ? [
-            Colors.blue.shade800.withOpacity(0.2),
-            Colors.purple.shade800.withOpacity(0.1),
-          ]
-        : [
-            const Color(0xFF2563EB).withOpacity(0.1),
-            const Color(0xFF7C3AED).withOpacity(0.05),
-          ];
-
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.topRight,
-            radius: 1.5,
-            colors: gradientColors,
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              responsiveWidth(0.053),
-              screenPadding.top + 15,
-              responsiveWidth(0.053),
-              20,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: gradientColors.first,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: isDarkMode ? charcoal : pureWhite,
+        systemNavigationBarIconBrightness: isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment.topRight,
+              radius: 1.5,
+              colors: gradientColors.map((c) => c.withOpacity(0.05)).toList(),
             ),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: FadeTransition(
-                  opacity: _fadeInAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Column(
-                          children: [
-                            // Animated Logo with Scale
-                            ScaleTransition(
-                              scale: _scaleAnimation,
-                              child: Align(
-                                alignment: Alignment.topLeft,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const SettingsScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: Hero(
-                                    tag: 'app_logo',
-                                    child: Image.asset(
-                                      "assets/images/app_icon.png",
-                                      width: responsiveWidth(0.267),
-                                      color: isDarkMode ? Colors.white : null,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            SizedBox(height: responsiveHeight(0.05)),
-
-                            // Welcome Text
-                            TweenAnimationBuilder(
-                              tween: Tween<double>(begin: 0, end: 1),
-                              duration: const Duration(milliseconds: 800),
-                              builder: (context, double value, child) {
-                                return Opacity(opacity: value, child: child);
-                              },
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                responsiveWidth(0.053),
+                screenPadding.top + 15,
+                responsiveWidth(0.053),
+                20,
+              ),
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: FadeTransition(
+                    opacity: _fadeInAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Column(
+                            children: [
+                              // Premium Logo Section with Sky Blue Theme
+                              ScaleTransition(
+                                scale: _scaleAnimation,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      "Welcome back!",
-                                      style: TextStyle(
-                                        fontSize: responsiveFontSize(28),
-                                        fontFamily: "poppins",
-                                        fontWeight: FontWeight.w700,
-                                        color: textColor,
-                                        letterSpacing: 0.5,
+                                    Container(
+                                      padding: EdgeInsets.all(responsiveWidth(0.02)),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: gradientColors,
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.03),
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: skyBlue.withOpacity(0.3),
+                                            blurRadius: 20,
+                                            spreadRadius: 2,
+                                            offset: const Offset(0, 8),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                    SizedBox(height: responsiveHeight(0.005)),
-                                    Text(
-                                      "Enter your Login Credentials",
-                                      style: TextStyle(
-                                        fontSize: responsiveFontSize(14),
-                                        fontFamily: "poppins",
-                                        color: hintTextColor,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            SizedBox(height: responsiveHeight(0.07)),
-
-                            // Email Field
-                            TweenAnimationBuilder(
-                              tween: Tween<double>(begin: 0, end: 1),
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeOut,
-                              builder: (context, double value, child) {
-                                return Transform.translate(
-                                  offset: Offset(0, 20 * (1 - value)),
-                                  child: Opacity(opacity: value, child: child),
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    responsiveWidth(0.04),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: isDarkMode
-                                          ? Colors.transparent
-                                          : Colors.black.withOpacity(0.03),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: TextFormField(
-                                  controller: _emailController,
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: responsiveFontSize(16),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  decoration: InputDecoration(
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: responsiveWidth(0.04),
-                                      vertical: responsiveHeight(0.015),
-                                    ),
-                                    labelText: "Email address",
-                                    labelStyle: TextStyle(
-                                      fontSize: responsiveFontSize(14),
-                                      color: hintTextColor,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    floatingLabelStyle: TextStyle(
-                                      color: focusedBorderColor,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: responsiveFontSize(14),
-                                    ),
-                                    prefixIcon: Container(
-                                      padding: EdgeInsets.all(
-                                        responsiveWidth(0.02),
-                                      ),
-                                      child: Icon(
-                                        Icons.email_rounded,
-                                        size: responsiveFontSize(20),
-                                        color: focusedBorderColor,
-                                      ),
-                                    ),
-                                    hintStyle: TextStyle(color: hintTextColor),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        responsiveWidth(0.04),
-                                      ),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        responsiveWidth(0.04),
-                                      ),
-                                      borderSide: BorderSide(
-                                        color:
-                                            borderColor ?? Colors.grey.shade300,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        responsiveWidth(0.04),
-                                      ),
-                                      borderSide: BorderSide(
-                                        color: focusedBorderColor,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    filled: true,
-                                    fillColor: isDarkMode
-                                        ? Colors.grey[800]
-                                        : Colors.grey.shade50,
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "Email required";
-                                    }
-                                    final emailRegex = RegExp(
-                                      r'^[a-zA-Z0-9._%+-]+@(ppecon\.com|gmail\.com)$',
-                                    );
-                                    if (!emailRegex.hasMatch(value)) {
-                                      return "Only ppecon.com or gmail.com emails are allowed";
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                            ),
-
-                            SizedBox(height: responsiveHeight(0.042)),
-
-                            // Password Field
-                            TweenAnimationBuilder(
-                              tween: Tween<double>(begin: 0, end: 1),
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeOut,
-                              builder: (context, double value, child) {
-                                return Transform.translate(
-                                  offset: Offset(0, 20 * (1 - value)),
-                                  child: Opacity(opacity: value, child: child),
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    responsiveWidth(0.04),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: isDarkMode
-                                          ? Colors.transparent
-                                          : Colors.black.withOpacity(0.03),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: TextFormField(
-                                  controller: _passwordController,
-                                  obscureText: !_isPasswordVisible,
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: responsiveFontSize(16),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  decoration: InputDecoration(
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: responsiveWidth(0.04),
-                                      vertical: responsiveHeight(0.015),
-                                    ),
-                                    labelText: "Password",
-                                    labelStyle: TextStyle(
-                                      fontSize: responsiveFontSize(14),
-                                      color: hintTextColor,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    floatingLabelStyle: TextStyle(
-                                      color: focusedBorderColor,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: responsiveFontSize(14),
-                                    ),
-                                    prefixIcon: Container(
-                                      padding: EdgeInsets.all(
-                                        responsiveWidth(0.02),
-                                      ),
-                                      child: Icon(
-                                        Icons.lock_rounded,
-                                        size: responsiveFontSize(20),
-                                        color: focusedBorderColor,
-                                      ),
-                                    ),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _isPasswordVisible
-                                            ? Icons.visibility_rounded
-                                            : Icons.visibility_off_rounded,
-                                        color: hintTextColor,
-                                      ),
-                                      onPressed: () {
-                                        HapticFeedback.selectionClick();
-                                        setState(() {
-                                          _isPasswordVisible =
-                                              !_isPasswordVisible;
-                                        });
-                                      },
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        responsiveWidth(0.04),
-                                      ),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        responsiveWidth(0.04),
-                                      ),
-                                      borderSide: BorderSide(
-                                        color:
-                                            borderColor ?? Colors.grey.shade300,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        responsiveWidth(0.04),
-                                      ),
-                                      borderSide: BorderSide(
-                                        color: focusedBorderColor,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    filled: true,
-                                    fillColor: isDarkMode
-                                        ? Colors.grey[800]
-                                        : Colors.grey.shade50,
-                                  ),
-                                  validator: (value) =>
-                                      (value == null || value.isEmpty)
-                                      ? "Password required"
-                                      : null,
-                                ),
-                              ),
-                            ),
-
-                            SizedBox(height: responsiveHeight(0.02)),
-
-                            // Forgot Password
-                            TweenAnimationBuilder(
-                              tween: Tween<double>(begin: 0, end: 1),
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeOut,
-                              builder: (context, double value, child) {
-                                return Opacity(opacity: value, child: child);
-                              },
-                              child: GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/forgotpasswordScreen",
-                                  );
-                                },
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: responsiveHeight(0.005),
-                                      horizontal: responsiveWidth(0.02),
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      color: isDarkMode
-                                          ? Colors.transparent
-                                          : focusedBorderColor.withOpacity(
-                                              0.05,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(
+                                              responsiveWidth(0.015),
                                             ),
-                                    ),
-                                    child: Text(
-                                      "Forgot password?",
-                                      style: TextStyle(
-                                        fontSize: responsiveFontSize(15),
-                                        fontWeight: FontWeight.w600,
-                                        fontFamily: "poppins",
-                                        color: focusedBorderColor,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            SizedBox(height: responsiveHeight(0.04)),
-
-                            // ========== LOGIN BUTTON (FIXED) ==========
-                            TweenAnimationBuilder(
-                              tween: Tween<double>(begin: 0, end: 1),
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.elasticOut,
-                              builder: (context, double value, child) {
-                                return Transform.scale(
-                                  scale: value,
-                                  child: child,
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    responsiveWidth(0.04),
-                                  ),
-                                  gradient: LinearGradient(
-                                    colors: isDarkMode
-                                        ? [Colors.blue[600]!, Colors.blue[800]!]
-                                        : [
-                                            const Color(0xFF2563EB),
-                                            const Color(0xFF3B82F6),
-                                          ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          (isDarkMode
-                                                  ? Colors.blue[900]!
-                                                  : Colors.blue[500]!)
-                                              .withOpacity(0.4),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: _isloading
-                                      ? null
-                                      : () async {
-                                          HapticFeedback.mediumImpact();
-                                          if (!_formKey.currentState!
-                                              .validate()) {
-                                            return;
-                                          }
-                                          setState(() => _isloading = true);
-
-                                          try {
-                                            final auth = AuthService();
-                                            final response = await auth
-                                                .loginUser(
-                                                  email: _emailController.text
-                                                      .trim(),
-                                                  password: _passwordController
-                                                      .text
-                                                      .trim(),
-                                                );
-
-                                            print(
-                                              "📱 Login Screen Response: $response",
-                                            );
-
-                                            if (response["success"] == true) {
-                                              final prefs =
-                                                  await SharedPreferences.getInstance();
-                                              await prefs.setString(
-                                                'userEmail',
-                                                _emailController.text.trim(),
-                                              );
-                                              print(
-                                                "✅ User Email saved: ${_emailController.text.trim()}",
-                                              );
-
-                                              // 🔥 CLEAR OLD CACHE
-                                              final profileProvider =
-                                                  Provider.of<ProfileProvider>(
-                                                    context,
-                                                    listen: false,
-                                                  );
-                                              await profileProvider
-                                                  .clearProfileCache();
-                                              // 🔥 FIXED: Pehle login status save karo
-                                              String? sid = response["sid"];
-                                              List<String> cookies =
-                                                  response["cookies"] ?? [];
-                                              String email =
-                                                  response["email"] ??
-                                                  _emailController.text.trim();
-                                              String fullName =
-                                                  response["full_name"] ??
-                                                  email.split('@')[0];
-
-                                              await CheckuserUtils.saveloginStatus(
-                                                route: "/homeScreen",
-                                                employeeId:
-                                                    "", // Employee ID baad mein fetch karenge
-                                                userName: fullName,
-                                                authToken: sid,
-                                                cookies: cookies,
-                                              );
-
-                                              // 🔥 Ab profile load karo
-                                              try {
-                                                final profileProvider =
-                                                    Provider.of<
-                                                      ProfileProvider
-                                                    >(context, listen: false);
-                                                await profileProvider
-                                                    .loadProfile();
-                                              } catch (e) {
-                                                print("Profile load error: $e");
-                                              }
-
-                                              // 🔥 Employee ID fetch karo
-                                              try {
-                                                if (email.isNotEmpty) {
-                                                  await Provider.of<
-                                                        EmployeeProvider
-                                                      >(context, listen: false)
-                                                      .fetchAndSaveEmployeeId(
-                                                        email,
-                                                      );
-                                                }
-                                              } catch (e) {
-                                                print(
-                                                  "Employee fetch error: $e",
-                                                );
-                                              }
-
-                                              setState(
-                                                () => _isloading = false,
-                                              );
-
-                                              // 🔥 Success Dialog
-                                              WidgetsBinding.instance.addPostFrameCallback((
-                                                _,
-                                              ) {
-                                                showDialog(
-                                                  context: context,
-                                                  barrierDismissible: false,
-                                                  builder: (dialogContext) {
-                                                    Future.delayed(
-                                                      const Duration(
-                                                        seconds: 2,
-                                                      ),
-                                                      () {
-                                                        if (mounted) {
-                                                          Navigator.pop(
-                                                            dialogContext,
-                                                          );
-                                                          Navigator.pushReplacementNamed(
-                                                            context,
-                                                            "/homeScreen",
-                                                          );
-                                                        }
-                                                      },
-                                                    );
-
-                                                    return Dialog(
-                                                      backgroundColor:
-                                                          Colors.transparent,
-                                                      elevation: 0,
-                                                      child: Container(
-                                                        padding: EdgeInsets.all(
-                                                          responsiveWidth(0.08),
-                                                        ),
-                                                        decoration: BoxDecoration(
-                                                          color: dialogBgColor,
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                responsiveWidth(
-                                                                  0.06,
-                                                                ),
-                                                              ),
-                                                        ),
-                                                        child: Column(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            Container(
-                                                              width:
-                                                                  responsiveWidth(
-                                                                    0.15,
-                                                                  ),
-                                                              height:
-                                                                  responsiveWidth(
-                                                                    0.15,
-                                                                  ),
-                                                              decoration: BoxDecoration(
-                                                                shape: BoxShape
-                                                                    .circle,
-                                                                color: Colors
-                                                                    .green
-                                                                    .withOpacity(
-                                                                      0.1,
-                                                                    ),
-                                                                border: Border.all(
-                                                                  color: Colors
-                                                                      .green,
-                                                                  width: 3,
-                                                                ),
-                                                              ),
-                                                              child: Icon(
-                                                                Icons
-                                                                    .check_circle_rounded,
-                                                                size:
-                                                                    responsiveWidth(
-                                                                      0.08,
-                                                                    ),
-                                                                color: Colors
-                                                                    .green,
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              height:
-                                                                  responsiveHeight(
-                                                                    0.02,
-                                                                  ),
-                                                            ),
-                                                            Text(
-                                                              "Success",
-                                                              style: TextStyle(
-                                                                fontSize:
-                                                                    responsiveFontSize(
-                                                                      20,
-                                                                    ),
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                color:
-                                                                    dialogTextColor,
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              height:
-                                                                  responsiveHeight(
-                                                                    0.01,
-                                                                  ),
-                                                            ),
-                                                            Text(
-                                                              "Welcome, $fullName!",
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              style: TextStyle(
-                                                                fontSize:
-                                                                    responsiveFontSize(
-                                                                      14,
-                                                                    ),
-                                                                color:
-                                                                    isDarkMode
-                                                                    ? Colors
-                                                                          .grey[300]
-                                                                    : Colors
-                                                                          .grey
-                                                                          .shade700,
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              height:
-                                                                  responsiveHeight(
-                                                                    0.03,
-                                                                  ),
-                                                            ),
-                                                            SizedBox(
-                                                              width:
-                                                                  responsiveWidth(
-                                                                    0.1,
-                                                                  ),
-                                                              height:
-                                                                  responsiveWidth(
-                                                                    0.1,
-                                                                  ),
-                                                              child: CircularProgressIndicator(
-                                                                strokeWidth: 3,
-                                                                color:
-                                                                    focusedBorderColor,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                );
-                                              });
-                                            } else {
-                                              setState(
-                                                () => _isloading = false,
-                                              );
-
-                                              String errorMsg =
-                                                  response["message"] ??
-                                                  "Login failed";
-                                              if (errorMsg.contains(
-                                                "User not found",
-                                              )) {
-                                                _showErrorDialog(
-                                                  context,
-                                                  "Login Failed",
-                                                  "User not found!",
-                                                );
-                                              } else if (errorMsg.contains(
-                                                "Incorrect password",
-                                              )) {
-                                                _showErrorDialog(
-                                                  context,
-                                                  "Invalid Credentials",
-                                                  "Incorrect password.",
-                                                );
-                                              } else {
-                                                _showErrorDialog(
-                                                  context,
-                                                  "Error",
-                                                  errorMsg,
-                                                );
-                                              }
-                                            }
-                                          } catch (e) {
-                                            setState(() => _isloading = false);
-                                            print("❌ Exception: $e");
-                                            _showErrorDialog(
-                                              context,
-                                              "Network Error",
-                                              "Please check your internet connection\nError: $e",
-                                            );
-                                          }
-                                        },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    minimumSize: Size(
-                                      responsiveWidth(0.9),
-                                      responsiveHeight(0.06),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        responsiveWidth(0.04),
-                                      ),
-                                    ),
-                                  ),
-                                  child: _isloading
-                                      ? SizedBox(
-                                          height: responsiveHeight(0.03),
-                                          width: responsiveHeight(0.03),
-                                          child:
-                                              const CircularProgressIndicator(
-                                                strokeWidth: 2.5,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                      Color
-                                                    >(Colors.white),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(
+                                                0.2,
                                               ),
-                                        )
-                                      : Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.login_rounded,
-                                              size: responsiveFontSize(20),
+                                              borderRadius: BorderRadius.circular(
+                                                responsiveWidth(0.02),
+                                              ),
+                                            ),
+                                            child: Image.asset(
+                                              "assets/images/app_icon.png",
+                                              width: responsiveWidth(0.08),
                                               color: Colors.white,
                                             ),
-                                            SizedBox(
-                                              width: responsiveWidth(0.02),
-                                            ),
-                                            Text(
-                                              "Login",
-                                              style: TextStyle(
-                                                fontSize: responsiveFontSize(
-                                                  18,
+                                          ),
+                                          SizedBox(width: responsiveWidth(0.02)),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                "PIONEER",
+                                                style: TextStyle(
+                                                  fontSize: responsiveFontSize(16),
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                  letterSpacing: 2,
+                                                  height: 1.0,
+                                                  shadows: [
+                                                    Shadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.3),
+                                                      blurRadius: 10,
+                                                    ),
+                                                  ],
                                                 ),
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white,
-                                                letterSpacing: 0.5,
                                               ),
-                                            ),
-                                          ],
-                                        ),
+                                              Text(
+                                                "TECH",
+                                                style: TextStyle(
+                                                  fontSize: responsiveFontSize(16),
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Colors.white,
+                                                  letterSpacing: 2,
+                                                  height: 1.0,
+                                                  shadows: [
+                                                    Shadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.3),
+                                                      blurRadius: 10,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
 
-                            SizedBox(height: responsiveHeight(0.1)),
+                              SizedBox(height: responsiveHeight(0.05)),
 
-                            // Footer
-                            TweenAnimationBuilder(
-                              tween: Tween<double>(begin: 0, end: 1),
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeOut,
-                              builder: (context, double value, child) {
-                                return Opacity(opacity: value, child: child);
-                              },
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                              // Premium Welcome Text with Sky Blue Theme
+                              TweenAnimationBuilder(
+                                tween: Tween<double>(begin: 0, end: 1),
+                                duration: const Duration(milliseconds: 800),
+                                builder: (context, double value, child) {
+                                  return Opacity(opacity: value, child: child);
+                                },
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Flexible(
-                                        child: Container(
-                                          height: 1,
-                                          width: responsiveWidth(0.133),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Colors.transparent,
-                                                dividerColor!,
-                                                Colors.transparent,
-                                              ],
-                                            ),
-                                          ),
+                                      Text(
+                                        "Welcome back!",
+                                        style: TextStyle(
+                                          fontSize: responsiveFontSize(32),
+                                          fontWeight: FontWeight.w800,
+                                          color: textColor,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
-                                      Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: responsiveWidth(0.032),
-                                        ),
-                                        child: Text(
-                                          "Powered by",
-                                          style: TextStyle(
-                                            fontSize: responsiveFontSize(12),
-                                            letterSpacing: 0.5,
-                                            color: hintTextColor,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                      Flexible(
-                                        child: Container(
-                                          height: 1,
-                                          width: responsiveWidth(0.133),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Colors.transparent,
-                                                dividerColor,
-                                                Colors.transparent,
-                                              ],
-                                            ),
-                                          ),
+                                      SizedBox(height: responsiveHeight(0.005)),
+                                      Text(
+                                        "Enter your login credentials",
+                                        style: TextStyle(
+                                          fontSize: responsiveFontSize(14),
+                                          color: hintTextColor,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.3,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: responsiveHeight(0.02)),
-                                  RichText(
-                                    text: TextSpan(
+                                ),
+                              ),
+
+                              SizedBox(height: responsiveHeight(0.07)),
+
+                              // Premium Email Field with Sky Blue Theme
+                              TweenAnimationBuilder(
+                                tween: Tween<double>(begin: 0, end: 1),
+                                duration: const Duration(milliseconds: 600),
+                                curve: Curves.easeOut,
+                                builder: (context, double value, child) {
+                                  return Transform.translate(
+                                    offset: Offset(0, 20 * (1 - value)),
+                                    child: Opacity(opacity: value, child: child),
+                                  );
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      responsiveWidth(0.04),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: skyBlue.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        spreadRadius: 2,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: TextFormField(
+                                    controller: _emailController,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: responsiveFontSize(16),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    decoration: InputDecoration(
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: responsiveWidth(0.04),
+                                        vertical: responsiveHeight(0.015),
+                                      ),
+                                      labelText: "Email address",
+                                      labelStyle: TextStyle(
+                                        fontSize: responsiveFontSize(14),
+                                        color: hintTextColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      floatingLabelStyle: TextStyle(
+                                        color: focusedBorderColor,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: responsiveFontSize(14),
+                                      ),
+                                      prefixIcon: Container(
+                                        padding: EdgeInsets.all(
+                                          responsiveWidth(0.02),
+                                        ),
+                                        child: Icon(
+                                          Icons.email_rounded,
+                                          size: responsiveFontSize(20),
+                                          color: focusedBorderColor,
+                                        ),
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.04),
+                                        ),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.04),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: borderColor,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.04),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: focusedBorderColor,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: isDarkMode
+                                          ? slate.withOpacity(0.5)
+                                          : pureWhite,
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "Email required";
+                                      }
+                                      final emailRegex = RegExp(
+                                        r'^[a-zA-Z0-9._%+-]+@(ppecon\.com|gmail\.com)$',
+                                      );
+                                      if (!emailRegex.hasMatch(value)) {
+                                        return "Only ppecon.com or gmail.com emails are allowed";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: responsiveHeight(0.042)),
+
+                              // Premium Password Field with Sky Blue Theme
+                              TweenAnimationBuilder(
+                                tween: Tween<double>(begin: 0, end: 1),
+                                duration: const Duration(milliseconds: 600),
+                                curve: Curves.easeOut,
+                                builder: (context, double value, child) {
+                                  return Transform.translate(
+                                    offset: Offset(0, 20 * (1 - value)),
+                                    child: Opacity(opacity: value, child: child),
+                                  );
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      responsiveWidth(0.04),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: skyBlue.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        spreadRadius: 2,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: TextFormField(
+                                    controller: _passwordController,
+                                    obscureText: !_isPasswordVisible,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: responsiveFontSize(16),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    decoration: InputDecoration(
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: responsiveWidth(0.04),
+                                        vertical: responsiveHeight(0.015),
+                                      ),
+                                      labelText: "Password",
+                                      labelStyle: TextStyle(
+                                        fontSize: responsiveFontSize(14),
+                                        color: hintTextColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      floatingLabelStyle: TextStyle(
+                                        color: focusedBorderColor,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: responsiveFontSize(14),
+                                      ),
+                                      prefixIcon: Container(
+                                        padding: EdgeInsets.all(
+                                          responsiveWidth(0.02),
+                                        ),
+                                        child: Icon(
+                                          Icons.lock_rounded,
+                                          size: responsiveFontSize(20),
+                                          color: focusedBorderColor,
+                                        ),
+                                      ),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _isPasswordVisible
+                                              ? Icons.visibility_rounded
+                                              : Icons.visibility_off_rounded,
+                                          color: hintTextColor,
+                                        ),
+                                        onPressed: () {
+                                          HapticFeedback.selectionClick();
+                                          setState(() {
+                                            _isPasswordVisible =
+                                                !_isPasswordVisible;
+                                          });
+                                        },
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.04),
+                                        ),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.04),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: borderColor,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.04),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: focusedBorderColor,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: isDarkMode
+                                          ? slate.withOpacity(0.5)
+                                          : pureWhite,
+                                    ),
+                                    validator: (value) =>
+                                        (value == null || value.isEmpty)
+                                        ? "Password required"
+                                        : null,
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: responsiveHeight(0.02)),
+
+                              // Premium Forgot Password with Sky Blue Theme
+                              TweenAnimationBuilder(
+                                tween: Tween<double>(begin: 0, end: 1),
+                                duration: const Duration(milliseconds: 600),
+                                curve: Curves.easeOut,
+                                builder: (context, double value, child) {
+                                  return Opacity(opacity: value, child: child);
+                                },
+                                child: GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/forgotpasswordScreen",
+                                    );
+                                  },
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: responsiveHeight(0.005),
+                                        horizontal: responsiveWidth(0.02),
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: skyBlue.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        "Forgot password?",
+                                        style: TextStyle(
+                                          fontSize: responsiveFontSize(14),
+                                          fontWeight: FontWeight.w600,
+                                          color: skyBlue,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: responsiveHeight(0.04)),
+
+                              // ========== PREMIUM LOGIN BUTTON with Sky Blue Theme ==========
+                              TweenAnimationBuilder(
+                                tween: Tween<double>(begin: 0, end: 1),
+                                duration: const Duration(milliseconds: 600),
+                                curve: Curves.elasticOut,
+                                builder: (context, double value, child) {
+                                  return Transform.scale(
+                                    scale: value,
+                                    child: child,
+                                  );
+                                },
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: _isloading
+                                        ? null
+                                        : () async {
+                                            HapticFeedback.mediumImpact();
+                                            if (!_formKey.currentState!
+                                                .validate()) {
+                                              return;
+                                            }
+                                            setState(() => _isloading = true);
+
+                                            try {
+                                              final auth = AuthService();
+                                              final response = await auth
+                                                  .loginUser(
+                                                    email: _emailController.text
+                                                        .trim(),
+                                                    password:
+                                                        _passwordController.text
+                                                            .trim(),
+                                                  );
+
+                                              print(
+                                                "📱 Login Screen Response: $response",
+                                              );
+
+                                              if (response["success"] == true) {
+                                                final prefs =
+                                                    await SharedPreferences
+                                                        .getInstance();
+                                                await prefs.setString(
+                                                  'userEmail',
+                                                  _emailController.text.trim(),
+                                                );
+                                                print(
+                                                  "✅ User Email saved: ${_emailController.text.trim()}",
+                                                );
+
+                                                // 🔥 CLEAR OLD CACHE
+                                                final profileProvider =
+                                                    Provider.of<ProfileProvider>(
+                                                      context,
+                                                      listen: false,
+                                                    );
+                                                await profileProvider
+                                                    .clearProfileCache();
+
+                                                String? sid = response["sid"];
+                                                List<String> cookies =
+                                                    response["cookies"] ?? [];
+                                                String email =
+                                                    response["email"] ??
+                                                    _emailController.text
+                                                        .trim();
+                                                String fullName =
+                                                    response["full_name"] ??
+                                                    email.split('@')[0];
+
+                                                await CheckuserUtils
+                                                    .saveloginStatus(
+                                                      route: "/homeScreen",
+                                                      employeeId: "",
+                                                      userName: fullName,
+                                                      authToken: sid,
+                                                      cookies: cookies,
+                                                    );
+
+                                                // 🔥 Load profile
+                                                try {
+                                                  final profileProvider =
+                                                      Provider.of<
+                                                        ProfileProvider
+                                                      >(
+                                                        context,
+                                                        listen: false,
+                                                      );
+                                                  await profileProvider
+                                                      .loadProfile();
+                                                } catch (e) {
+                                                  print(
+                                                    "Profile load error: $e",
+                                                  );
+                                                }
+
+                                                // 🔥 Fetch employee ID
+                                                try {
+                                                  if (email.isNotEmpty) {
+                                                    await Provider.of<
+                                                          EmployeeProvider
+                                                        >(
+                                                          context,
+                                                          listen: false,
+                                                        )
+                                                        .fetchAndSaveEmployeeId(
+                                                          email,
+                                                        );
+                                                  }
+                                                } catch (e) {
+                                                  print(
+                                                    "Employee fetch error: $e",
+                                                  );
+                                                }
+
+                                                setState(
+                                                  () => _isloading = false,
+                                                );
+
+                                                // 🔥 Show premium success dialog
+                                                _showSuccessDialog(fullName);
+                                              } else {
+                                                setState(
+                                                  () => _isloading = false,
+                                                );
+
+                                                String errorMsg =
+                                                    response["message"] ??
+                                                    "Login failed";
+                                                if (errorMsg.contains(
+                                                  "User not found",
+                                                )) {
+                                                  _showErrorDialog(
+                                                    context,
+                                                    "Login Failed",
+                                                    "User not found!",
+                                                  );
+                                                } else if (errorMsg.contains(
+                                                  "Incorrect password",
+                                                )) {
+                                                  _showErrorDialog(
+                                                    context,
+                                                    "Invalid Credentials",
+                                                    "Incorrect password.",
+                                                  );
+                                                } else {
+                                                  _showErrorDialog(
+                                                    context,
+                                                    "Error",
+                                                    errorMsg,
+                                                  );
+                                                }
+                                              }
+                                            } catch (e) {
+                                              setState(
+                                                () => _isloading = false,
+                                              );
+                                              print("❌ Exception: $e");
+                                              _showErrorDialog(
+                                                context,
+                                                "Network Error",
+                                                "Please check your internet connection\nError: $e",
+                                              );
+                                            }
+                                          },
+                                    borderRadius: BorderRadius.circular(
+                                      responsiveWidth(0.04),
+                                    ),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: responsiveHeight(0.02),
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: gradientColors,
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          responsiveWidth(0.04),
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: skyBlue.withOpacity(0.3),
+                                            blurRadius: 25,
+                                            spreadRadius: 5,
+                                            offset: const Offset(0, 10),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: _isloading
+                                            ? SizedBox(
+                                                height: responsiveHeight(0.03),
+                                                width: responsiveHeight(0.03),
+                                                child:
+                                                    const CircularProgressIndicator(
+                                                      strokeWidth: 2.5,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(Colors.white),
+                                                    ),
+                                              )
+                                            : Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Container(
+                                                    padding: EdgeInsets.all(
+                                                      responsiveWidth(0.01),
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white
+                                                          .withOpacity(0.2),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.login_rounded,
+                                                      size: responsiveFontSize(
+                                                        20,
+                                                      ),
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: responsiveWidth(0.02),
+                                                  ),
+                                                  Text(
+                                                    "Login",
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          responsiveFontSize(18),
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: Colors.white,
+                                                      letterSpacing: 0.5,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: responsiveHeight(0.1)),
+
+                              // Premium Footer with Sky Blue Theme
+                              TweenAnimationBuilder(
+                                tween: Tween<double>(begin: 0, end: 1),
+                                duration: const Duration(milliseconds: 600),
+                                curve: Curves.easeOut,
+                                builder: (context, double value, child) {
+                                  return Opacity(opacity: value, child: child);
+                                },
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        TextSpan(
-                                          text: "Pioneer.",
-                                          style: TextStyle(
-                                            fontSize: responsiveFontSize(16),
-                                            fontFamily: "poppins",
-                                            color: textColor,
-                                            fontWeight: FontWeight.w400,
+                                        Flexible(
+                                          child: Container(
+                                            height: 1,
+                                            width: responsiveWidth(0.133),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  Colors.transparent,
+                                                  skyBlue.withOpacity(0.3),
+                                                  Colors.transparent,
+                                                ],
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                        TextSpan(
-                                          text: "Tech",
-                                          style: TextStyle(
-                                            fontSize: responsiveFontSize(16),
-                                            color: focusedBorderColor,
-                                            fontFamily: "poppins",
-                                            fontWeight: FontWeight.w700,
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: responsiveWidth(0.032),
+                                          ),
+                                          child: Text(
+                                            "Powered by",
+                                            style: TextStyle(
+                                              fontSize: responsiveFontSize(12),
+                                              letterSpacing: 0.5,
+                                              color: hintTextColor,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        Flexible(
+                                          child: Container(
+                                            height: 1,
+                                            width: responsiveWidth(0.133),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  Colors.transparent,
+                                                  skyBlue.withOpacity(0.3),
+                                                  Colors.transparent,
+                                                ],
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(height: responsiveHeight(0.02)),
+                                    RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: "Pioneer.",
+                                            style: TextStyle(
+                                              fontSize: responsiveFontSize(16),
+                                              color: textColor,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: "Tech",
+                                            style: TextStyle(
+                                              fontSize: responsiveFontSize(16),
+                                              color: skyBlue,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

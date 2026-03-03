@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/services/auth_service.dart';
-import 'package:management_app/services/leave_balance_service.dart'; // ✅ Added import
+import 'package:management_app/services/leave_balance_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:management_app/services/leave_approved_service.dart';
@@ -71,79 +71,56 @@ class _DashboardScreenState extends State<DashboardScreen>
   static const Color charcoal = Color(0xFF1E293B);
   static const Color slate = Color(0xFF334155);
 
-  // ✅ Updated Quick Stats Cards with new leave balance cards
+  // ✅ Updated Quick Stats Cards - SCREENSHOT STYLE with BORDERS
   final List<Map<String, dynamic>> quickStatsCards = [
     {
-      'title': 'Total Requests',
+      'title': 'Total\nRequests',
       'value': '0',
       'icon': Icons.assignment_rounded,
-      'bgPattern': Icons.assignment_turned_in_rounded,
       'subtitle': 'All requests',
       'color': skyBlue,
+      'bgColor': Colors.blue.shade50,
+      'borderColor': skyBlue,
     },
     {
-      'title': 'Leave Requests',
+      'title': 'Leave\nRequests',
       'value': '0',
       'icon': Icons.beach_access_rounded,
-      'bgPattern': Icons.waves_rounded,
       'subtitle': 'Total leaves',
-      'color': skyBlue,
+      'color': Colors.green,
+      'bgColor': Colors.green.shade50,
+      'borderColor': Colors.green,
     },
     {
-      'title': 'Travel Requests',
+      'title': 'Travel\nRequests',
       'value': '0',
       'icon': Icons.flight_rounded,
-      'bgPattern': Icons.public_rounded,
       'subtitle': 'Total travels',
-      'color': skyBlue,
-    },
-    // ✅ New Leave Balance Cards
-    {
-      'title': 'Allocated Leave',
-      'value': '0',
-      'icon': Icons.card_giftcard_rounded,
-      'bgPattern': Icons.event_available_rounded,
-      'subtitle': 'Total allocated',
-      'unit': 'days',
-      'color': Colors.blue,
-    },
-    {
-      'title': 'Taken Leave',
-      'value': '0',
-      'icon': Icons.event_busy_rounded,
-      'bgPattern': Icons.cancel_rounded,
-      'subtitle': 'Leaves taken',
-      'unit': 'days',
       'color': Colors.orange,
+      'bgColor': Colors.orange.shade50,
+      'borderColor': Colors.orange,
     },
     {
-      'title': 'Remaining Leave',
-      'value': '0',
-      'icon': Icons.account_balance_wallet_rounded,
-      'bgPattern': Icons.timer_rounded,
-      'subtitle': 'Balance available',
-      'unit': 'days',
-      'color': Colors.green,
-    },
-    {
-      'title': 'Pending',
+      'title': 'Pending\nApproval',
       'value': '0',
       'icon': Icons.pending_actions_rounded,
-      'bgPattern': Icons.hourglass_empty_rounded,
-      'subtitle': 'Awaiting approval',
+      'subtitle': 'Awaiting review',
       'color': Colors.purple,
+      'bgColor': Colors.purple.shade50,
+      'borderColor': Colors.purple,
     },
     {
-      'title': 'Approved',
+      'title': 'Approved\nRequests',
       'value': '0',
       'icon': Icons.check_circle_rounded,
-      'bgPattern': Icons.verified_rounded,
       'subtitle': 'Completed',
       'color': Colors.teal,
+      'bgColor': Colors.teal.shade50,
+      'borderColor': Colors.teal,
     },
   ];
 
-  // Quick Access Modules with sky blue theme
+  // ✅ Quick Access Modules with bgPattern (FIXED)
   final List<Map<String, dynamic>> modules = [
     {
       'title': 'Leave Request',
@@ -275,22 +252,26 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
-  // ✅ Updated _fetchDashboardStats with real leave balance data
   Future<void> _fetchDashboardStats() async {
     setState(() => _isLoadingStats = true);
 
     try {
       int totalLeaves = 0;
       int totalTravel = 0;
-      int pendingLeaves = 0;
-      int approvedLeaves = 0;
-      
-      // Reset leave balance values
+
+      // ✅ Variables for leave status
+      int leavePending = 0;
+      int leaveApproved = 0;
+
+      // ✅ Variables for travel status
+      int travelPending = 0;
+      int travelApproved = 0;
+
       _totalAllocated = 0;
       _totalTaken = 0;
       _totalRemaining = 0;
 
-      // Fetch leaves
+      // ✅ Fetch and process leaves
       try {
         final leaves = await LeaveApprovedService.fetchLeaves();
         final userLeaves = leaves.where((leave) {
@@ -303,41 +284,89 @@ class _DashboardScreenState extends State<DashboardScreen>
         }).toList();
 
         totalLeaves = userLeaves.length;
-        pendingLeaves = userLeaves.where((l) => l.status == 'Pending').length;
-        approvedLeaves = userLeaves.where((l) => l.status == 'Approved').length;
-      } catch (e) {}
 
-      // Fetch travels
+        // ✅ Count leave pending and approved
+        leavePending = userLeaves
+            .where(
+              (l) =>
+                  l.status != null &&
+                  (l.status.toLowerCase() == 'pending' ||
+                      l.status.toLowerCase() == 'open' ||
+                      l.status.toLowerCase() == 'draft'),
+            )
+            .length;
+
+        leaveApproved = userLeaves
+            .where(
+              (l) =>
+                  l.status != null &&
+                  (l.status.toLowerCase() == 'approved' ||
+                      l.status.toLowerCase() == 'completed'),
+            )
+            .length;
+
+        print(
+          "📊 Leaves - Total: $totalLeaves, Pending: $leavePending, Approved: $leaveApproved",
+        );
+      } catch (e) {
+        print("Error fetching leaves: $e");
+      }
+
+      // ✅ Fetch and process travels
       try {
         final travels = await TravelRequestService.getMyTravelRequests(
           _employeeId,
         );
         totalTravel = travels.length;
-      } catch (e) {}
 
-      // ✅ Fetch real leave balance from service
+        // ✅ Count travel pending and approved
+        travelPending = travels.where((t) {
+          final status = (t["status"] ?? "").toString().toLowerCase();
+          return status.contains('pending') ||
+              status.contains('draft') ||
+              status.contains('open');
+        }).length;
+
+        travelApproved = travels.where((t) {
+          final status = (t["status"] ?? "").toString().toLowerCase();
+          return status.contains('approved') || status.contains('completed');
+        }).length;
+
+        print(
+          "📊 Travels - Total: $totalTravel, Pending: $travelPending, Approved: $travelApproved",
+        );
+      } catch (e) {
+        print("Error fetching travels: $e");
+      }
+
+      // ✅ Calculate combined totals
+      int totalRequests = totalLeaves + totalTravel;
+      int totalPending = leavePending + travelPending;
+      int totalApproved = leaveApproved + travelApproved;
+
+      print(
+        "✅ COMBINED - Total Requests: $totalRequests, Pending: $totalPending, Approved: $totalApproved",
+      );
+
+      // ✅ Fetch leave balance
       try {
         final leaveService = LeaveBalanceService();
         final result = await leaveService.fetchLeaveBalances();
-        
+
         if (result['success'] == true) {
           _leaveDetails = result['leaveDetails'] ?? {};
           final totals = result['totals'] ?? {};
           _totalAllocated = totals['allocated'] ?? 0;
           _totalTaken = totals['taken'] ?? 0;
           _totalRemaining = totals['remaining'] ?? 0;
-          
-          print("✅ Leave Balance - Allocated: $_totalAllocated, Taken: $_totalTaken, Remaining: $_totalRemaining");
+
+          print(
+            "✅ Leave Balance - Allocated: $_totalAllocated, Taken: $_totalTaken, Remaining: $_totalRemaining",
+          );
         }
       } catch (e) {
         print("❌ Error fetching leave balance: $e");
-        // Fallback to demo data if API fails
-        _totalAllocated = 18;
-        _totalTaken = 5;
-        _totalRemaining = 13;
       }
-
-      int totalRequests = totalLeaves + totalTravel;
 
       if (mounted) {
         setState(() {
@@ -347,20 +376,16 @@ class _DashboardScreenState extends State<DashboardScreen>
             'totalLeaves': totalLeaves,
             'totalTravel': totalTravel,
             'totalRequests': totalRequests,
-            'pendingRequests': pendingLeaves,
-            'approvedRequests': approvedLeaves,
+            'pendingRequests': totalPending,
+            'approvedRequests': totalApproved,
           };
 
           // Update quick stats cards with real values
           quickStatsCards[0]['value'] = totalRequests.toString();
           quickStatsCards[1]['value'] = totalLeaves.toString();
           quickStatsCards[2]['value'] = totalTravel.toString();
-          // ✅ Update leave balance cards
-          quickStatsCards[3]['value'] = _totalAllocated.floor().toString();
-          quickStatsCards[4]['value'] = _totalTaken.floor().toString();
-          quickStatsCards[5]['value'] = _totalRemaining.floor().toString();
-          quickStatsCards[6]['value'] = pendingLeaves.toString();
-          quickStatsCards[7]['value'] = approvedLeaves.toString();
+          quickStatsCards[3]['value'] = totalPending.toString();
+          quickStatsCards[4]['value'] = totalApproved.toString();
 
           _isLoadingStats = false;
           _statsAnimationController.forward(from: 0.0);
@@ -414,12 +439,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.dispose();
   }
 
-  // Responsive sizing - Bigger text
+  // Responsive sizing
   double _getResponsiveFontSize(double baseSize, double width) {
-    if (width < 360) return baseSize * 1.0;
-    if (width > 600) return baseSize * 1.3;
-    if (width > 900) return baseSize * 1.5;
-    return baseSize * 1.1;
+    if (width < 360) return baseSize * 0.9;
+    if (width > 600) return baseSize * 1.2;
+    if (width > 900) return baseSize * 1.4;
+    return baseSize;
   }
 
   // Button-like press navigation
@@ -449,7 +474,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  // Elegant Header with sky blue
+  // Elegant Header
   Widget _buildDashboardHeader(
     BuildContext context,
     double width,
@@ -647,22 +672,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 width: double.infinity,
                 padding: EdgeInsets.all(width * 0.04),
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(
-                    255,
-                    111,
-                    195,
-                    228,
-                  ).withOpacity(0.05),
+                  color: skyBlue.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color.fromARGB(
-                      255,
-                      86,
-                      178,
-                      215,
-                    ).withOpacity(0.2),
-                    width: 1,
-                  ),
+                  border: Border.all(color: skyBlue.withOpacity(0.2), width: 1),
                 ),
                 child: Row(
                   children: [
@@ -690,7 +702,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             _greetingMessage,
                             style: TextStyle(
                               fontSize: _getResponsiveFontSize(
-                                width * 0.03,
+                                width * 0.035,
                                 width,
                               ),
                               color: textSecondary,
@@ -700,7 +712,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             fullName,
                             style: TextStyle(
                               fontSize: _getResponsiveFontSize(
-                                width * 0.035,
+                                width * 0.04,
                                 width,
                               ),
                               fontWeight: FontWeight.w600,
@@ -839,7 +851,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ✅ Updated Quick Stats with new cards
+  // ✅ Quick Stats with SCREENSHOT STYLE DESIGN
+  // ✅ Quick Stats with SCREENSHOT STYLE DESIGN - NO OVERFLOW
   Widget _buildQuickStats(double width, double height, BuildContext context) {
     if (_isLoadingStats) {
       return Container(
@@ -859,11 +872,17 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
     }
 
-    // Responsive grid - now showing 4 cards per row on larger screens
+    // Responsive grid - 5 cards with PROPER ASPECT RATIO
     int crossAxisCount = width < 400
         ? 2
-        : (width < 600 ? 2 : (width < 900 ? 4 : 4));
-    double cardHeight = width < 400 ? height * 0.15 : height * 0.14;
+        : (width < 600 ? 2 : (width < 900 ? 3 : 5));
+
+    // ✅ FIXED: Better aspect ratio calculation
+    double cardHeight = width < 400 ? height * 0.14 : height * 0.12;
+    double cardWidth =
+        (width - (crossAxisCount + 1) * width * 0.02) / crossAxisCount;
+    double aspectRatio = cardWidth / cardHeight;
+
     double spacing = width * 0.02;
 
     return Container(
@@ -882,9 +901,9 @@ class _DashboardScreenState extends State<DashboardScreen>
             itemCount: quickStatsCards.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              childAspectRatio: width / (cardHeight * crossAxisCount),
+              childAspectRatio: aspectRatio,
               crossAxisSpacing: spacing,
-              mainAxisSpacing: height * 0.015,
+              mainAxisSpacing: height * 0.01, // ✅ Reduced spacing
             ),
             itemBuilder: (context, index) {
               final card = quickStatsCards[index];
@@ -899,7 +918,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     scale: Curves.elasticOut.transform(animationValue),
                     child: Opacity(
                       opacity: animationValue,
-                      child: _buildStatCardWithPattern(
+                      child: _buildStatCardScreenshotStyle(
                         context,
                         width,
                         height,
@@ -912,7 +931,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             },
           ),
 
-          // ✅ Show leave breakdown if available
+          // Leave breakdown section
           if (_leaveDetails.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(top: height * 0.02),
@@ -923,13 +942,127 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ✅ New method to show leave type breakdown
- Widget _buildLeaveBreakdown(double width, double height, BuildContext context) {
+  // ✅ SCREENSHOT STYLE stat card - with colored background, border, and reduced height
+  Widget _buildStatCardScreenshotStyle(
+    BuildContext context,
+    double width,
+    double height,
+    Map<String, dynamic> card,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = _getTextPrimaryColor(context);
+    final textSecondary = _getTextSecondaryColor(context);
+
+    final Color cardColor = card['color'] ?? skyBlue;
+    final Color borderColor = card['borderColor'] ?? cardColor;
+    final Color bgColor = isDark
+        ? cardColor.withOpacity(0.15)
+        : (card['bgColor'] ?? cardColor.withOpacity(0.1));
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12), // ✅ Smaller radius
+        border: Border.all(color: borderColor.withOpacity(0.5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: cardColor.withOpacity(isDark ? 0.2 : 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(width * 0.015), // ✅ Reduced padding
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Icon with background circle
+            Container(
+              padding: EdgeInsets.all(width * 0.01), // ✅ Smaller padding
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: cardColor.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Icon(
+                card['icon'] as IconData,
+                color: cardColor,
+                size: width * 0.04, // ✅ Smaller icon
+              ),
+            ),
+
+            SizedBox(height: height * 0.006), // ✅ Reduced spacing
+            // Title - with line breaks
+            Text(
+              card['title'] as String,
+              style: TextStyle(
+                fontSize: _getResponsiveFontSize(
+                  width * 0.024,
+                  width,
+                ), // ✅ Smaller font
+                fontWeight: FontWeight.w600,
+                color: textPrimary,
+                height: 1.1,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            SizedBox(height: height * 0.003), // ✅ Reduced spacing
+            // Value
+            Text(
+              card['value'] as String,
+              style: TextStyle(
+                fontSize: _getResponsiveFontSize(
+                  width * 0.036,
+                  width,
+                ), // ✅ Smaller font
+                fontWeight: FontWeight.w800,
+                color: cardColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            // Subtitle
+            Text(
+              card['subtitle'] as String,
+              style: TextStyle(
+                fontSize: _getResponsiveFontSize(
+                  width * 0.018,
+                  width,
+                ), // ✅ Smaller font
+                color: textSecondary,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Leave breakdown widget
+  Widget _buildLeaveBreakdown(
+    double width,
+    double height,
+    BuildContext context,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = _getSurfaceColor(context);
     final textPrimary = _getTextPrimaryColor(context);
     final borderColor = _getBorderColor(context);
-    
+
     if (_leaveDetails.isEmpty) return const SizedBox.shrink();
 
     return Container(
@@ -971,7 +1104,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             final allocated = details['allocated'] ?? 0;
             final taken = details['taken'] ?? 0;
             final remaining = details['remaining'] ?? 0;
-            
+
             Color progressColor;
             if (leaveType.toLowerCase().contains('sick')) {
               progressColor = Colors.orange;
@@ -980,7 +1113,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             } else {
               progressColor = skyBlue;
             }
-            
+
             return Padding(
               padding: EdgeInsets.only(bottom: height * 0.012),
               child: Column(
@@ -992,7 +1125,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                         child: Text(
                           leaveType,
                           style: TextStyle(
-                            fontSize: _getResponsiveFontSize(width * 0.032, width),
+                            fontSize: _getResponsiveFontSize(
+                              width * 0.032,
+                              width,
+                            ),
                             fontWeight: FontWeight.w500,
                             color: textPrimary,
                           ),
@@ -1000,9 +1136,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      // ✅ YAHAN CHANGE KARO - floor() use karo
                       Text(
-                        '${remaining.floor()} / ${allocated.floor()} days',
+                        '${remaining.toStringAsFixed(1)} / ${allocated.toStringAsFixed(1)} days',
                         style: TextStyle(
                           fontSize: _getResponsiveFontSize(width * 0.03, width),
                           color: progressColor,
@@ -1015,7 +1150,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
-                      value: allocated > 0 ? (taken / allocated).clamp(0.0, 1.0) : 0,
+                      value: allocated > 0
+                          ? (taken / allocated).clamp(0.0, 1.0)
+                          : 0,
                       backgroundColor: borderColor,
                       valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                       minHeight: height * 0.006,
@@ -1026,19 +1163,23 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // ✅ YAHAN CHANGE KARO - floor() use karo
                         Text(
-                          'Taken: ${taken.floor()}',
+                          'Taken: ${taken.toStringAsFixed(1)}',
                           style: TextStyle(
-                            fontSize: _getResponsiveFontSize(width * 0.024, width),
+                            fontSize: _getResponsiveFontSize(
+                              width * 0.024,
+                              width,
+                            ),
                             color: Colors.grey,
                           ),
                         ),
-                        // ✅ YAHAN CHANGE KARO - floor() use karo
                         Text(
-                          'Remaining: ${remaining.floor()}',
+                          'Remaining: ${remaining.toStringAsFixed(1)}',
                           style: TextStyle(
-                            fontSize: _getResponsiveFontSize(width * 0.024, width),
+                            fontSize: _getResponsiveFontSize(
+                              width * 0.024,
+                              width,
+                            ),
                             color: progressColor,
                           ),
                         ),
@@ -1054,132 +1195,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ✅ Updated Stat Card with color per card
-  Widget _buildStatCardWithPattern(
-    BuildContext context,
-    double width,
-    double height,
-    Map<String, dynamic> card,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = _getSurfaceColor(context);
-    final textPrimary = _getTextPrimaryColor(context);
-    final textSecondary = _getTextSecondaryColor(context);
-    final borderColor = _getBorderColor(context);
-    
-    final Color cardColor = card['color'] ?? skyBlue;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: cardColor.withOpacity(isDark ? 0.15 : 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Background Pattern
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.8,
-              child: Icon(
-                card['bgPattern'] as IconData,
-                size: width * 0.22,
-                color: cardColor,
-              ),
-            ),
-          ),
-
-          // Content
-          Padding(
-            padding: EdgeInsets.all(width * 0.03),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Icon and Title Row
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(width * 0.015),
-                      decoration: BoxDecoration(
-                        color: cardColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        card['icon'] as IconData,
-                        color: cardColor,
-                        size: width * 0.04,
-                      ),
-                    ),
-                    SizedBox(width: width * 0.01),
-                    Expanded(
-                      child: Text(
-                        card['title'] as String,
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(width * 0.028, width),
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Value
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      card['value'] as String,
-                      style: TextStyle(
-                        fontSize: _getResponsiveFontSize(width * 0.045, width),
-                        fontWeight: FontWeight.w700,
-                        color: cardColor,
-                      ),
-                    ),
-                    if (card.containsKey('unit'))
-                      Padding(
-                        padding: EdgeInsets.only(left: width * 0.005),
-                        child: Text(
-                          card['unit'] as String,
-                          style: TextStyle(
-                            fontSize: _getResponsiveFontSize(width * 0.022, width),
-                            color: textSecondary,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-
-                // Subtitle
-                Text(
-                  card['subtitle'] as String,
-                  style: TextStyle(
-                    fontSize: _getResponsiveFontSize(width * 0.022, width),
-                    color: textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Module Grid
+  // ✅ Module Grid with bgPattern (FIXED)
   Widget _buildModuleGrid(double width, double height, BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = _getSurfaceColor(context);
@@ -1263,7 +1279,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     child: Stack(
                       children: [
-                        // Background Pattern
+                        // Background Pattern (KEEP for modules)
                         Positioned.fill(
                           child: Opacity(
                             opacity: isPressed ? 0.3 : 0.2,
@@ -1431,10 +1447,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         backgroundColor: backgroundColor,
         body: SafeArea(
           child: _isLoading
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
+                    valueColor: const AlwaysStoppedAnimation<Color>(skyBlue),
                   ),
                 )
               : RefreshIndicator(
@@ -1457,7 +1473,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         // Banner
                         _buildBannerSlider(width, height),
 
-                        // Quick Stats with Bounce Animation
+                        // Quick Stats with SCREENSHOT STYLE
                         _buildQuickStats(width, height, context),
 
                         SizedBox(height: height * 0.02),
