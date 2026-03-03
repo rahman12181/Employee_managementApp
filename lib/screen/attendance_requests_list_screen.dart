@@ -21,11 +21,28 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
   bool _isRefreshing = false;
   late bool _isDarkMode;
 
+  // Sky Blue Color Palette - Matching all screens
+  static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE);  // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0);  // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0);    // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _loadAttendanceRequests();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
   }
 
   Future<void> _loadUserData() async {
@@ -81,15 +98,34 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
     }
   }
 
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'pending':
+        return skyBlue;  // Changed to sky blue
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _buildRequestItem(Map<String, dynamic> request, int index) {
+    final statusColor = _getStatusColor(request["status"] ?? "pending");
+    
     return Container(
       margin: EdgeInsets.fromLTRB(16, index == 0 ? 16 : 8, 16, index == _requests.length - 1 ? 16 : 8),
       decoration: BoxDecoration(
-        color: _isDarkMode ? Colors.grey[800] : Colors.white,
+        color: _isDarkMode ? slate.withOpacity(0.5) : pureWhite,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: skyBlue.withOpacity(0.2),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(_isDarkMode ? 0.3 : 0.08),
+            color: skyBlue.withOpacity(_isDarkMode ? 0.1 : 0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -122,12 +158,12 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: request["color"].withOpacity(0.1),
+                        color: skyBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.calendar_today,
-                        color: request["color"],
+                        color: skyBlue,
                         size: 24,
                       ),
                     ),
@@ -155,16 +191,16 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: request["color"].withOpacity(0.1),
+                                  color: statusColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: request["color"], width: 1),
+                                  border: Border.all(color: statusColor, width: 1),
                                 ),
                                 child: Text(
-                                  request["status"],
+                                  request["status"] ?? "Pending",
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: request["color"],
+                                    color: statusColor,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -229,8 +265,9 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                        color: skyBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: skyBlue.withOpacity(0.3), width: 1),
                       ),
                       child: Row(
                         children: [
@@ -239,14 +276,14 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: _isDarkMode ? Colors.blue[300] : Colors.blue[600],
+                              color: skyBlue,
                             ),
                           ),
                           const SizedBox(width: 6),
                           Icon(
                             Icons.arrow_forward_ios,
                             size: 10,
-                            color: _isDarkMode ? Colors.blue[300] : Colors.blue[600],
+                            color: skyBlue,
                           ),
                         ],
                       ),
@@ -272,13 +309,13 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: _isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                color: skyBlue.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.calendar_today,
                 size: 48,
-                color: _isDarkMode ? Colors.grey[600] : Colors.grey[400],
+                color: skyBlue,
               ),
             ),
             const SizedBox(height: 32),
@@ -309,7 +346,7 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
               icon: const Icon(Icons.add, size: 20),
               label: const Text("Create New Request", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isDarkMode ? Colors.blue[600]! : Colors.blue[600]!,
+                backgroundColor: skyBlue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -358,8 +395,9 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                color: _isDarkMode ? slate.withOpacity(0.3) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withOpacity(0.2), width: 1),
               ),
               child: Text(
                 _errorMessage.length > 150 ? "${_errorMessage.substring(0, 150)}..." : _errorMessage,
@@ -412,9 +450,9 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       decoration: BoxDecoration(
-        color: _isDarkMode ? Colors.grey[900] : Colors.white,
+        color: _isDarkMode ? slate.withOpacity(0.5) : pureWhite,
         border: Border(
-          bottom: BorderSide(color: _isDarkMode ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
+          bottom: BorderSide(color: _isDarkMode ? Colors.grey[800]! : skyBlue.withOpacity(0.2)!, width: 1),
         ),
       ),
       child: Column(
@@ -427,13 +465,18 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
                 height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: _isDarkMode 
-                        ? [Colors.blue[800]!, Colors.blue[600]!]
-                        : [Colors.blue[600]!, Colors.blue[400]!],
+                    colors: [skyBlue, deepSky],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: skyBlue.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: const Icon(Icons.list_alt, color: Colors.white, size: 20),
               ),
@@ -469,22 +512,23 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                  color: skyBlue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: skyBlue.withOpacity(0.3), width: 1),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.person,
                       size: 14,
-                      color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: skyBlue,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       _employeeName,
                       style: TextStyle(
                         fontSize: 13,
-                        color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: skyBlue,
                       ),
                     ),
                   ],
@@ -494,22 +538,23 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                  color: skyBlue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: skyBlue.withOpacity(0.3), width: 1),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.format_list_numbered,
                       size: 14,
-                      color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: skyBlue,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      "${_requests.length} Requests",
+                      "${_requests.length} Request${_requests.length != 1 ? 's' : ''}",
                       style: TextStyle(
                         fontSize: 13,
-                        color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: skyBlue,
                       ),
                     ),
                   ],
@@ -527,17 +572,26 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
     _isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.grey[50],
+      backgroundColor: _isDarkMode ? charcoal : offWhite,
       body: SafeArea(
         child: Column(
           children: [
+            // Custom App Bar with Sky Blue
             Container(
               height: 60,
               decoration: BoxDecoration(
-                color: _isDarkMode ? Colors.grey[900] : Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: _isDarkMode ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
+                gradient: LinearGradient(
+                  colors: [skyBlue, deepSky],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: skyBlue.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -545,22 +599,22 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.arrow_back, color: _isDarkMode ? Colors.white : Colors.grey[900]),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                       splashRadius: 24,
                     ),
-                    Text(
+                    const Text(
                       "Attendance History",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: _isDarkMode ? Colors.white : Colors.grey[900],
+                        color: Colors.white,
                       ),
                     ),
                     IconButton(
                       icon: Icon(
                         _isRefreshing ? Icons.refresh : Icons.refresh,
-                        color: _isDarkMode ? Colors.white : Colors.grey[900],
+                        color: Colors.white,
                       ),
                       onPressed: _isRefreshing ? null : _refreshData,
                       splashRadius: 24,
@@ -580,7 +634,7 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
                             height: 60,
                             child: CircularProgressIndicator(
                               strokeWidth: 3,
-                              color: _isDarkMode ? Colors.blue[400] : Colors.blue[600],
+                              color: skyBlue,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -600,8 +654,8 @@ class _AttendanceRequestsListScreenState extends State<AttendanceRequestsListScr
                           ? _buildEmptyState()
                           : RefreshIndicator(
                               onRefresh: _refreshData,
-                              color: _isDarkMode ? Colors.blue[400]! : Colors.blue[600]!,
-                              backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
+                              color: skyBlue,
+                              backgroundColor: _isDarkMode ? slate : pureWhite,
                               displacement: 40,
                               child: CustomScrollView(
                                 physics: const AlwaysScrollableScrollPhysics(),

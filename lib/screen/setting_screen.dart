@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/screen/change_password_screen.dart';
@@ -20,12 +21,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String selectedLanguage = "English";
   String selectedTheme = "Light";
 
-  // Get gradient colors based on theme
-  List<Color> _getHeaderGradientColors(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  // Sky Blue Color Palette - Matching all screens
+  static const Color skyBlue = Color(0xFF87CEEB); // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE); // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0); // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0); // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
+  // Get header gradient colors based on theme (matching all screens)
+  List<Color> _getHeaderGradientColors(bool isDarkMode) {
     return isDarkMode
-        ? [Colors.grey.shade900, Colors.grey.shade800]
-        : [Colors.blue.shade50, Colors.purple.shade50];
+        ? [charcoal, slate, const Color(0xFF1E1E2E)]
+        : [skyBlue, mediumSky, deepSky];
   }
 
   @override
@@ -34,301 +45,340 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDarkMode = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final gradientColors = _getHeaderGradientColors(isDarkMode);
 
     // Color scheme
-    final backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.grey[50]!;
+    final backgroundColor = isDarkMode ? charcoal : offWhite;
     final textColor = isDarkMode ? Colors.white : Colors.grey[900]!;
-    final subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[700]!;
-    final gradientColors = _getHeaderGradientColors(context);
+    final subtitleColor = isDarkMode ? Colors.grey[400]! : Colors.grey[600]!;
 
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      body: Column(
-        children: [
-          // Fixed status bar with gradient
-          Container(
-            height: MediaQuery.of(context).padding.top,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: gradientColors,
-              ),
-            ),
-          ),
-          // Rest of the content
-          Expanded(
-            child: Consumer<ProfileProvider>(
-              builder: (context, provider, _) {
-                final user = provider.profileData;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: gradientColors.first,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: isDarkMode ? charcoal : pureWhite,
+        systemNavigationBarIconBrightness: isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        body: SafeArea(
+          top: true,
+          bottom: true,
+          child: Consumer<ProfileProvider>(
+            builder: (context, provider, _) {
+              final user = provider.profileData;
 
-                return Column(
-                  children: [
-                    // Header
-                    Container(
+              return Column(
+                children: [
+                  // Premium Header with Sky Blue Gradient
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.05,
+                      vertical: screenHeight * 0.015,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: gradientColors,
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(30),
+                        bottomRight: Radius.circular(30),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: skyBlue.withOpacity(0.3),
+                          blurRadius: 25,
+                          spreadRadius: 5,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Settings",
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.06,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withOpacity(0.2),
+                                Colors.white.withOpacity(0.1),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.logout_rounded,
+                              color: Colors.white,
+                              size: screenWidth * 0.06,
+                            ),
+                            onPressed: () => _showLogoutDialog(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Scrollable content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
                       padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
-                        vertical: screenHeight * 0.02,
+                        horizontal: screenWidth * 0.045,
+                        vertical: screenHeight * 0.025,
                       ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isDarkMode
-                              ? [Colors.grey[850]!, Colors.grey[900]!]
-                              : [Colors.blue.shade50, Colors.purple.shade50],
-                        ),
-                        border: Border(
-                          bottom: BorderSide(
-                            color: isDarkMode
-                                ? Colors.grey[700]!
-                                : Colors.grey[200]!,
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(width: screenWidth * 0.02),
-                          Expanded(
-                            child: Text(
-                              "Settings",
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.055,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
-                              ),
-                            ),
+                          // Premium Profile Section with Sky Blue Theme
+                          _buildPremiumProfileSection(
+                            context,
+                            user,
+                            screenWidth,
+                            screenHeight,
+                            isDarkMode,
+                            textColor,
+                            subtitleColor,
+                            gradientColors,
                           ),
+
+                          SizedBox(height: screenHeight * 0.03),
+
+                          // Account Settings
+                          _buildPremiumSectionTitle(
+                            "Account Settings",
+                            Icons.settings_rounded,
+                            gradientColors,
+                            screenWidth,
+                          ),
+                          SizedBox(height: screenHeight * 0.015),
+
+                          _buildPremiumSettingTile(
+                            icon: Icons.person_outline_rounded,
+                            title: "User Profile",
+                            subtitle: "View and edit your profile",
+                            iconColor: skyBlue,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const Profilescreen(),
+                                ),
+                              );
+                            },
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            isDarkMode: isDarkMode,
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            gradientColors: gradientColors,
+                          ),
+
+                          _buildPremiumSettingTile(
+                            icon: Icons.lock_outline_rounded,
+                            title: "Change Password",
+                            subtitle: "Update your password",
+                            iconColor: deepSky,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ChangePasswordScreen(),
+                                ),
+                              );
+                            },
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            isDarkMode: isDarkMode,
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            gradientColors: gradientColors,
+                          ),
+
+                          _buildPremiumSettingTile(
+                            icon: Icons.email_outlined,
+                            title: "Notification Email",
+                            subtitle: user?['email'] ?? "Not set",
+                            iconColor: mediumSky,
+                            onTap: () {},
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            isDarkMode: isDarkMode,
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            gradientColors: gradientColors,
+                          ),
+
+                          SizedBox(height: screenHeight * 0.03),
+
+                          // App Settings
+                          _buildPremiumSectionTitle(
+                            "App Settings",
+                            Icons.app_settings_alt_rounded,
+                            gradientColors,
+                            screenWidth,
+                          ),
+                          SizedBox(height: screenHeight * 0.015),
+
+                          _buildPremiumToggleTile(
+                            icon: Icons.mic_none_outlined,
+                            title: "Voice Recognition",
+                            subtitle: "Enable voice commands",
+                            value: voiceEnabled,
+                            iconColor: skyBlue,
+                            onChanged: (value) {
+                              setState(() => voiceEnabled = value);
+                            },
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            isDarkMode: isDarkMode,
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            gradientColors: gradientColors,
+                          ),
+
+                          _buildPremiumDropdownTile(
+                            icon: Icons.language_rounded,
+                            title: "Language",
+                            value: selectedLanguage,
+                            options: const [
+                              "English",
+                              "Arabic",
+                              "Hindi",
+                              "Spanish",
+                            ],
+                            iconColor: deepSky,
+                            onChanged: (value) {
+                              setState(() => selectedLanguage = value!);
+                            },
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            isDarkMode: isDarkMode,
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            gradientColors: gradientColors,
+                          ),
+
+                          _buildPremiumDropdownTile(
+                            icon: Icons.brightness_6_outlined,
+                            title: "Theme",
+                            value: selectedTheme,
+                            options: const ["Light", "Dark", "System"],
+                            iconColor: mediumSky,
+                            onChanged: (value) {
+                              setState(() => selectedTheme = value!);
+                            },
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            isDarkMode: isDarkMode,
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            gradientColors: gradientColors,
+                          ),
+
+                          _buildPremiumToggleTile(
+                            icon: Icons.face_retouching_natural,
+                            title: "Face ID Login",
+                            subtitle: "Biometric authentication",
+                            value: faceIdEnabled,
+                            iconColor: lightSky,
+                            onChanged: (value) {
+                              setState(() => faceIdEnabled = value);
+                            },
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            isDarkMode: isDarkMode,
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            gradientColors: gradientColors,
+                          ),
+
+                          SizedBox(height: screenHeight * 0.05),
+
+                          // App Info with Sky Blue Theme
                           Container(
+                            padding: EdgeInsets.all(screenWidth * 0.05),
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                              color: isDarkMode
+                                  ? slate.withOpacity(0.5)
+                                  : pureWhite,
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.04,
+                              ),
                               border: Border.all(
-                                color: Colors.red.withOpacity(0.3),
-                                width: 1.5,
+                                color: skyBlue.withOpacity(0.2),
+                                width: 1,
                               ),
                             ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.logout_rounded,
-                                color: Colors.red,
-                                size: screenWidth * 0.05,
-                              ),
-                              onPressed: () => _showLogoutDialog(context),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  color: skyBlue.withOpacity(0.5),
+                                  size: screenWidth * 0.08,
+                                ),
+                                SizedBox(height: screenHeight * 0.01),
+                                Text(
+                                  "Version 1.0.0",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.035,
+                                    fontWeight: FontWeight.w600,
+                                    color: skyBlue,
+                                  ),
+                                ),
+                                SizedBox(height: screenHeight * 0.005),
+                                Text(
+                                  "© 2024 Management App",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.03,
+                                    color: subtitleColor.withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+
+                          SizedBox(height: screenHeight * 0.02),
                         ],
                       ),
                     ),
-
-                    // Scrollable content
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.045,
-                          vertical: screenHeight * 0.025,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Profile Section
-                            _buildProfileSection(
-                              context,
-                              user,
-                              screenWidth,
-                              screenHeight,
-                              isDarkMode,
-                              textColor,
-                              subtitleColor,
-                            ),
-
-                            SizedBox(height: screenHeight * 0.03),
-
-                            // Account Settings
-                            _buildSectionTitle(
-                              "Account Settings",
-                              screenWidth,
-                              textColor,
-                            ),
-                            SizedBox(height: screenHeight * 0.015),
-
-                            _buildSettingTile(
-                              context: context,
-                              icon: Icons.person_outline_rounded,
-                              title: "User Profile",
-                              subtitle: "View and edit your profile",
-                              iconColor: Colors.blue,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const Profilescreen(),
-                                  ),
-                                );
-                              },
-                              screenWidth: screenWidth,
-                              screenHeight: screenHeight,
-                              isDarkMode: isDarkMode,
-                              textColor: textColor,
-                              subtitleColor: subtitleColor,
-                            ),
-
-                            _buildSettingTile(
-                              context: context,
-                              icon: Icons.lock_outline_rounded,
-                              title: "Change Password",
-                              subtitle: "Update your password",
-                              iconColor: Colors.purple,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const ChangePasswordScreen(),
-                                  ),
-                                );
-                              },
-                              screenWidth: screenWidth,
-                              screenHeight: screenHeight,
-                              isDarkMode: isDarkMode,
-                              textColor: textColor,
-                              subtitleColor: subtitleColor,
-                            ),
-
-                            _buildSettingTile(
-                              context: context,
-                              icon: Icons.email_outlined,
-                              title: "Notification Email",
-                              subtitle: user?['email'] ?? "Not set",
-                              iconColor: Colors.orange,
-                              onTap: () {},
-                              screenWidth: screenWidth,
-                              screenHeight: screenHeight,
-                              isDarkMode: isDarkMode,
-                              textColor: textColor,
-                              subtitleColor: subtitleColor,
-                            ),
-
-                            SizedBox(height: screenHeight * 0.03),
-
-                            // App Settings
-                            _buildSectionTitle(
-                              "App Settings",
-                              screenWidth,
-                              textColor,
-                            ),
-                            SizedBox(height: screenHeight * 0.015),
-
-                            _buildToggleTile(
-                              icon: Icons.mic_none_outlined,
-                              title: "Voice Recognition",
-                              subtitle: "Enable voice commands",
-                              value: voiceEnabled,
-                              iconColor: Colors.green,
-                              onChanged: (value) {
-                                setState(() => voiceEnabled = value);
-                              },
-                              screenWidth: screenWidth,
-                              screenHeight: screenHeight,
-                              isDarkMode: isDarkMode,
-                              textColor: textColor,
-                              subtitleColor: subtitleColor,
-                            ),
-
-                            _buildDropdownTile(
-                              icon: Icons.language_rounded,
-                              title: "Language",
-                              value: selectedLanguage,
-                              options: const [
-                                "English",
-                                "Arabic",
-                                "Hindi",
-                                "Spanish",
-                              ],
-                              iconColor: Colors.blue,
-                              onChanged: (value) {
-                                setState(() => selectedLanguage = value!);
-                              },
-                              screenWidth: screenWidth,
-                              screenHeight: screenHeight,
-                              isDarkMode: isDarkMode,
-                              textColor: textColor,
-                              subtitleColor: subtitleColor,
-                            ),
-
-                            _buildDropdownTile(
-                              icon: Icons.brightness_6_outlined,
-                              title: "Theme",
-                              value: selectedTheme,
-                              options: const ["Light", "Dark", "System"],
-                              iconColor: Colors.amber,
-                              onChanged: (value) {
-                                setState(() => selectedTheme = value!);
-                              },
-                              screenWidth: screenWidth,
-                              screenHeight: screenHeight,
-                              isDarkMode: isDarkMode,
-                              textColor: textColor,
-                              subtitleColor: subtitleColor,
-                            ),
-
-                            _buildToggleTile(
-                              icon: Icons.face_retouching_natural,
-                              title: "Face ID Login",
-                              subtitle: "Biometric authentication",
-                              value: faceIdEnabled,
-                              iconColor: Colors.pink,
-                              onChanged: (value) {
-                                setState(() => faceIdEnabled = value);
-                              },
-                              screenWidth: screenWidth,
-                              screenHeight: screenHeight,
-                              isDarkMode: isDarkMode,
-                              textColor: textColor,
-                              subtitleColor: subtitleColor,
-                            ),
-
-                            SizedBox(height: screenHeight * 0.05),
-
-                            // App Info
-                            Center(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    "Version 1.0.0",
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.032,
-                                      color: subtitleColor,
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.005),
-                                  Text(
-                                    "© 2024 Management App",
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.03,
-                                      color: subtitleColor.withOpacity(0.6),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            SizedBox(height: screenHeight * 0.02),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                ],
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildProfileSection(
+  // Premium Profile Section with Sky Blue Theme
+  Widget _buildPremiumProfileSection(
     BuildContext context,
     Map<String, dynamic>? user,
     double screenWidth,
@@ -336,6 +386,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool isDarkMode,
     Color textColor,
     Color subtitleColor,
+    List<Color> gradientColors,
   ) {
     return GestureDetector(
       onTap: () {
@@ -347,39 +398,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Container(
         padding: EdgeInsets.all(screenWidth * 0.04),
         decoration: BoxDecoration(
-          color: isDarkMode ? Colors.grey[800]! : Colors.white,
-          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+          color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+          borderRadius: BorderRadius.circular(screenWidth * 0.05),
+          border: Border.all(color: skyBlue.withOpacity(0.2), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+              color: skyBlue.withOpacity(0.1),
+              blurRadius: 25,
+              spreadRadius: 5,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
         child: Row(
           children: [
+            // Premium Profile Image with Sky Blue Gradient
             Container(
               width: screenWidth * 0.18,
               height: screenWidth * 0.18,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.blue.withOpacity(0.3),
-                  width: 2,
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: skyBlue.withOpacity(0.3),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-              child: CircleAvatar(
-                backgroundColor: Colors.blue.shade50,
-                backgroundImage:
-                    (user != null &&
-                        user['user_image'] != null &&
-                        user['user_image'] != "")
-                    ? NetworkImage(
-                        "https://ppecon.erpnext.com${user['user_image']}",
-                      )
-                    : const AssetImage("assets/images/app_icon.png")
-                          as ImageProvider,
+              child: Padding(
+                padding: const EdgeInsets.all(3),
+                child: CircleAvatar(
+                  backgroundColor: isDarkMode ? slate : Colors.white,
+                  child: ClipOval(
+                    child:
+                        (user != null &&
+                            user['user_image'] != null &&
+                            user['user_image'].toString().isNotEmpty)
+                        ? Image.network(
+                            "https://ppecon.erpnext.com${user['user_image']}",
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+
+                            /// ⭐ IMPORTANT — ERPNext session cookie
+                            headers: {"Cookie": AuthService.cookies.join("; ")},
+
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              "assets/images/app_icon.png",
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Image.asset(
+                            "assets/images/app_icon.png",
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                ),
               ),
             ),
             SizedBox(width: screenWidth * 0.04),
@@ -392,7 +472,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: TextStyle(
                       fontSize: screenWidth * 0.045,
                       fontWeight: FontWeight.w700,
-                      color: textColor,
+                      color: skyBlue,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -412,15 +492,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       vertical: screenHeight * 0.005,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: skyBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: skyBlue.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.verified_rounded,
-                          color: Colors.blue,
+                          color: skyBlue,
                           size: screenWidth * 0.035,
                         ),
                         SizedBox(width: screenWidth * 0.01),
@@ -428,8 +512,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           "Verified Account",
                           style: TextStyle(
                             fontSize: screenWidth * 0.03,
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
+                            color: skyBlue,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -438,10 +522,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: subtitleColor,
-              size: screenWidth * 0.04,
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.02),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradientColors),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white,
+                size: screenWidth * 0.04,
+              ),
             ),
           ],
         ),
@@ -449,20 +540,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, double screenWidth, Color textColor) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: screenWidth * 0.04,
-        fontWeight: FontWeight.w700,
-        color: textColor,
-        letterSpacing: 0.5,
-      ),
+  // Premium Section Title with Sky Blue Theme
+  Widget _buildPremiumSectionTitle(
+    String title,
+    IconData icon,
+    List<Color> gradientColors,
+    double screenWidth,
+  ) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(screenWidth * 0.02),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: gradientColors),
+            borderRadius: BorderRadius.circular(screenWidth * 0.02),
+            boxShadow: [
+              BoxShadow(
+                color: skyBlue.withOpacity(0.2),
+                blurRadius: 10,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Icon(icon, size: screenWidth * 0.04, color: Colors.white),
+        ),
+        SizedBox(width: screenWidth * 0.02),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: screenWidth * 0.04,
+            fontWeight: FontWeight.w800,
+            color: skyBlue,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSettingTile({
-    required BuildContext context,
+  // Premium Setting Tile with Sky Blue Theme
+  Widget _buildPremiumSettingTile({
     required IconData icon,
     required String title,
     String? subtitle,
@@ -473,34 +590,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool isDarkMode,
     required Color textColor,
     required Color subtitleColor,
+    required List<Color> gradientColors,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.01),
       child: Material(
-        color: isDarkMode ? Colors.grey[800]! : Colors.white,
-        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+        color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
           child: Container(
             padding: EdgeInsets.symmetric(
               horizontal: screenWidth * 0.04,
               vertical: screenHeight * 0.018,
             ),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              border: Border.all(
-                color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
-                width: 1,
-              ),
+              color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+              borderRadius: BorderRadius.circular(screenWidth * 0.04),
+              border: Border.all(color: skyBlue.withOpacity(0.2), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: skyBlue.withOpacity(0.1),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: Row(
               children: [
+                // Icon with gradient background
                 Container(
                   padding: EdgeInsets.all(screenWidth * 0.025),
                   decoration: BoxDecoration(
                     color: iconColor.withOpacity(0.1),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: iconColor.withOpacity(0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Icon(icon, color: iconColor, size: screenWidth * 0.05),
                 ),
@@ -513,7 +641,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title,
                         style: TextStyle(
                           fontSize: screenWidth * 0.04,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: textColor,
                         ),
                       ),
@@ -530,10 +658,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: subtitleColor,
-                  size: screenWidth * 0.04,
+                Container(
+                  padding: EdgeInsets.all(screenWidth * 0.015),
+                  decoration: BoxDecoration(
+                    color: skyBlue.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: skyBlue,
+                    size: screenWidth * 0.04,
+                  ),
                 ),
               ],
             ),
@@ -543,7 +678,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildToggleTile({
+  // Premium Toggle Tile with Sky Blue Theme
+  Widget _buildPremiumToggleTile({
     required IconData icon,
     required String title,
     String? subtitle,
@@ -555,74 +691,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool isDarkMode,
     required Color textColor,
     required Color subtitleColor,
+    required List<Color> gradientColors,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.01),
-      child: Material(
-        color: isDarkMode ? Colors.grey[800]! : Colors.white,
-        borderRadius: BorderRadius.circular(screenWidth * 0.03),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.04,
-            vertical: screenHeight * 0.018,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-            border: Border.all(
-              color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
-              width: 1,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: screenHeight * 0.018,
+        ),
+        decoration: BoxDecoration(
+          color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+          border: Border.all(color: skyBlue.withOpacity(0.2), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: skyBlue.withOpacity(0.1),
+              blurRadius: 15,
+              spreadRadius: 2,
+              offset: const Offset(0, 5),
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(screenWidth * 0.025),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: iconColor, size: screenWidth * 0.05),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icon with gradient background
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.025),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: iconColor.withOpacity(0.3), width: 1),
               ),
-              SizedBox(width: screenWidth * 0.04),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: Icon(icon, color: iconColor, size: screenWidth * 0.05),
+            ),
+            SizedBox(width: screenWidth * 0.04),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    SizedBox(height: screenHeight * 0.003),
                     Text(
-                      title,
+                      subtitle,
                       style: TextStyle(
-                        fontSize: screenWidth * 0.04,
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
+                        fontSize: screenWidth * 0.032,
+                        color: subtitleColor,
                       ),
                     ),
-                    if (subtitle != null) ...[
-                      SizedBox(height: screenHeight * 0.003),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.032,
-                          color: subtitleColor,
-                        ),
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
-              Switch.adaptive(
-                value: value,
-                onChanged: onChanged,
-                activeColor: iconColor,
-                activeTrackColor: iconColor.withOpacity(0.3),
-              ),
-            ],
-          ),
+            ),
+            Switch.adaptive(
+              value: value,
+              onChanged: onChanged,
+              activeColor: iconColor,
+              activeTrackColor: iconColor.withOpacity(0.3),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDropdownTile({
+  // Premium Dropdown Tile with Sky Blue Theme
+  Widget _buildPremiumDropdownTile({
     required IconData icon,
     required String title,
     required String value,
@@ -634,266 +776,410 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool isDarkMode,
     required Color textColor,
     required Color subtitleColor,
+    required List<Color> gradientColors,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.01),
-      child: Material(
-        color: isDarkMode ? Colors.grey[800]! : Colors.white,
-        borderRadius: BorderRadius.circular(screenWidth * 0.03),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.04,
-            vertical: screenHeight * 0.018,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-            border: Border.all(
-              color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
-              width: 1,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: screenHeight * 0.018,
+        ),
+        decoration: BoxDecoration(
+          color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+          border: Border.all(color: skyBlue.withOpacity(0.2), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: skyBlue.withOpacity(0.1),
+              blurRadius: 15,
+              spreadRadius: 2,
+              offset: const Offset(0, 5),
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(screenWidth * 0.025),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: iconColor, size: screenWidth * 0.05),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icon with gradient background
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.025),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: iconColor.withOpacity(0.3), width: 1),
               ),
-              SizedBox(width: screenWidth * 0.04),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
+              child: Icon(icon, color: iconColor, size: screenWidth * 0.05),
+            ),
+            SizedBox(width: screenWidth * 0.04),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.003),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.032,
+                      color: subtitleColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuButton<String>(
+              onSelected: onChanged,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
+              ),
+              color: isDarkMode ? slate : Colors.white,
+              itemBuilder: (BuildContext context) {
+                return options.map((String option) {
+                  return PopupMenuItem<String>(
+                    value: option,
+                    child: Text(
+                      option,
                       style: TextStyle(
-                        fontSize: screenWidth * 0.04,
-                        fontWeight: FontWeight.w600,
+                        fontSize: screenWidth * 0.038,
                         color: textColor,
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.003),
+                  );
+                }).toList();
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.03,
+                  vertical: screenHeight * 0.008,
+                ),
+                decoration: BoxDecoration(
+                  color: skyBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  border: Border.all(color: skyBlue.withOpacity(0.3), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
                       value,
                       style: TextStyle(
                         fontSize: screenWidth * 0.032,
-                        color: subtitleColor,
+                        fontWeight: FontWeight.w600,
+                        color: skyBlue,
                       ),
+                    ),
+                    SizedBox(width: screenWidth * 0.01),
+                    Icon(
+                      Icons.arrow_drop_down_rounded,
+                      color: skyBlue,
+                      size: screenWidth * 0.045,
                     ),
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                onSelected: onChanged,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Premium Logout Dialog with Sky Blue Theme
+  Future<void> _showLogoutDialog(BuildContext context) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final gradientColors = _getHeaderGradientColors(isDarkMode);
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: screenWidth * 0.8,
+          padding: EdgeInsets.all(screenWidth * 0.05),
+          decoration: BoxDecoration(
+            color: isDarkMode ? slate : pureWhite,
+            borderRadius: BorderRadius.circular(screenWidth * 0.06),
+            border: Border.all(color: skyBlue.withOpacity(0.3), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: skyBlue.withOpacity(0.2),
+                blurRadius: 30,
+                spreadRadius: 5,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [deepSky, skyBlue]),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: deepSky.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
-                itemBuilder: (BuildContext context) {
-                  return options.map((String option) {
-                    return PopupMenuItem<String>(
-                      value: option,
-                      child: Text(
-                        option,
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.038,
-                          color: textColor,
+                child: Icon(
+                  Icons.logout_rounded,
+                  color: Colors.white,
+                  size: screenWidth * 0.08,
+                ),
+              ),
+              SizedBox(height: screenWidth * 0.04),
+              Text(
+                "Logout",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.06,
+                  fontWeight: FontWeight.w800,
+                  color: skyBlue,
+                ),
+              ),
+              SizedBox(height: screenWidth * 0.02),
+              Text(
+                "Are you sure you want to logout?",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.038,
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenWidth * 0.05),
+              Row(
+                children: [
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context, false),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            vertical: screenWidth * 0.03,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(
+                              screenWidth * 0.03,
+                            ),
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              "Cancel",
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.04,
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : Colors.grey[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    );
-                  }).toList();
-                },
-                child: Container(
-                  padding: EdgeInsets.all(screenWidth * 0.015),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
-                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        value,
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.032,
-                          color: subtitleColor,
+                  SizedBox(width: screenWidth * 0.03),
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context, true),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            vertical: screenWidth * 0.03,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: gradientColors),
+                            borderRadius: BorderRadius.circular(
+                              screenWidth * 0.03,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: skyBlue.withOpacity(0.3),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Text(
+                              "Logout",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      SizedBox(width: screenWidth * 0.01),
-                      Icon(
-                        Icons.arrow_drop_down_rounded,
-                        color: subtitleColor,
-                        size: screenWidth * 0.045,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
         ),
       ),
     );
-  }
 
-  // Logout Confirmation Dialog
-  Future<void> _showLogoutDialog(BuildContext context) async {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    // Show confirmation dialog only
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(screenWidth * 0.04),
-        ),
-        backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
-        title: Row(
-          children: [
-            Icon(
-              Icons.logout_rounded,
-              color: Colors.red,
-              size: screenWidth * 0.06,
-            ),
-            SizedBox(width: screenWidth * 0.03),
-            Text(
-              "Logout",
-              style: TextStyle(
-                fontSize: screenWidth * 0.045,
-                fontWeight: FontWeight.w700,
-                color: isDarkMode ? Colors.white : Colors.grey[900],
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          "Are you sure you want to logout?",
-          style: TextStyle(
-            fontSize: screenWidth * 0.038,
-            color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            style: TextButton.styleFrom(
-              foregroundColor: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: screenWidth * 0.025,
-              ),
-            ),
-            child: Text(
-              "No",
-              style: TextStyle(fontSize: screenWidth * 0.038),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: screenWidth * 0.025,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              ),
-            ),
-            child: Text(
-              "Yes",
-              style: TextStyle(fontSize: screenWidth * 0.038),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    // If user confirms, proceed with logout
     if (confirm == true) {
       _performLogout(context);
     }
   }
 
-  // Perform Logout - No loading dialog, directly navigate
+  // Perform Logout
   Future<void> _performLogout(BuildContext context) async {
     final auth = AuthService();
     final result = await auth.logoutUser();
 
     if (context.mounted) {
       if (result["success"] == true) {
-        // Direct navigation to GoodbyeScreen without any dialog
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const GoodbyeScreen()),
-          (route) => false, // This removes all previous routes
+          (route) => false,
         );
       } else {
-        // Show error message if logout failed
-        _showErrorDialog(context, result["message"] ?? "Logout failed. Please try again.");
+        _showErrorDialog(
+          context,
+          result["message"] ?? "Logout failed. Please try again.",
+        );
       }
     }
   }
 
-  // Show Error Dialog if Logout Fails
+  // Premium Error Dialog with Sky Blue Theme
   void _showErrorDialog(BuildContext context, String message) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
+    final gradientColors = _getHeaderGradientColors(isDarkMode);
 
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(screenWidth * 0.04),
-        ),
-        backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
-        title: Row(
-          children: [
-            Icon(
-              Icons.error_rounded,
-              color: Colors.red,
-              size: screenWidth * 0.06,
-            ),
-            SizedBox(width: screenWidth * 0.03),
-            Text(
-              "Error",
-              style: TextStyle(
-                fontSize: screenWidth * 0.045,
-                fontWeight: FontWeight.w700,
-                color: isDarkMode ? Colors.white : Colors.grey[900],
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: screenWidth * 0.8,
+          padding: EdgeInsets.all(screenWidth * 0.05),
+          decoration: BoxDecoration(
+            color: isDarkMode ? slate : pureWhite,
+            borderRadius: BorderRadius.circular(screenWidth * 0.06),
+            border: Border.all(color: Colors.red.withOpacity(0.3), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.2),
+                blurRadius: 30,
+                spreadRadius: 5,
+                offset: const Offset(0, 10),
               ),
-            ),
-          ],
-        ),
-        content: Text(
-          message,
-          style: TextStyle(
-            fontSize: screenWidth * 0.038,
-            color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B6B), Color(0xFF556270)],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF6B6B).withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.white,
+                  size: screenWidth * 0.08,
+                ),
+              ),
+              SizedBox(height: screenWidth * 0.04),
+              Text(
+                "Error",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.06,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.red,
+                ),
+              ),
+              SizedBox(height: screenWidth * 0.02),
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.038,
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenWidth * 0.05),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: gradientColors),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      boxShadow: [
+                        BoxShadow(
+                          color: skyBlue.withOpacity(0.3),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        "OK",
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.blue,
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: screenWidth * 0.025,
-              ),
-            ),
-            child: Text(
-              "OK",
-              style: TextStyle(fontSize: screenWidth * 0.038),
-            ),
-          ),
-        ],
       ),
     );
   }

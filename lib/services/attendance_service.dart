@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'auth_service.dart';
 
 class AttendanceService {
   static const String baseUrl =
@@ -12,13 +11,6 @@ class AttendanceService {
     required DateTime start,
     required DateTime end,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final cookies = prefs.getStringList("cookies");
-
-    if (cookies==null || cookies.isEmpty) {
-      throw Exception("session expired");
-    }
-
     final df = DateFormat("yyyy-MM-dd");
 
     final formattedStart = "${df.format(start)} 00:00:00";
@@ -33,26 +25,25 @@ class AttendanceService {
         "&limit_page_length=1000";
 
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Cookie": cookies.join("; "),
-        },
-      );
+      final response = await AuthService.safeRequest(() {
+        return AuthService.client.get(
+          Uri.parse(url),
+          headers: AuthService().buildHeaders(isJson: true),
+        );
+      });
 
       if (response.statusCode != 200) {
-        throw Exception("Failed to fetch attendance: ${response.statusCode}");
+        throw Exception(
+            "Failed to fetch attendance: ${response.statusCode}");
       }
 
       final jsonData = jsonDecode(response.body);
-      
+
       if (jsonData["data"] == null) {
         return [];
       }
 
-      return jsonData["data"] as List;
+      return List<dynamic>.from(jsonData["data"]);
     } catch (e) {
       throw Exception("Attendance fetch error: $e");
     }

@@ -42,10 +42,21 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
   String? selectedLeaveType;
   String compOff = "NO";
 
+  // Sky Blue Color Palette - Matching all screens
+  static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE);  // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0);  // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0);    // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
   final List<Map<String, dynamic>> leaveTypes = [
-    {"code": "CL", "name": "Casual Leave", "color": Colors.blue, "icon": Icons.beach_access},
-    {"code": "SL", "name": "Sick Leave", "color": Colors.red, "icon": Icons.local_hospital},
-    {"code": "EL", "name": "Earned Leave", "color": Colors.green, "icon": Icons.work},
+    {"code": "CL", "name": "Casual Leave", "color": skyBlue, "icon": Icons.beach_access},
+    {"code": "SL", "name": "Sick Leave", "color": deepSky, "icon": Icons.local_hospital},
+    {"code": "EL", "name": "Earned Leave", "color": mediumSky, "icon": Icons.work},
     {"code": "UL", "name": "Unpaid Leave", "color": Colors.orange, "icon": Icons.money_off},
   ];
 
@@ -144,7 +155,7 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
     
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
-        systemNavigationBarColor: isDarkMode ? Colors.black : Colors.white,
+        systemNavigationBarColor: isDarkMode ? charcoal : pureWhite,
         systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
@@ -165,13 +176,13 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
         return Theme(
           data: theme.copyWith(
             colorScheme: ColorScheme.light(
-              primary: isDarkMode ? Colors.blue[300]! : const Color(0xFF2563EB),
+              primary: isDarkMode ? skyBlue : skyBlue,
               onPrimary: Colors.white,
-              surface: isDarkMode ? Colors.grey[800]! : Colors.white,
+              surface: isDarkMode ? slate : Colors.white,
               onSurface: isDarkMode ? Colors.white : Colors.black,
             ),
             dialogTheme: DialogThemeData(
-              backgroundColor: isDarkMode ? Colors.grey[800]! : Colors.white,
+              backgroundColor: isDarkMode ? slate : Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -348,7 +359,7 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
         fontWeight: FontWeight.w500,
       ),
       floatingLabelStyle: TextStyle(
-        color: isDarkMode ? Colors.blue[300]! : const Color(0xFF2563EB),
+        color: skyBlue,
         fontSize: width * 0.035,
         fontWeight: FontWeight.w600,
       ),
@@ -370,25 +381,25 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(width * 0.03),
         borderSide: BorderSide(
-          color: isDarkMode ? Colors.blue[400]! : const Color(0xFF2563EB),
+          color: skyBlue,
           width: 2.0,
         ),
       ),
       filled: true,
-      fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
+      fillColor: isDarkMode ? slate : offWhite,
       prefixIcon: icon != null
           ? Icon(
               icon,
               size: width * 0.05,
-              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              color: skyBlue,
             )
           : null,
-      prefixIconColor: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+      prefixIconColor: skyBlue,
       suffixIcon: label.contains("Date")
           ? Icon(
               Icons.calendar_today_rounded,
               size: width * 0.05,
-              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              color: skyBlue,
             )
           : null,
     );
@@ -414,18 +425,18 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
     final isDarkMode = mediaQuery.platformBrightness == Brightness.dark;
     final width = mediaQuery.size.width;
     final height = mediaQuery.size.height;
-    final backgroundColor = isDarkMode ? Colors.grey[900]! : const Color(0xFFF8FAFD);
-    final primaryColor = isDarkMode ? Colors.blue[300]! : const Color(0xFF2563EB);
-    final secondaryColor = isDarkMode ? Colors.blue[400]! : const Color(0xFF3B82F6);
+    final backgroundColor = isDarkMode ? charcoal : offWhite;
+    final primaryColor = skyBlue;
+    final secondaryColor = deepSky;
     final textColor = isDarkMode ? Colors.white : Colors.black;
-    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final cardColor = isDarkMode ? slate : pureWhite;
     final subtitleColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
-        systemNavigationBarColor: isDarkMode ? Colors.black : Colors.white,
+        systemNavigationBarColor: isDarkMode ? charcoal : pureWhite,
         systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
@@ -457,8 +468,8 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      primaryColor,
-                                      secondaryColor,
+                                      skyBlue,
+                                      deepSky,
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -469,7 +480,7 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
+                                      color: skyBlue.withOpacity(0.3),
                                       blurRadius: 20,
                                       spreadRadius: 1,
                                       offset: const Offset(0, 4),
@@ -633,7 +644,7 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                                 HapticFeedback.selectionClick();
                                                 setState(() => selectedLeaveType = leaveType["code"]);
                                               },
-                                              backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                                              backgroundColor: isDarkMode ? slate : Colors.grey[200],
                                               selectedColor: typeColor,
                                               side: BorderSide(
                                                 color: isSelected
@@ -766,16 +777,16 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                                   margin: EdgeInsets.symmetric(horizontal: width * 0.01),
                                                   padding: EdgeInsets.symmetric(vertical: height * 0.015),
                                                   decoration: BoxDecoration(
-                                                    color: isSelected ? primaryColor : Colors.transparent,
+                                                    color: isSelected ? skyBlue : Colors.transparent,
                                                     borderRadius: BorderRadius.circular(width * 0.025),
                                                     border: Border.all(
-                                                      color: primaryColor,
+                                                      color: skyBlue,
                                                       width: 2,
                                                     ),
                                                     boxShadow: isSelected
                                                         ? [
                                                             BoxShadow(
-                                                              color: primaryColor.withOpacity(0.3),
+                                                              color: skyBlue.withOpacity(0.3),
                                                               blurRadius: 10,
                                                               spreadRadius: 2,
                                                             ),
@@ -788,7 +799,7 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                                       Icon(
                                                         isSelected ? Icons.check_circle : Icons.circle_outlined,
                                                         size: width * 0.05,
-                                                        color: isSelected ? Colors.white : primaryColor,
+                                                        color: isSelected ? Colors.white : skyBlue,
                                                       ),
                                                       SizedBox(width: width * 0.02),
                                                       Text(
@@ -796,7 +807,7 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                                         style: TextStyle(
                                                           fontSize: width * 0.04,
                                                           fontWeight: FontWeight.w600,
-                                                          color: isSelected ? Colors.white : primaryColor,
+                                                          color: isSelected ? Colors.white : skyBlue,
                                                         ),
                                                       ),
                                                     ],
@@ -841,12 +852,12 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: _isLoading
                                                   ? Colors.grey.shade400
-                                                  : primaryColor,
+                                                  : skyBlue,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(width * 0.035),
                                               ),
                                               elevation: _isLoading ? 0 : 5,
-                                              shadowColor: primaryColor.withOpacity(0.5),
+                                              shadowColor: skyBlue.withOpacity(0.5),
                                             ),
                                             child: Stack(
                                               alignment: Alignment.center,
@@ -922,10 +933,10 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                           padding: EdgeInsets.all(width * 0.04),
                                           margin: EdgeInsets.only(top: height * 0.02),
                                           decoration: BoxDecoration(
-                                            color: primaryColor.withOpacity(0.1),
+                                            color: skyBlue.withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(width * 0.03),
                                             border: Border.all(
-                                              color: primaryColor.withOpacity(0.2),
+                                              color: skyBlue.withOpacity(0.2),
                                               width: 1.5,
                                             ),
                                           ),
@@ -934,7 +945,7 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                                               Icon(
                                                 Icons.info_outline_rounded,
                                                 size: width * 0.05,
-                                                color: primaryColor,
+                                                color: skyBlue,
                                               ),
                                               SizedBox(width: width * 0.03),
                                               Expanded(
@@ -1053,7 +1064,7 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
                             child: Text(
                               "Apply Another Leave",
                               style: TextStyle(
-                                color: primaryColor,
+                                color: skyBlue,
                                 fontSize: width * 0.038,
                                 fontWeight: FontWeight.w600,
                               ),

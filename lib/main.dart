@@ -150,6 +150,7 @@ class MyApp extends StatelessWidget {
         '/leaveBalaneceScreen': (_) => const LeaveBalanceScreen(),
         '/checkMore': (_) => const CheckMore(),
         '/leaveApprovalScreen': (_) => const LeaveApprovalScreen(),
+        '/profilescreen': (_) => const Profilescreen(),
       },
 
       onUnknownRoute: (_) =>

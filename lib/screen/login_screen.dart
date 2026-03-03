@@ -7,6 +7,7 @@ import 'package:management_app/screen/setting_screen.dart';
 import 'package:management_app/services/auth_service.dart';
 import 'package:management_app/utils/checkuser_util.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,14 +16,14 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> 
+class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isloading = false;
   bool _isPasswordVisible = false;
-  
+
   // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _fadeInAnimation;
@@ -32,36 +33,31 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    
+
     _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-    
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
     _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutBack,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
     );
-    
+
     _animationController.forward();
   }
 
@@ -71,6 +67,23 @@ class _LoginScreenState extends State<LoginScreen>
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  // ================= ERROR DIALOG HELPER =================
+  void _showErrorDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -106,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen>
     final borderColor = isDarkMode ? Colors.grey[700] : Colors.grey.shade300;
     final focusedBorderColor = isDarkMode
         ? Colors.blue[300]!
-        : const Color(0xFF2563EB); 
+        : const Color(0xFF2563EB);
     final dividerColor = isDarkMode ? Colors.grey[700] : Colors.grey.shade400;
     final dialogBgColor = isDarkMode ? Colors.grey[800] : Colors.white;
     final dialogTextColor = isDarkMode ? Colors.white : Colors.black;
@@ -164,7 +177,8 @@ class _LoginScreenState extends State<LoginScreen>
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => const SettingsScreen(),
+                                        builder: (context) =>
+                                            const SettingsScreen(),
                                       ),
                                     );
                                   },
@@ -181,16 +195,13 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
 
                             SizedBox(height: responsiveHeight(0.05)),
-                            
-                            // Welcome Text with Shimmer Effect
+
+                            // Welcome Text
                             TweenAnimationBuilder(
                               tween: Tween<double>(begin: 0, end: 1),
                               duration: const Duration(milliseconds: 800),
                               builder: (context, double value, child) {
-                                return Opacity(
-                                  opacity: value,
-                                  child: child,
-                                );
+                                return Opacity(opacity: value, child: child);
                               },
                               child: Align(
                                 alignment: Alignment.centerLeft,
@@ -223,8 +234,8 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
 
                             SizedBox(height: responsiveHeight(0.07)),
-                            
-                            // Email Field with Animation
+
+                            // Email Field
                             TweenAnimationBuilder(
                               tween: Tween<double>(begin: 0, end: 1),
                               duration: const Duration(milliseconds: 600),
@@ -232,10 +243,7 @@ class _LoginScreenState extends State<LoginScreen>
                               builder: (context, double value, child) {
                                 return Transform.translate(
                                   offset: Offset(0, 20 * (1 - value)),
-                                  child: Opacity(
-                                    opacity: value,
-                                    child: child,
-                                  ),
+                                  child: Opacity(opacity: value, child: child),
                                 );
                               },
                               child: Container(
@@ -277,7 +285,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       fontSize: responsiveFontSize(14),
                                     ),
                                     prefixIcon: Container(
-                                      padding: EdgeInsets.all(responsiveWidth(0.02)),
+                                      padding: EdgeInsets.all(
+                                        responsiveWidth(0.02),
+                                      ),
                                       child: Icon(
                                         Icons.email_rounded,
                                         size: responsiveFontSize(20),
@@ -296,7 +306,8 @@ class _LoginScreenState extends State<LoginScreen>
                                         responsiveWidth(0.04),
                                       ),
                                       borderSide: BorderSide(
-                                        color: borderColor ?? Colors.grey.shade300,
+                                        color:
+                                            borderColor ?? Colors.grey.shade300,
                                         width: 1.5,
                                       ),
                                     ),
@@ -310,8 +321,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                     ),
                                     filled: true,
-                                    fillColor: isDarkMode 
-                                        ? Colors.grey[800] 
+                                    fillColor: isDarkMode
+                                        ? Colors.grey[800]
                                         : Colors.grey.shade50,
                                   ),
                                   validator: (value) {
@@ -329,10 +340,10 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                             ),
-                            
+
                             SizedBox(height: responsiveHeight(0.042)),
-                            
-                            // Password Field with Animation
+
+                            // Password Field
                             TweenAnimationBuilder(
                               tween: Tween<double>(begin: 0, end: 1),
                               duration: const Duration(milliseconds: 600),
@@ -340,10 +351,7 @@ class _LoginScreenState extends State<LoginScreen>
                               builder: (context, double value, child) {
                                 return Transform.translate(
                                   offset: Offset(0, 20 * (1 - value)),
-                                  child: Opacity(
-                                    opacity: value,
-                                    child: child,
-                                  ),
+                                  child: Opacity(opacity: value, child: child),
                                 );
                               },
                               child: Container(
@@ -386,7 +394,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       fontSize: responsiveFontSize(14),
                                     ),
                                     prefixIcon: Container(
-                                      padding: EdgeInsets.all(responsiveWidth(0.02)),
+                                      padding: EdgeInsets.all(
+                                        responsiveWidth(0.02),
+                                      ),
                                       child: Icon(
                                         Icons.lock_rounded,
                                         size: responsiveFontSize(20),
@@ -403,7 +413,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       onPressed: () {
                                         HapticFeedback.selectionClick();
                                         setState(() {
-                                          _isPasswordVisible = !_isPasswordVisible;
+                                          _isPasswordVisible =
+                                              !_isPasswordVisible;
                                         });
                                       },
                                     ),
@@ -418,7 +429,8 @@ class _LoginScreenState extends State<LoginScreen>
                                         responsiveWidth(0.04),
                                       ),
                                       borderSide: BorderSide(
-                                        color: borderColor ?? Colors.grey.shade300,
+                                        color:
+                                            borderColor ?? Colors.grey.shade300,
                                         width: 1.5,
                                       ),
                                     ),
@@ -432,29 +444,27 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                     ),
                                     filled: true,
-                                    fillColor: isDarkMode 
-                                        ? Colors.grey[800] 
+                                    fillColor: isDarkMode
+                                        ? Colors.grey[800]
                                         : Colors.grey.shade50,
                                   ),
-                                  validator: (value) => (value == null || value.isEmpty)
+                                  validator: (value) =>
+                                      (value == null || value.isEmpty)
                                       ? "Password required"
                                       : null,
                                 ),
                               ),
                             ),
-                            
+
                             SizedBox(height: responsiveHeight(0.02)),
-                            
-                            // Forgot Password with Animation
+
+                            // Forgot Password
                             TweenAnimationBuilder(
                               tween: Tween<double>(begin: 0, end: 1),
                               duration: const Duration(milliseconds: 600),
                               curve: Curves.easeOut,
                               builder: (context, double value, child) {
-                                return Opacity(
-                                  opacity: value,
-                                  child: child,
-                                );
+                                return Opacity(opacity: value, child: child);
                               },
                               child: GestureDetector(
                                 onTap: () {
@@ -475,7 +485,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       borderRadius: BorderRadius.circular(20),
                                       color: isDarkMode
                                           ? Colors.transparent
-                                          : focusedBorderColor.withOpacity(0.05),
+                                          : focusedBorderColor.withOpacity(
+                                              0.05,
+                                            ),
                                     ),
                                     child: Text(
                                       "Forgot password?",
@@ -491,10 +503,10 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                             ),
-                            
+
                             SizedBox(height: responsiveHeight(0.04)),
-                            
-                            // Login Button with Gradient and Animation
+
+                            // ========== LOGIN BUTTON (FIXED) ==========
                             TweenAnimationBuilder(
                               tween: Tween<double>(begin: 0, end: 1),
                               duration: const Duration(milliseconds: 600),
@@ -513,12 +525,18 @@ class _LoginScreenState extends State<LoginScreen>
                                   gradient: LinearGradient(
                                     colors: isDarkMode
                                         ? [Colors.blue[600]!, Colors.blue[800]!]
-                                        : [const Color(0xFF2563EB), const Color(0xFF3B82F6)],
+                                        : [
+                                            const Color(0xFF2563EB),
+                                            const Color(0xFF3B82F6),
+                                          ],
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: (isDarkMode ? Colors.blue[900]! : Colors.blue[500]!)
-                                          .withOpacity(0.4),
+                                      color:
+                                          (isDarkMode
+                                                  ? Colors.blue[900]!
+                                                  : Colors.blue[500]!)
+                                              .withOpacity(0.4),
                                       blurRadius: 15,
                                       offset: const Offset(0, 8),
                                     ),
@@ -529,108 +547,126 @@ class _LoginScreenState extends State<LoginScreen>
                                       ? null
                                       : () async {
                                           HapticFeedback.mediumImpact();
-                                          if (!_formKey.currentState!.validate()) {
+                                          if (!_formKey.currentState!
+                                              .validate()) {
                                             return;
                                           }
                                           setState(() => _isloading = true);
 
                                           try {
                                             final auth = AuthService();
-                                            final response = await auth.loginUser(
-                                              email: _emailController.text.trim(),
-                                              password: _passwordController.text.trim(),
+                                            final response = await auth
+                                                .loginUser(
+                                                  email: _emailController.text
+                                                      .trim(),
+                                                  password: _passwordController
+                                                      .text
+                                                      .trim(),
+                                                );
+
+                                            print(
+                                              "📱 Login Screen Response: $response",
                                             );
 
-                                            String title = "";
-                                            String content = "";
-                                            bool loginSuccess = false;
-
                                             if (response["success"] == true) {
-                                              title = "Success";
-                                              content =
-                                                  "Welcome, ${response["full_name"]}!";
-                                              loginSuccess = true;
+                                              final prefs =
+                                                  await SharedPreferences.getInstance();
+                                              await prefs.setString(
+                                                'userEmail',
+                                                _emailController.text.trim(),
+                                              );
+                                              print(
+                                                "✅ User Email saved: ${_emailController.text.trim()}",
+                                              );
 
+                                              // 🔥 CLEAR OLD CACHE
                                               final profileProvider =
                                                   Provider.of<ProfileProvider>(
                                                     context,
                                                     listen: false,
                                                   );
-                                              await profileProvider.loadProfile();
-
-                                              final email =
-                                                  profileProvider.profileData?["email"];
-                                              if (email != null) {
-                                                await Provider.of<EmployeeProvider>(
-                                                  context,
-                                                  listen: false,
-                                                ).fetchAndSaveEmployeeId(email);
-                                              }
-
-                                              String route =
-                                                  response["home_page"] ?? "/homeScreen";
-                                              switch (route) {
-                                                case "/app/home":
-                                                case "/app":
-                                                case "/desk":
-                                                case "/app/overview":
-                                                  route = "/homeScreen";
-                                                  break;
-                                                default:
-                                                  if (route.isEmpty) {
-                                                    route = "/homeScreen";
-                                                  }
-                                              }
-
-                                              String employeeId =
-                                                  response["employee_id"] ?? "";
-                                              String? sid;
-                                              if (AuthService.cookies.isNotEmpty) {
-                                                try {
-                                                  sid = AuthService.cookies
-                                                      .firstWhere(
-                                                        (c) => c.startsWith("sid="),
-                                                      )
-                                                      .replaceAll("sid=", "")
-                                                      .trim();
-                                                } catch (_) {}
-                                              }
+                                              await profileProvider
+                                                  .clearProfileCache();
+                                              // 🔥 FIXED: Pehle login status save karo
+                                              String? sid = response["sid"];
+                                              List<String> cookies =
+                                                  response["cookies"] ?? [];
+                                              String email =
+                                                  response["email"] ??
+                                                  _emailController.text.trim();
+                                              String fullName =
+                                                  response["full_name"] ??
+                                                  email.split('@')[0];
 
                                               await CheckuserUtils.saveloginStatus(
-                                                route: route,
-                                                employeeId: employeeId,
-                                                userName: response["email"] ?? email,
+                                                route: "/homeScreen",
+                                                employeeId:
+                                                    "", // Employee ID baad mein fetch karenge
+                                                userName: fullName,
                                                 authToken: sid,
-                                                cookies: AuthService.cookies,
+                                                cookies: cookies,
                                               );
 
-                                              setState(() => _isloading = false);
+                                              // 🔥 Ab profile load karo
+                                              try {
+                                                final profileProvider =
+                                                    Provider.of<
+                                                      ProfileProvider
+                                                    >(context, listen: false);
+                                                await profileProvider
+                                                    .loadProfile();
+                                              } catch (e) {
+                                                print("Profile load error: $e");
+                                              }
 
+                                              // 🔥 Employee ID fetch karo
+                                              try {
+                                                if (email.isNotEmpty) {
+                                                  await Provider.of<
+                                                        EmployeeProvider
+                                                      >(context, listen: false)
+                                                      .fetchAndSaveEmployeeId(
+                                                        email,
+                                                      );
+                                                }
+                                              } catch (e) {
+                                                print(
+                                                  "Employee fetch error: $e",
+                                                );
+                                              }
+
+                                              setState(
+                                                () => _isloading = false,
+                                              );
+
+                                              // 🔥 Success Dialog
                                               WidgetsBinding.instance.addPostFrameCallback((
                                                 _,
                                               ) {
                                                 showDialog(
                                                   context: context,
                                                   barrierDismissible: false,
-                                                  barrierColor: Colors.black.withOpacity(0.5),
                                                   builder: (dialogContext) {
-                                                    if (loginSuccess) {
-                                                      Future.delayed(
-                                                        const Duration(seconds: 2),
-                                                        () {
-                                                          if (mounted) {
-                                                            // ignore: use_build_context_synchronously
-                                                            Navigator.pop(dialogContext);
-                                                            Navigator.pushReplacementNamed(
-                                                              context,
-                                                              route,
-                                                            );
-                                                          }
-                                                        },
-                                                      );
-                                                    }
+                                                    Future.delayed(
+                                                      const Duration(
+                                                        seconds: 2,
+                                                      ),
+                                                      () {
+                                                        if (mounted) {
+                                                          Navigator.pop(
+                                                            dialogContext,
+                                                          );
+                                                          Navigator.pushReplacementNamed(
+                                                            context,
+                                                            "/homeScreen",
+                                                          );
+                                                        }
+                                                      },
+                                                    );
+
                                                     return Dialog(
-                                                      backgroundColor: Colors.transparent,
+                                                      backgroundColor:
+                                                          Colors.transparent,
                                                       elevation: 0,
                                                       child: Container(
                                                         padding: EdgeInsets.all(
@@ -638,66 +674,115 @@ class _LoginScreenState extends State<LoginScreen>
                                                         ),
                                                         decoration: BoxDecoration(
                                                           color: dialogBgColor,
-                                                          borderRadius: BorderRadius.circular(
-                                                            responsiveWidth(0.06),
-                                                          ),
-                                                          boxShadow: [
-                                                            BoxShadow(
-                                                              color: Colors.black.withOpacity(0.2),
-                                                              blurRadius: 30,
-                                                              spreadRadius: 5,
-                                                            ),
-                                                          ],
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                responsiveWidth(
+                                                                  0.06,
+                                                                ),
+                                                              ),
                                                         ),
                                                         child: Column(
-                                                          mainAxisSize: MainAxisSize.min,
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
                                                           children: [
-                                                            AnimatedContainer(
-                                                              duration: const Duration(milliseconds: 500),
-                                                              curve: Curves.elasticOut,
-                                                              width: responsiveWidth(0.15),
-                                                              height: responsiveWidth(0.15),
+                                                            Container(
+                                                              width:
+                                                                  responsiveWidth(
+                                                                    0.15,
+                                                                  ),
+                                                              height:
+                                                                  responsiveWidth(
+                                                                    0.15,
+                                                                  ),
                                                               decoration: BoxDecoration(
-                                                                shape: BoxShape.circle,
-                                                                color: Colors.green.withOpacity(0.1),
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                                color: Colors
+                                                                    .green
+                                                                    .withOpacity(
+                                                                      0.1,
+                                                                    ),
                                                                 border: Border.all(
-                                                                  color: Colors.green,
+                                                                  color: Colors
+                                                                      .green,
                                                                   width: 3,
                                                                 ),
                                                               ),
                                                               child: Icon(
-                                                                Icons.check_circle_rounded,
-                                                                size: responsiveWidth(0.08),
-                                                                color: Colors.green,
+                                                                Icons
+                                                                    .check_circle_rounded,
+                                                                size:
+                                                                    responsiveWidth(
+                                                                      0.08,
+                                                                    ),
+                                                                color: Colors
+                                                                    .green,
                                                               ),
                                                             ),
-                                                            SizedBox(height: responsiveHeight(0.02)),
-                                                            Text(
-                                                              title,
-                                                              style: TextStyle(
-                                                                fontSize: responsiveFontSize(20),
-                                                                fontWeight: FontWeight.w700,
-                                                                color: dialogTextColor,
-                                                              ),
-                                                            ),
-                                                            SizedBox(height: responsiveHeight(0.01)),
-                                                            Text(
-                                                              content,
-                                                              textAlign: TextAlign.center,
-                                                              style: TextStyle(
-                                                                fontSize: responsiveFontSize(14),
-                                                                color: isDarkMode
-                                                                    ? Colors.grey[300]
-                                                                    : Colors.grey.shade700,
-                                                              ),
-                                                            ),
-                                                            SizedBox(height: responsiveHeight(0.03)),
                                                             SizedBox(
-                                                              width: responsiveWidth(0.1),
-                                                              height: responsiveWidth(0.1),
+                                                              height:
+                                                                  responsiveHeight(
+                                                                    0.02,
+                                                                  ),
+                                                            ),
+                                                            Text(
+                                                              "Success",
+                                                              style: TextStyle(
+                                                                fontSize:
+                                                                    responsiveFontSize(
+                                                                      20,
+                                                                    ),
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color:
+                                                                    dialogTextColor,
+                                                              ),
+                                                            ),
+                                                            SizedBox(
+                                                              height:
+                                                                  responsiveHeight(
+                                                                    0.01,
+                                                                  ),
+                                                            ),
+                                                            Text(
+                                                              "Welcome, $fullName!",
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style: TextStyle(
+                                                                fontSize:
+                                                                    responsiveFontSize(
+                                                                      14,
+                                                                    ),
+                                                                color:
+                                                                    isDarkMode
+                                                                    ? Colors
+                                                                          .grey[300]
+                                                                    : Colors
+                                                                          .grey
+                                                                          .shade700,
+                                                              ),
+                                                            ),
+                                                            SizedBox(
+                                                              height:
+                                                                  responsiveHeight(
+                                                                    0.03,
+                                                                  ),
+                                                            ),
+                                                            SizedBox(
+                                                              width:
+                                                                  responsiveWidth(
+                                                                    0.1,
+                                                                  ),
+                                                              height:
+                                                                  responsiveWidth(
+                                                                    0.1,
+                                                                  ),
                                                               child: CircularProgressIndicator(
                                                                 strokeWidth: 3,
-                                                                color: focusedBorderColor,
+                                                                color:
+                                                                    focusedBorderColor,
                                                               ),
                                                             ),
                                                           ],
@@ -707,221 +792,46 @@ class _LoginScreenState extends State<LoginScreen>
                                                   },
                                                 );
                                               });
-                                            } else if (response["exc_type"] ==
-                                                "DoesNotExistError") {
-                                              title = "Login Failed";
-                                              content = "User not found!";
-                                              setState(() => _isloading = false);
-                                            } else if (response["exc_type"] ==
-                                                "AuthenticationError") {
-                                              title = "Invalid Credentials";
-                                              content = "Incorrect password.";
-                                              setState(() => _isloading = false);
                                             } else {
-                                              title = "Error";
-                                              content =
-                                                  response["message"] ??
-                                                  "Something went wrong";
-                                              setState(() => _isloading = false);
-                                            }
+                                              setState(
+                                                () => _isloading = false,
+                                              );
 
-                                            if (!loginSuccess) {
-                                              WidgetsBinding.instance
-                                                  .addPostFrameCallback((_) {
-                                                    showDialog(
-                                                      context: context,
-                                                      builder: (_) => Dialog(
-                                                        backgroundColor: Colors.transparent,
-                                                        elevation: 0,
-                                                        child: Container(
-                                                          padding: EdgeInsets.all(
-                                                            responsiveWidth(0.06),
-                                                          ),
-                                                          decoration: BoxDecoration(
-                                                            color: dialogBgColor,
-                                                            borderRadius: BorderRadius.circular(
-                                                              responsiveWidth(0.06),
-                                                            ),
-                                                            boxShadow: [
-                                                              BoxShadow(
-                                                                color: Colors.black.withOpacity(0.2),
-                                                                blurRadius: 30,
-                                                                spreadRadius: 5,
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          child: Column(
-                                                            mainAxisSize: MainAxisSize.min,
-                                                            children: [
-                                                              Container(
-                                                                width: responsiveWidth(0.15),
-                                                                height: responsiveWidth(0.15),
-                                                                decoration: BoxDecoration(
-                                                                  shape: BoxShape.circle,
-                                                                  color: Colors.red.withOpacity(0.1),
-                                                                  border: Border.all(
-                                                                    color: Colors.red,
-                                                                    width: 3,
-                                                                  ),
-                                                                ),
-                                                                child: Icon(
-                                                                  Icons.error_outline_rounded,
-                                                                  size: responsiveWidth(0.08),
-                                                                  color: Colors.red,
-                                                                ),
-                                                              ),
-                                                              SizedBox(height: responsiveHeight(0.02)),
-                                                              Text(
-                                                                title,
-                                                                style: TextStyle(
-                                                                  fontSize: responsiveFontSize(18),
-                                                                  fontWeight: FontWeight.w700,
-                                                                  color: dialogTextColor,
-                                                                ),
-                                                              ),
-                                                              SizedBox(height: responsiveHeight(0.01)),
-                                                              Text(
-                                                                content,
-                                                                textAlign: TextAlign.center,
-                                                                style: TextStyle(
-                                                                  fontSize: responsiveFontSize(14),
-                                                                  color: isDarkMode
-                                                                      ? Colors.grey[300]
-                                                                      : Colors.grey.shade700,
-                                                                ),
-                                                              ),
-                                                              SizedBox(height: responsiveHeight(0.03)),
-                                                              SizedBox(
-                                                                width: double.infinity,
-                                                                child: ElevatedButton(
-                                                                  onPressed: () => Navigator.pop(context),
-                                                                  style: ElevatedButton.styleFrom(
-                                                                    backgroundColor: Colors.red,
-                                                                    shape: RoundedRectangleBorder(
-                                                                      borderRadius: BorderRadius.circular(
-                                                                        responsiveWidth(0.03),
-                                                                      ),
-                                                                    ),
-                                                                    padding: EdgeInsets.symmetric(
-                                                                      vertical: responsiveHeight(0.015),
-                                                                    ),
-                                                                  ),
-                                                                  child: Text(
-                                                                    "Try Again",
-                                                                    style: TextStyle(
-                                                                      fontSize: responsiveFontSize(16),
-                                                                      fontWeight: FontWeight.w600,
-                                                                      color: Colors.white,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    );
-                                                  });
+                                              String errorMsg =
+                                                  response["message"] ??
+                                                  "Login failed";
+                                              if (errorMsg.contains(
+                                                "User not found",
+                                              )) {
+                                                _showErrorDialog(
+                                                  context,
+                                                  "Login Failed",
+                                                  "User not found!",
+                                                );
+                                              } else if (errorMsg.contains(
+                                                "Incorrect password",
+                                              )) {
+                                                _showErrorDialog(
+                                                  context,
+                                                  "Invalid Credentials",
+                                                  "Incorrect password.",
+                                                );
+                                              } else {
+                                                _showErrorDialog(
+                                                  context,
+                                                  "Error",
+                                                  errorMsg,
+                                                );
+                                              }
                                             }
                                           } catch (e) {
                                             setState(() => _isloading = false);
-                                            WidgetsBinding.instance.addPostFrameCallback((
-                                              _,
-                                            ) {
-                                              showDialog(
-                                                context: context,
-                                                builder: (_) => Dialog(
-                                                  backgroundColor: Colors.transparent,
-                                                  elevation: 0,
-                                                  child: Container(
-                                                    padding: EdgeInsets.all(
-                                                      responsiveWidth(0.06),
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: dialogBgColor,
-                                                      borderRadius: BorderRadius.circular(
-                                                        responsiveWidth(0.06),
-                                                      ),
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors.black.withOpacity(0.2),
-                                                          blurRadius: 30,
-                                                          spreadRadius: 5,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    child: Column(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Container(
-                                                          width: responsiveWidth(0.15),
-                                                          height: responsiveWidth(0.15),
-                                                          decoration: BoxDecoration(
-                                                            shape: BoxShape.circle,
-                                                            color: Colors.orange.withOpacity(0.1),
-                                                            border: Border.all(
-                                                              color: Colors.orange,
-                                                              width: 3,
-                                                            ),
-                                                          ),
-                                                          child: Icon(
-                                                            Icons.wifi_off_rounded,
-                                                            size: responsiveWidth(0.08),
-                                                            color: Colors.orange,
-                                                          ),
-                                                        ),
-                                                        SizedBox(height: responsiveHeight(0.02)),
-                                                        Text(
-                                                          "Network Error",
-                                                          style: TextStyle(
-                                                            fontSize: responsiveFontSize(18),
-                                                            fontWeight: FontWeight.w700,
-                                                            color: dialogTextColor,
-                                                          ),
-                                                        ),
-                                                        SizedBox(height: responsiveHeight(0.01)),
-                                                        Text(
-                                                          "Please check your internet connection",
-                                                          textAlign: TextAlign.center,
-                                                          style: TextStyle(
-                                                            fontSize: responsiveFontSize(14),
-                                                            color: isDarkMode
-                                                                ? Colors.grey[300]
-                                                                : Colors.grey.shade700,
-                                                          ),
-                                                        ),
-                                                        SizedBox(height: responsiveHeight(0.03)),
-                                                        SizedBox(
-                                                          width: double.infinity,
-                                                          child: ElevatedButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            style: ElevatedButton.styleFrom(
-                                                              backgroundColor: Colors.orange,
-                                                              shape: RoundedRectangleBorder(
-                                                                borderRadius: BorderRadius.circular(
-                                                                  responsiveWidth(0.03),
-                                                                ),
-                                                              ),
-                                                              padding: EdgeInsets.symmetric(
-                                                                vertical: responsiveHeight(0.015),
-                                                              ),
-                                                            ),
-                                                            child: Text(
-                                                              "OK",
-                                                              style: TextStyle(
-                                                                fontSize: responsiveFontSize(16),
-                                                                fontWeight: FontWeight.w600,
-                                                                color: Colors.white,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            });
+                                            print("❌ Exception: $e");
+                                            _showErrorDialog(
+                                              context,
+                                              "Network Error",
+                                              "Please check your internet connection\nError: $e",
+                                            );
                                           }
                                         },
                                   style: ElevatedButton.styleFrom(
@@ -941,26 +851,33 @@ class _LoginScreenState extends State<LoginScreen>
                                       ? SizedBox(
                                           height: responsiveHeight(0.03),
                                           width: responsiveHeight(0.03),
-                                          child: const CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                          ),
+                                          child:
+                                              const CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(Colors.white),
+                                              ),
                                         )
                                       : Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Icon(
                                               Icons.login_rounded,
                                               size: responsiveFontSize(20),
                                               color: Colors.white,
                                             ),
-                                            SizedBox(width: responsiveWidth(0.02)),
+                                            SizedBox(
+                                              width: responsiveWidth(0.02),
+                                            ),
                                             Text(
                                               "Login",
                                               style: TextStyle(
-                                                fontSize: responsiveFontSize(18),
+                                                fontSize: responsiveFontSize(
+                                                  18,
+                                                ),
                                                 fontWeight: FontWeight.w700,
                                                 color: Colors.white,
                                                 letterSpacing: 0.5,
@@ -973,17 +890,14 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
 
                             SizedBox(height: responsiveHeight(0.1)),
-                            
-                            // Footer with Animation
+
+                            // Footer
                             TweenAnimationBuilder(
                               tween: Tween<double>(begin: 0, end: 1),
                               duration: const Duration(milliseconds: 600),
                               curve: Curves.easeOut,
                               builder: (context, double value, child) {
-                                return Opacity(
-                                  opacity: value,
-                                  child: child,
-                                );
+                                return Opacity(opacity: value, child: child);
                               },
                               child: Column(
                                 children: [

@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:management_app/providers/profile_provider.dart';
+import 'package:management_app/services/auth_service.dart';
+import 'package:management_app/services/leave_balance_service.dart'; // ✅ Added import
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:management_app/services/leave_approved_service.dart';
@@ -19,23 +21,31 @@ class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final bool _isLoading = false;
   int currentIndex = 0;
-  late bool _isDarkMode;
   late AnimationController _bannerController;
   late AnimationController _greetingController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  late AnimationController _statsAnimationController;
+
+  // For button press feedback
+  int _pressedModuleIndex = -1;
 
   String _greetingMessage = "";
   IconData _greetingIcon = Icons.wb_sunny;
 
-  // Accurate Stats - Only totals, no pending
   Map<String, dynamic> _stats = {
     'leaveBalance': 0,
     'activeAdvances': 0,
     'totalLeaves': 0,
     'totalTravel': 0,
     'totalRequests': 0,
+    'pendingRequests': 0,
+    'approvedRequests': 0,
   };
+
+  // ✅ New variables for leave balance details
+  Map<String, dynamic> _leaveDetails = {};
+  double _totalAllocated = 0;
+  double _totalTaken = 0;
+  double _totalRemaining = 0;
 
   bool _isLoadingStats = true;
   String _employeeId = "";
@@ -51,58 +61,176 @@ class _DashboardScreenState extends State<DashboardScreen>
     'assets/images/banner7.jpg',
   ];
 
-  // Clean modules without any stats
-  final List<Map<String, dynamic>> modules = [
+  // Sky Blue Color Palette - Fresh and Professional
+  static const Color skyBlue = Color(0xFF87CEEB); // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE); // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0); // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0); // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+
+  // ✅ Updated Quick Stats Cards with new leave balance cards
+  final List<Map<String, dynamic>> quickStatsCards = [
     {
-      'title': 'Leave Request',
-      'subtitle': 'Apply for leave and manage your requests',
-      'image': 'assets/images/leaverequest.png',
-      'type': 'Leave_Request',
+      'title': 'Total Requests',
+      'value': '0',
+      'icon': Icons.assignment_rounded,
+      'bgPattern': Icons.assignment_turned_in_rounded,
+      'subtitle': 'All requests',
+      'color': skyBlue,
+    },
+    {
+      'title': 'Leave Requests',
+      'value': '0',
+      'icon': Icons.beach_access_rounded,
+      'bgPattern': Icons.waves_rounded,
+      'subtitle': 'Total leaves',
+      'color': skyBlue,
+    },
+    {
+      'title': 'Travel Requests',
+      'value': '0',
+      'icon': Icons.flight_rounded,
+      'bgPattern': Icons.public_rounded,
+      'subtitle': 'Total travels',
+      'color': skyBlue,
+    },
+    // ✅ New Leave Balance Cards
+    {
+      'title': 'Allocated Leave',
+      'value': '0',
+      'icon': Icons.card_giftcard_rounded,
+      'bgPattern': Icons.event_available_rounded,
+      'subtitle': 'Total allocated',
+      'unit': 'days',
       'color': Colors.blue,
     },
     {
-      'title': 'Employee Advance',
-      'subtitle': 'Request salary advance and track status',
-      'image': 'assets/images/leaverequest.png',
-      'type': 'employee_Advance',
-      'color': Colors.green,
-    },
-    {
-      'title': 'Request Approval',
-      'subtitle': 'Approve or reject pending requests',
-      'image': 'assets/images/leaveapproved.png',
-      'type': 'Leave_Approval',
-      'color': Colors.amber,
-    },
-    {
-      'title': 'Attendance',
-      'subtitle': 'Mark attendance and request corrections',
-      'image': 'assets/images/attendanceicon.png',
-      'type': 'Attendance_request',
-      'color': Colors.purple,
-    },
-    {
-      'title': 'Travel Request',
-      'subtitle': 'Submit and manage travel requests',
-      'image': 'assets/images/travel.png',
-      'type': 'Travel_request',
+      'title': 'Taken Leave',
+      'value': '0',
+      'icon': Icons.event_busy_rounded,
+      'bgPattern': Icons.cancel_rounded,
+      'subtitle': 'Leaves taken',
+      'unit': 'days',
       'color': Colors.orange,
     },
     {
-      'title': 'Leave Balance',
-      'subtitle': 'Check your leave balance and history',
-      'image': 'assets/images/leavebalence.png',
-      'type': 'Leave_Balance',
-      'color': Colors.red,
+      'title': 'Remaining Leave',
+      'value': '0',
+      'icon': Icons.account_balance_wallet_rounded,
+      'bgPattern': Icons.timer_rounded,
+      'subtitle': 'Balance available',
+      'unit': 'days',
+      'color': Colors.green,
     },
     {
-      'title': 'More',
-      'subtitle': 'Access additional features and tools',
-      'image': 'assets/images/more.png',
-      'type': 'Check_More',
+      'title': 'Pending',
+      'value': '0',
+      'icon': Icons.pending_actions_rounded,
+      'bgPattern': Icons.hourglass_empty_rounded,
+      'subtitle': 'Awaiting approval',
+      'color': Colors.purple,
+    },
+    {
+      'title': 'Approved',
+      'value': '0',
+      'icon': Icons.check_circle_rounded,
+      'bgPattern': Icons.verified_rounded,
+      'subtitle': 'Completed',
       'color': Colors.teal,
     },
   ];
+
+  // Quick Access Modules with sky blue theme
+  final List<Map<String, dynamic>> modules = [
+    {
+      'title': 'Leave Request',
+      'subtitle': 'Apply for leave',
+      'icon': Icons.beach_access_rounded,
+      'bgPattern': Icons.waves_rounded,
+      'type': 'Leave_Request',
+      'route': '/leaveRequest',
+    },
+    {
+      'title': 'Employee Advance',
+      'subtitle': 'Request advance',
+      'icon': Icons.attach_money_rounded,
+      'bgPattern': Icons.trending_up_rounded,
+      'type': 'employee_Advance',
+      'route': '/employeeAdvance',
+    },
+    {
+      'title': 'Request Approval',
+      'subtitle': 'Approve requests',
+      'icon': Icons.approval_rounded,
+      'bgPattern': Icons.how_to_reg_rounded,
+      'type': 'Leave_Approval',
+      'route': '/leaveApprovalScreen',
+    },
+    {
+      'title': 'Attendance',
+      'subtitle': 'Mark attendance',
+      'icon': Icons.fingerprint_rounded,
+      'bgPattern': Icons.schedule_rounded,
+      'type': 'Attendance_request',
+      'route': '/attendanceRequest',
+    },
+    {
+      'title': 'Travel Request',
+      'subtitle': 'Plan travel',
+      'icon': Icons.flight_rounded,
+      'bgPattern': Icons.explore_rounded,
+      'type': 'Travel_request',
+      'route': '/travelRequest',
+    },
+    {
+      'title': 'Leave Balance',
+      'subtitle': 'Check balance',
+      'icon': Icons.account_balance_wallet_rounded,
+      'bgPattern': Icons.timer_rounded,
+      'type': 'Leave_Balance',
+      'route': '/leaveBalaneceScreen',
+    },
+    {
+      'title': 'More',
+      'subtitle': 'Additional features',
+      'icon': Icons.apps_rounded,
+      'bgPattern': Icons.more_horiz_rounded,
+      'type': 'Check_More',
+      'route': '/checkMore',
+    },
+  ];
+
+  // Theme-aware colors with sky blue
+  Color _getBackgroundColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? charcoal
+        : offWhite;
+  }
+
+  Color _getSurfaceColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? slate : pureWhite;
+  }
+
+  Color _getTextPrimaryColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? pureWhite
+        : charcoal;
+  }
+
+  Color _getTextSecondaryColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+  }
+
+  Color _getBorderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+  }
 
   @override
   void initState() {
@@ -119,20 +247,15 @@ class _DashboardScreenState extends State<DashboardScreen>
       duration: const Duration(milliseconds: 600),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _greetingController, curve: Curves.easeIn),
+    _statsAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
     );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-          CurvedAnimation(parent: _greetingController, curve: Curves.easeOut),
-        );
 
     _updateGreeting();
     _startBannerAnimation();
     _greetingController.forward();
 
-    // Load employee data and fetch stats
     _loadEmployeeData().then((_) {
       if (_employeeId.isNotEmpty) {
         _fetchDashboardStats();
@@ -152,19 +275,24 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  // ✅ Updated _fetchDashboardStats with real leave balance data
   Future<void> _fetchDashboardStats() async {
     setState(() => _isLoadingStats = true);
 
     try {
       int totalLeaves = 0;
       int totalTravel = 0;
-      int leaveBalance = 18;
+      int pendingLeaves = 0;
+      int approvedLeaves = 0;
+      
+      // Reset leave balance values
+      _totalAllocated = 0;
+      _totalTaken = 0;
+      _totalRemaining = 0;
 
-      // Fetch Leaves Data
+      // Fetch leaves
       try {
         final leaves = await LeaveApprovedService.fetchLeaves();
-
-        // Filter leaves for current user
         final userLeaves = leaves.where((leave) {
           return leave.employeeName.toLowerCase().contains(
                 _employeeName.toLowerCase(),
@@ -175,46 +303,74 @@ class _DashboardScreenState extends State<DashboardScreen>
         }).toList();
 
         totalLeaves = userLeaves.length;
+        pendingLeaves = userLeaves.where((l) => l.status == 'Pending').length;
+        approvedLeaves = userLeaves.where((l) => l.status == 'Approved').length;
       } catch (e) {}
 
-      // Fetch Travel Data
+      // Fetch travels
       try {
         final travels = await TravelRequestService.getMyTravelRequests(
           _employeeId,
         );
-
-        final userTravels = travels.where((travel) {
-          final travelEmpId = travel["employee"]?.toString() ?? "";
-          final travelEmpName = travel["employee_name"]?.toString() ?? "";
-          return travelEmpId == _employeeId ||
-              travelEmpName.toLowerCase().contains(
-                _employeeName.toLowerCase(),
-              ) ||
-              _employeeName.toLowerCase().contains(travelEmpName.toLowerCase());
-        }).toList();
-
-        totalTravel = userTravels.length;
+        totalTravel = travels.length;
       } catch (e) {}
 
-      // Total requests
+      // ✅ Fetch real leave balance from service
+      try {
+        final leaveService = LeaveBalanceService();
+        final result = await leaveService.fetchLeaveBalances();
+        
+        if (result['success'] == true) {
+          _leaveDetails = result['leaveDetails'] ?? {};
+          final totals = result['totals'] ?? {};
+          _totalAllocated = totals['allocated'] ?? 0;
+          _totalTaken = totals['taken'] ?? 0;
+          _totalRemaining = totals['remaining'] ?? 0;
+          
+          print("✅ Leave Balance - Allocated: $_totalAllocated, Taken: $_totalTaken, Remaining: $_totalRemaining");
+        }
+      } catch (e) {
+        print("❌ Error fetching leave balance: $e");
+        // Fallback to demo data if API fails
+        _totalAllocated = 18;
+        _totalTaken = 5;
+        _totalRemaining = 13;
+      }
+
       int totalRequests = totalLeaves + totalTravel;
 
       if (mounted) {
         setState(() {
           _stats = {
-            'leaveBalance': leaveBalance,
+            'leaveBalance': _totalRemaining,
             'activeAdvances': 1,
             'totalLeaves': totalLeaves,
             'totalTravel': totalTravel,
             'totalRequests': totalRequests,
+            'pendingRequests': pendingLeaves,
+            'approvedRequests': approvedLeaves,
           };
+
+          // Update quick stats cards with real values
+          quickStatsCards[0]['value'] = totalRequests.toString();
+          quickStatsCards[1]['value'] = totalLeaves.toString();
+          quickStatsCards[2]['value'] = totalTravel.toString();
+          // ✅ Update leave balance cards
+          quickStatsCards[3]['value'] = _totalAllocated.floor().toString();
+          quickStatsCards[4]['value'] = _totalTaken.floor().toString();
+          quickStatsCards[5]['value'] = _totalRemaining.floor().toString();
+          quickStatsCards[6]['value'] = pendingLeaves.toString();
+          quickStatsCards[7]['value'] = approvedLeaves.toString();
+
           _isLoadingStats = false;
+          _statsAnimationController.forward(from: 0.0);
         });
       }
     } catch (e) {
-      print('Error fetching stats: $e');
+      print("❌ Error in _fetchDashboardStats: $e");
       if (mounted) {
         setState(() => _isLoadingStats = false);
+        _statsAnimationController.forward(from: 0.0);
       }
     }
   }
@@ -250,349 +406,352 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    _updateSystemNavigationBar();
-  }
-
-  void _updateSystemNavigationBar() {
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        systemNavigationBarColor: _isDarkMode ? Colors.black : Colors.white,
-        systemNavigationBarIconBrightness: _isDarkMode
-            ? Brightness.light
-            : Brightness.dark,
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: _isDarkMode
-            ? Brightness.light
-            : Brightness.dark,
-      ),
-    );
-  }
-
-  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _bannerController.dispose();
     _greetingController.dispose();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        systemNavigationBarColor: Colors.transparent,
-        statusBarColor: Colors.transparent,
-      ),
-    );
+    _statsAnimationController.dispose();
     super.dispose();
   }
 
-  // Get gradient colors based on theme
-  List<Color> _getHeaderGradientColors() {
-    return _isDarkMode
-        ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-        : [const Color(0xFFE3F2FD), const Color(0xFFF3E5F5)];
+  // Responsive sizing - Bigger text
+  double _getResponsiveFontSize(double baseSize, double width) {
+    if (width < 360) return baseSize * 1.0;
+    if (width > 600) return baseSize * 1.3;
+    if (width > 900) return baseSize * 1.5;
+    return baseSize * 1.1;
   }
 
+  // Button-like press navigation
+  void _handlePress(int index, String routeName) {
+    setState(() {
+      _pressedModuleIndex = index;
+    });
+
+    HapticFeedback.lightImpact();
+
+    Future.delayed(const Duration(milliseconds: 80), () {
+      if (mounted) {
+        Navigator.pushNamed(context, routeName).then((_) {
+          if (mounted) {
+            setState(() {
+              _pressedModuleIndex = -1;
+            });
+          }
+        });
+      }
+    });
+  }
+
+  void _handlePressCancel() {
+    setState(() {
+      _pressedModuleIndex = -1;
+    });
+  }
+
+  // Elegant Header with sky blue
   Widget _buildDashboardHeader(
     BuildContext context,
     double width,
     double height,
   ) {
-    final theme = Theme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final gradientColors = _getHeaderGradientColors();
+    final surfaceColor = _getSurfaceColor(context);
+    final textPrimary = _getTextPrimaryColor(context);
+    final textSecondary = _getTextSecondaryColor(context);
+    final borderColor = _getBorderColor(context);
 
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradientColors,
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(25),
-          bottomRight: Radius.circular(25),
-        ),
+      padding: EdgeInsets.only(
+        top: height * 0.02,
+        left: width * 0.04,
+        right: width * 0.04,
+        bottom: height * 0.03,
       ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          top: height * 0.02,
-          left: width * 0.04,
-          right: width * 0.04,
-          bottom: height * 0.02,
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
         ),
-        child: Column(
-          children: [
-            // Top row with profile, logo and notification
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Profile with ripple effect
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.pushNamed(context, "/settingScreen");
-                    },
-                    borderRadius: BorderRadius.circular(width * 0.06),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
-                          width: 2,
+        boxShadow: [
+          BoxShadow(
+            color: skyBlue.withOpacity(isDark ? 0.2 : 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Top Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Profile
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pushNamed(context, "/settingScreen");
+                  },
+                  borderRadius: BorderRadius.circular(width * 0.08),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: skyBlue.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Consumer<ProfileProvider>(
+                      builder: (context, provider, child) {
+                        final user = provider.profileData;
+                        return CircleAvatar(
+                          radius: width * 0.06,
+                          backgroundColor: lightSky,
+                          child: ClipOval(
+                            child:
+                                (user != null &&
+                                    user['user_image'] != null &&
+                                    user['user_image'].toString().isNotEmpty)
+                                ? Image.network(
+                                    "https://ppecon.erpnext.com${user['user_image']}",
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                    headers: {
+                                      "Cookie": AuthService.cookies.join("; "),
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        "assets/images/app_icon.png",
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  )
+                                : Image.asset(
+                                    "assets/images/app_icon.png",
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              // Logo
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(width * 0.02),
+                    decoration: BoxDecoration(
+                      color: skyBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Image.asset(
+                      "assets/images/app_icon.png",
+                      width: width * 0.05,
+                      height: width * 0.05,
+                      color: skyBlue,
+                    ),
+                  ),
+                  SizedBox(width: width * 0.02),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "PIONEER",
+                        style: TextStyle(
+                          fontSize: _getResponsiveFontSize(
+                            width * 0.045,
+                            width,
+                          ),
+                          fontWeight: FontWeight.w600,
+                          color: textPrimary,
+                          letterSpacing: 1,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
-                            blurRadius: 10,
-                            spreadRadius: 2,
+                      ),
+                      Text(
+                        "TECH",
+                        style: TextStyle(
+                          fontSize: _getResponsiveFontSize(
+                            width * 0.035,
+                            width,
+                          ),
+                          fontWeight: FontWeight.w400,
+                          color: textSecondary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              // Notification
+              Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: skyBlue.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.pushNamed(context, "/notificationScreen");
+                      },
+                      icon: Icon(
+                        Icons.notifications_none_rounded,
+                        size: width * 0.06,
+                        color: skyBlue,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: height * 0.005,
+                    right: width * 0.01,
+                    child: Container(
+                      width: width * 0.02,
+                      height: width * 0.02,
+                      decoration: BoxDecoration(
+                        color: skyBlue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: surfaceColor, width: 1.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          SizedBox(height: height * 0.02),
+
+          // Welcome Card
+          Consumer<ProfileProvider>(
+            builder: (context, provider, child) {
+              final user = provider.profileData;
+              final fullName = user != null && user['full_name'] != null
+                  ? user['full_name']
+                  : _employeeName.isNotEmpty
+                  ? _employeeName
+                  : 'User';
+
+              return Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(width * 0.04),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(
+                    255,
+                    111,
+                    195,
+                    228,
+                  ).withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color.fromARGB(
+                      255,
+                      86,
+                      178,
+                      215,
+                    ).withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Greeting Icon
+                    Container(
+                      padding: EdgeInsets.all(width * 0.025),
+                      decoration: BoxDecoration(
+                        color: skyBlue.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _greetingIcon,
+                        color: skyBlue,
+                        size: width * 0.06,
+                      ),
+                    ),
+                    SizedBox(width: width * 0.03),
+
+                    // Text
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _greetingMessage,
+                            style: TextStyle(
+                              fontSize: _getResponsiveFontSize(
+                                width * 0.03,
+                                width,
+                              ),
+                              color: textSecondary,
+                            ),
+                          ),
+                          Text(
+                            fullName,
+                            style: TextStyle(
+                              fontSize: _getResponsiveFontSize(
+                                width * 0.035,
+                                width,
+                              ),
+                              fontWeight: FontWeight.w600,
+                              color: textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                      child: Consumer<ProfileProvider>(
-                        builder: (context, provider, child) {
-                          final user = provider.profileData;
-                          return CircleAvatar(
-                            radius: width * 0.06,
-                            backgroundImage:
-                                (user != null &&
-                                    user['user_image'] != null &&
-                                    user['user_image'] != "")
-                                ? NetworkImage(
-                                    "https://ppecon.erpnext.com${user['user_image']}",
-                                  )
-                                : const AssetImage("assets/images/app_icon.png")
-                                      as ImageProvider,
-                          );
-                        },
-                      ),
                     ),
-                  ),
-                ),
 
-                // Logo with shimmer effect
-                TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 800),
-                  builder: (context, double value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              theme.colorScheme.primary,
-                              theme.colorScheme.secondary,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(width * 0.03),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.3),
-                              blurRadius: 15,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: width * 0.04,
-                            vertical: height * 0.01,
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(width * 0.015),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(
-                                    width * 0.02,
-                                  ),
-                                ),
-                                child: Image.asset(
-                                  "assets/images/app_icon.png",
-                                  width: width * 0.08,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              SizedBox(width: width * 0.02),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "PIONEER",
-                                    style: TextStyle(
-                                      fontSize: width * 0.04,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                      letterSpacing: 1,
-                                      height: 1.0,
-                                    ),
-                                  ),
-                                  Text(
-                                    "TECH",
-                                    style: TextStyle(
-                                      fontSize: width * 0.04,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                      letterSpacing: 1,
-                                      height: 1.0,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                // Notification icon without badge
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: IconButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.pushNamed(context, "/notificationScreen");
-                    },
-                    icon: Icon(
-                      Icons.notifications_none,
-                      size: width * 0.07,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: height * 0.02),
-
-            // Animated welcome message with greeting
-            SlideTransition(
-              position: _slideAnimation,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Consumer<ProfileProvider>(
-                  builder: (context, provider, child) {
-                    final user = provider.profileData;
-                    final fullName = user != null && user['full_name'] != null
-                        ? user['full_name']
-                        : _employeeName.isNotEmpty
-                        ? _employeeName
-                        : 'User';
-
-                    return Container(
-                      width: double.infinity,
+                    // Date
+                    Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: width * 0.04,
-                        vertical: height * 0.015,
+                        horizontal: width * 0.035,
+                        vertical: height * 0.01,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(width * 0.03),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
+                        color: surfaceColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: borderColor, width: 1),
                       ),
                       child: Row(
                         children: [
-                          // Greeting Icon
-                          Container(
-                            padding: EdgeInsets.all(width * 0.015),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              _greetingIcon,
-                              color: Colors.amber,
-                              size: width * 0.06,
-                            ),
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: width * 0.03,
+                            color: skyBlue,
                           ),
-                          SizedBox(width: width * 0.03),
-
-                          // Greeting Text and Full Name
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _greetingMessage,
-                                  style: TextStyle(
-                                    fontSize: width * 0.035,
-                                    color: isDark ? Colors.white : Colors.black,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                Text(
-                                  fullName,
-                                  style: TextStyle(
-                                    fontSize: width * 0.045,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : Colors.black,
-                                    height: 1.2,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Date
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: width * 0.025,
-                              vertical: height * 0.005,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(width * 0.02),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: width * 0.04,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: width * 0.015),
-                                Text(
-                                  _getFormattedDate(),
-                                  style: TextStyle(
-                                    fontSize: width * 0.03,
-                                    color: Colors.white,
-                                    height: 1.0,
-                                  ),
-                                ),
-                              ],
+                          SizedBox(width: width * 0.01),
+                          Text(
+                            _getFormattedDate(),
+                            style: TextStyle(
+                              fontSize: _getResponsiveFontSize(
+                                width * 0.03,
+                                width,
+                              ),
+                              color: textPrimary,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ),
-            ),
-          ],
-        ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -616,56 +775,42 @@ class _DashboardScreenState extends State<DashboardScreen>
     return '${now.day} ${months[now.month - 1]}';
   }
 
+  // Banner Slider
   Widget _buildBannerSlider(double width, double height) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      width: width * 0.9,
-      height: height * 0.2,
+      width: width * 0.92,
+      height: height * 0.18,
       margin: EdgeInsets.symmetric(vertical: height * 0.02),
       child: Stack(
         children: [
-          // Banner Image
+          // Banner
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 800),
             transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 1.1, end: 1.0).animate(animation),
-                  child: child,
-                ),
-              );
+              return FadeTransition(opacity: animation, child: child);
             },
             child: Container(
               key: ValueKey<int>(currentIndex),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(width * 0.05),
+                borderRadius: BorderRadius.circular(20),
                 image: DecorationImage(
                   image: AssetImage(bannerImages[currentIndex]),
                   fit: BoxFit.cover,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: skyBlue.withOpacity(isDark ? 0.2 : 0.1),
                     blurRadius: 20,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 8),
+                    offset: const Offset(0, 10),
                   ),
                 ],
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(width * 0.05),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
-                  ),
-                ),
               ),
             ),
           ),
 
-          // Page Indicators
+          // Indicators
           Positioned(
             bottom: height * 0.015,
             left: 0,
@@ -677,38 +822,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                 (index) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: EdgeInsets.symmetric(horizontal: width * 0.01),
-                  width: currentIndex == index ? width * 0.06 : width * 0.025,
-                  height: width * 0.01,
+                  width: currentIndex == index ? width * 0.08 : width * 0.025,
+                  height: width * 0.012,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(width * 0.02),
                     color: currentIndex == index
-                        ? Colors.white
+                        ? skyBlue
                         : Colors.white.withOpacity(0.5),
                   ),
-                ),
-              ),
-            ),
-          ),
-
-          // Hint Text
-          Positioned(
-            bottom: height * 0.035,
-            left: width * 0.05,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: width * 0.03,
-                vertical: height * 0.005,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(width * 0.02),
-              ),
-              child: Text(
-                '✨ Latest Updates',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: width * 0.03,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -718,9 +839,32 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Clean module grid WITHOUT any stats badges
-  Widget _buildModuleGrid(double width, double height, BuildContext context) {
-    final theme = Theme.of(context);
+  // ✅ Updated Quick Stats with new cards
+  Widget _buildQuickStats(double width, double height, BuildContext context) {
+    if (_isLoadingStats) {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+        child: Column(
+          children: [
+            _buildSectionHeader(context, width, height, "Quick Stats"),
+            SizedBox(height: height * 0.02),
+            const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Responsive grid - now showing 4 cards per row on larger screens
+    int crossAxisCount = width < 400
+        ? 2
+        : (width < 600 ? 2 : (width < 900 ? 4 : 4));
+    double cardHeight = width < 400 ? height * 0.15 : height * 0.14;
+    double spacing = width * 0.02;
 
     return Container(
       width: double.infinity,
@@ -728,214 +872,490 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
-          Padding(
-            padding: EdgeInsets.only(bottom: height * 0.015),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(width * 0.02),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(width * 0.02),
-                      ),
-                      child: Icon(
-                        Icons.apps_rounded,
-                        size: width * 0.05,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    SizedBox(width: width * 0.02),
-                    Text(
-                      "Quick Access",
-                      style: TextStyle(
-                        fontSize: width * 0.05,
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onBackground,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: width * 0.03,
-                    vertical: height * 0.005,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(width * 0.02),
-                  ),
-                  child: Text(
-                    "${modules.length} Modules",
-                    style: TextStyle(
-                      fontSize: width * 0.03,
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildSectionHeader(context, width, height, "Quick Stats"),
+          SizedBox(height: height * 0.02),
 
-          // Grid of Modules - NO STATS BADGES
+          // Stats Grid with Bounce Animation
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            itemCount: modules.length,
+            itemCount: quickStatsCards.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.15,
-              crossAxisSpacing: width * 0.03,
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: width / (cardHeight * crossAxisCount),
+              crossAxisSpacing: spacing,
               mainAxisSpacing: height * 0.015,
             ),
             itemBuilder: (context, index) {
-              final module = modules[index];
-              final moduleColor = module['color'] as Color;
+              final card = quickStatsCards[index];
+              return AnimatedBuilder(
+                animation: _statsAnimationController,
+                builder: (context, child) {
+                  double delay = index * 0.08;
+                  double animationValue =
+                      (_statsAnimationController.value - delay).clamp(0.0, 1.0);
 
-              return TweenAnimationBuilder(
-                tween: Tween<double>(begin: 0, end: 1),
-                duration: Duration(milliseconds: 500 + (index * 100)),
-                curve: Curves.easeOutBack,
-                builder: (context, double value, child) {
                   return Transform.scale(
-                    scale: value,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(width * 0.04),
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          _handleModuleTap(module['type'], context);
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(width * 0.04),
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: _isDarkMode
-                                  ? [Colors.grey[850]!, Colors.grey[900]!]
-                                  : [Colors.white, Colors.grey[50]!],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 15,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                            border: Border.all(
-                              color: Colors.grey.withOpacity(0.1),
-                              width: 1,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(width * 0.03),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Icon with gradient background - NO STATS BADGE
-                                Container(
-                                  width: width * 0.12,
-                                  height: width * 0.12,
-                                  margin: EdgeInsets.only(
-                                    bottom: height * 0.01,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        moduleColor.withOpacity(0.15),
-                                        moduleColor.withOpacity(0.05),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(
-                                      width * 0.03,
-                                    ),
-                                    border: Border.all(
-                                      color: moduleColor.withOpacity(0.2),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Image.asset(
-                                      module['image'],
-                                      width: width * 0.06,
-                                      height: width * 0.06,
-                                      color: moduleColor,
-                                    ),
-                                  ),
-                                ),
-
-                                // Module Title
-                                Text(
-                                  module['title'],
-                                  style: TextStyle(
-                                    fontSize: width * 0.04,
-                                    fontWeight: FontWeight.w700,
-                                    color: theme.colorScheme.onBackground,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-
-                                SizedBox(height: height * 0.005),
-
-                                // Module Subtitle
-                                Expanded(
-                                  child: Text(
-                                    module['subtitle'],
-                                    style: TextStyle(
-                                      fontSize: width * 0.03,
-                                      color: theme.textTheme.bodySmall?.color
-                                          ?.withOpacity(0.7),
-                                      fontWeight: FontWeight.w500,
-                                      height: 1.3,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-
-                                // Access indicator
-                                Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: height * 0.006,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: moduleColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(
-                                      width * 0.015,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Tap to open',
-                                      style: TextStyle(
-                                        fontSize: width * 0.025,
-                                        color: moduleColor,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                    scale: Curves.elasticOut.transform(animationValue),
+                    child: Opacity(
+                      opacity: animationValue,
+                      child: _buildStatCardWithPattern(
+                        context,
+                        width,
+                        height,
+                        card,
                       ),
                     ),
                   );
                 },
+              );
+            },
+          ),
+
+          // ✅ Show leave breakdown if available
+          if (_leaveDetails.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: height * 0.02),
+              child: _buildLeaveBreakdown(width, height, context),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ New method to show leave type breakdown
+ Widget _buildLeaveBreakdown(double width, double height, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = _getSurfaceColor(context);
+    final textPrimary = _getTextPrimaryColor(context);
+    final borderColor = _getBorderColor(context);
+    
+    if (_leaveDetails.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(width * 0.04),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: skyBlue.withOpacity(isDark ? 0.1 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.pie_chart_rounded, color: skyBlue, size: width * 0.05),
+              SizedBox(width: width * 0.02),
+              Text(
+                'Leave Breakdown',
+                style: TextStyle(
+                  fontSize: _getResponsiveFontSize(width * 0.04, width),
+                  fontWeight: FontWeight.w600,
+                  color: textPrimary,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: height * 0.015),
+          ..._leaveDetails.entries.map((entry) {
+            final leaveType = entry.key;
+            final details = entry.value as Map<String, double>;
+            final allocated = details['allocated'] ?? 0;
+            final taken = details['taken'] ?? 0;
+            final remaining = details['remaining'] ?? 0;
+            
+            Color progressColor;
+            if (leaveType.toLowerCase().contains('sick')) {
+              progressColor = Colors.orange;
+            } else if (leaveType.toLowerCase().contains('annual')) {
+              progressColor = Colors.green;
+            } else {
+              progressColor = skyBlue;
+            }
+            
+            return Padding(
+              padding: EdgeInsets.only(bottom: height * 0.012),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          leaveType,
+                          style: TextStyle(
+                            fontSize: _getResponsiveFontSize(width * 0.032, width),
+                            fontWeight: FontWeight.w500,
+                            color: textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // ✅ YAHAN CHANGE KARO - floor() use karo
+                      Text(
+                        '${remaining.floor()} / ${allocated.floor()} days',
+                        style: TextStyle(
+                          fontSize: _getResponsiveFontSize(width * 0.03, width),
+                          color: progressColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: height * 0.004),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: allocated > 0 ? (taken / allocated).clamp(0.0, 1.0) : 0,
+                      backgroundColor: borderColor,
+                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                      minHeight: height * 0.006,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: height * 0.002),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // ✅ YAHAN CHANGE KARO - floor() use karo
+                        Text(
+                          'Taken: ${taken.floor()}',
+                          style: TextStyle(
+                            fontSize: _getResponsiveFontSize(width * 0.024, width),
+                            color: Colors.grey,
+                          ),
+                        ),
+                        // ✅ YAHAN CHANGE KARO - floor() use karo
+                        Text(
+                          'Remaining: ${remaining.floor()}',
+                          style: TextStyle(
+                            fontSize: _getResponsiveFontSize(width * 0.024, width),
+                            color: progressColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Updated Stat Card with color per card
+  Widget _buildStatCardWithPattern(
+    BuildContext context,
+    double width,
+    double height,
+    Map<String, dynamic> card,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = _getSurfaceColor(context);
+    final textPrimary = _getTextPrimaryColor(context);
+    final textSecondary = _getTextSecondaryColor(context);
+    final borderColor = _getBorderColor(context);
+    
+    final Color cardColor = card['color'] ?? skyBlue;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: cardColor.withOpacity(isDark ? 0.15 : 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Background Pattern
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.8,
+              child: Icon(
+                card['bgPattern'] as IconData,
+                size: width * 0.22,
+                color: cardColor,
+              ),
+            ),
+          ),
+
+          // Content
+          Padding(
+            padding: EdgeInsets.all(width * 0.03),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Icon and Title Row
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(width * 0.015),
+                      decoration: BoxDecoration(
+                        color: cardColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        card['icon'] as IconData,
+                        color: cardColor,
+                        size: width * 0.04,
+                      ),
+                    ),
+                    SizedBox(width: width * 0.01),
+                    Expanded(
+                      child: Text(
+                        card['title'] as String,
+                        style: TextStyle(
+                          fontSize: _getResponsiveFontSize(width * 0.028, width),
+                          fontWeight: FontWeight.w600,
+                          color: textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Value
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      card['value'] as String,
+                      style: TextStyle(
+                        fontSize: _getResponsiveFontSize(width * 0.045, width),
+                        fontWeight: FontWeight.w700,
+                        color: cardColor,
+                      ),
+                    ),
+                    if (card.containsKey('unit'))
+                      Padding(
+                        padding: EdgeInsets.only(left: width * 0.005),
+                        child: Text(
+                          card['unit'] as String,
+                          style: TextStyle(
+                            fontSize: _getResponsiveFontSize(width * 0.022, width),
+                            color: textSecondary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                // Subtitle
+                Text(
+                  card['subtitle'] as String,
+                  style: TextStyle(
+                    fontSize: _getResponsiveFontSize(width * 0.022, width),
+                    color: textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Module Grid
+  Widget _buildModuleGrid(double width, double height, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = _getSurfaceColor(context);
+    final textPrimary = _getTextPrimaryColor(context);
+    final textSecondary = _getTextSecondaryColor(context);
+    final borderColor = _getBorderColor(context);
+
+    // Responsive grid
+    int crossAxisCount = width < 400
+        ? 2
+        : (width < 600 ? 2 : (width < 900 ? 3 : 4));
+    double cardHeight = width < 400 ? height * 0.16 : height * 0.15;
+    double spacing = width * 0.03;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(context, width, height, "Quick Access"),
+          SizedBox(height: height * 0.02),
+
+          // Module Grid with Button Press Effect
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: modules.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: width / (cardHeight * crossAxisCount),
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: height * 0.015,
+            ),
+            itemBuilder: (context, index) {
+              final module = modules[index];
+              final isPressed = _pressedModuleIndex == index;
+
+              return GestureDetector(
+                onTapDown: (_) {
+                  setState(() {
+                    _pressedModuleIndex = index;
+                  });
+                },
+                onTapUp: (_) {
+                  _handlePress(index, module['route']);
+                },
+                onTapCancel: () {
+                  _handlePressCancel();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 50),
+                  curve: Curves.easeOut,
+                  transform: isPressed
+                      ? Matrix4.diagonal3Values(0.95, 0.95, 1.0)
+                      : Matrix4.identity(),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isPressed
+                          ? skyBlue.withOpacity(0.1)
+                          : surfaceColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isPressed ? skyBlue : borderColor,
+                        width: isPressed ? 2 : 1,
+                      ),
+                      boxShadow: [
+                        if (isPressed)
+                          BoxShadow(
+                            color: skyBlue.withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          )
+                        else
+                          BoxShadow(
+                            color: skyBlue.withOpacity(isDark ? 0.1 : 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        // Background Pattern
+                        Positioned.fill(
+                          child: Opacity(
+                            opacity: isPressed ? 0.3 : 0.2,
+                            child: Icon(
+                              module['bgPattern'] as IconData,
+                              size: width * 0.3,
+                              color: skyBlue,
+                            ),
+                          ),
+                        ),
+
+                        // Content
+                        Padding(
+                          padding: EdgeInsets.all(width * 0.035),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Icon with press effect
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 50),
+                                padding: EdgeInsets.all(
+                                  isPressed ? width * 0.03 : width * 0.025,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isPressed
+                                      ? skyBlue
+                                      : skyBlue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    if (isPressed)
+                                      BoxShadow(
+                                        color: skyBlue.withOpacity(0.5),
+                                        blurRadius: 10,
+                                      ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  module['icon'] as IconData,
+                                  color: isPressed ? Colors.white : skyBlue,
+                                  size: isPressed
+                                      ? width * 0.055
+                                      : width * 0.05,
+                                ),
+                              ),
+
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Title
+                                  Text(
+                                    module['title'],
+                                    style: TextStyle(
+                                      fontSize: _getResponsiveFontSize(
+                                        width * 0.035,
+                                        width,
+                                      ),
+                                      fontWeight: isPressed
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
+                                      color: isPressed ? skyBlue : textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+
+                                  SizedBox(height: height * 0.004),
+
+                                  // Subtitle
+                                  Text(
+                                    module['subtitle'],
+                                    style: TextStyle(
+                                      fontSize: _getResponsiveFontSize(
+                                        width * 0.024,
+                                        width,
+                                      ),
+                                      color: isPressed
+                                          ? skyBlue.withOpacity(0.8)
+                                          : textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               );
             },
           ),
@@ -944,415 +1364,169 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Quick Stats with only total counts (no pending)
-  Widget _buildQuickStats(double width, double height, BuildContext context) {
-    final theme = Theme.of(context);
-
-    if (_isLoadingStats) {
-      return Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(
-          horizontal: width * 0.04,
-          vertical: height * 0.03,
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.analytics_rounded,
-                  size: width * 0.05,
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: width * 0.02),
-                Text(
-                  "Quick Stats",
-                  style: TextStyle(
-                    fontSize: width * 0.045,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onBackground,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: height * 0.02),
-            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: width * 0.04,
-        vertical: height * 0.02,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(bottom: height * 0.015),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.analytics_rounded,
-                  size: width * 0.05,
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: width * 0.02),
-                Text(
-                  "Quick Stats",
-                  style: TextStyle(
-                    fontSize: width * 0.045,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onBackground,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Two rows of stats - only totals
-          Row(
-            children: [
-              // Total Requests Card
-              _buildStatCard(
-                width,
-                height,
-                icon: Icons.list_alt,
-                label: "Total Requests",
-                value: "${_stats['totalRequests']}",
-                subValue: "",
-                color: Colors.blue,
-              ),
-              SizedBox(width: width * 0.03),
-
-              // Total Leaves Card
-              _buildStatCard(
-                width,
-                height,
-                icon: Icons.beach_access,
-                label: "Total Leaves",
-                value: "${_stats['totalLeaves']}",
-                subValue: "",
-                color: Colors.green,
-              ),
-              SizedBox(width: width * 0.03),
-
-              // Total Travel Card
-              _buildStatCard(
-                width,
-                height,
-                icon: Icons.flight_takeoff,
-                label: "Total Travel",
-                value: "${_stats['totalTravel']}",
-                subValue: "",
-                color: Colors.orange,
-              ),
-            ],
-          ),
-
-          SizedBox(height: height * 0.015),
-
-          // Second Row
-          Row(
-            children: [
-              // Leave Balance Card
-              _buildStatCard(
-                width,
-                height,
-                icon: Icons.balance,
-                label: "Leave Balance",
-                value: "${_stats['leaveBalance']}",
-                subValue: "Days",
-                color: Colors.purple,
-              ),
-              SizedBox(width: width * 0.03),
-
-              // Active Advances Card
-              _buildStatCard(
-                width,
-                height,
-                icon: Icons.attach_money,
-                label: "Active Advances",
-                value: "${_stats['activeAdvances']}",
-                subValue: "",
-                color: Colors.teal,
-              ),
-              SizedBox(width: width * 0.03),
-
-              // Placeholder for future stat
-              Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(width * 0.03),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(width * 0.03),
-                  ),
-                  child: const SizedBox(),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
+  // Section Header
+  Widget _buildSectionHeader(
+    BuildContext context,
     double width,
-    double height, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required String subValue,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.all(width * 0.03),
-        decoration: BoxDecoration(
-          color: _isDarkMode ? Colors.grey[850] : Colors.white,
-          borderRadius: BorderRadius.circular(width * 0.03),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.all(width * 0.02),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: width * 0.05),
-            ),
-            SizedBox(height: height * 0.01),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: width * 0.028,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-            ),
-            SizedBox(height: height * 0.005),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: width * 0.045,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
-                ),
-                if (subValue.isNotEmpty) ...[
-                  SizedBox(width: width * 0.01),
-                  Text(
-                    subValue,
-                    style: TextStyle(
-                      fontSize: width * 0.022,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    double height,
+    String title,
+  ) {
+    final textPrimary = _getTextPrimaryColor(context);
+    final textSecondary = _getTextSecondaryColor(context);
 
-  void _handleModuleTap(String type, BuildContext context) {
-    switch (type) {
-      case 'Leave_Request':
-        Navigator.pushNamed(context, '/leaveRequest');
-        break;
-      case 'employee_Advance':
-        Navigator.pushNamed(context, '/employeeAdvance');
-        break;
-      case 'Leave_Approval':
-        Navigator.pushNamed(context, '/leaveApprovalScreen');
-        break;
-      case 'Attendance_request':
-        Navigator.pushNamed(context, '/attendanceRequest');
-        break;
-      case 'Travel_request':
-        Navigator.pushNamed(context, '/travelRequest');
-        break;
-      case 'Leave_Balance':
-        Navigator.pushNamed(context, '/leaveBalaneceScreen');
-        break;
-      case 'Check_More':
-        Navigator.pushNamed(context, '/checkMore');
-        break;
-      default:
-        debugPrint('No route defined for $type');
-    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: _getResponsiveFontSize(width * 0.05, width),
+            fontWeight: FontWeight.w600,
+            color: textPrimary,
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: width * 0.03,
+            vertical: height * 0.005,
+          ),
+          decoration: BoxDecoration(
+            color: skyBlue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            title == "Quick Stats"
+                ? "${quickStatsCards.length} Items"
+                : "${modules.length} Modules",
+            style: TextStyle(
+              fontSize: _getResponsiveFontSize(width * 0.026, width),
+              color: skyBlue,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
-    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final gradientColors = _getHeaderGradientColors();
+    final backgroundColor = _getBackgroundColor(context);
+    final surfaceColor = _getSurfaceColor(context);
+    final textSecondary = _getTextSecondaryColor(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: _isDarkMode
-            ? Brightness.light
-            : Brightness.dark,
-        systemNavigationBarColor: _isDarkMode ? Colors.black : Colors.white,
-        systemNavigationBarIconBrightness: _isDarkMode
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: backgroundColor,
+        systemNavigationBarIconBrightness: isDark
             ? Brightness.light
             : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: _isDarkMode
-            ? Colors.grey[900]
-            : const Color(0xFFF8FAFD),
-        body: Column(
-          children: [
-            // Status bar area with gradient (fixed at top)
-            Container(
-              height: MediaQuery.of(context).padding.top,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: gradientColors,
-                ),
-              ),
-            ),
-            // Scrollable content with bounce effect (entire screen except status bar)
-            Expanded(
-              child: _isLoading
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () async {
-                        HapticFeedback.mediumImpact();
-                        await _fetchDashboardStats(); // Refresh stats on pull
-                      },
-                      color: Theme.of(context).colorScheme.primary,
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        child: Column(
-                          children: [
-                            // Header content with gradient
-                            _buildDashboardHeader(context, width, height),
+        backgroundColor: backgroundColor,
+        body: SafeArea(
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    HapticFeedback.mediumImpact();
+                    await _fetchDashboardStats();
+                    _statsAnimationController.forward(from: 0.0);
+                  },
+                  color: skyBlue,
+                  backgroundColor: surfaceColor,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    child: Column(
+                      children: [
+                        // Header
+                        _buildDashboardHeader(context, width, height),
 
-                            // Banner Slider
-                            _buildBannerSlider(width, height),
+                        // Banner
+                        _buildBannerSlider(width, height),
 
-                            // Quick Stats Section with only totals
-                            _buildQuickStats(width, height, context),
+                        // Quick Stats with Bounce Animation
+                        _buildQuickStats(width, height, context),
 
-                            SizedBox(height: height * 0.02),
+                        SizedBox(height: height * 0.02),
 
-                            // Clean modules without stats
-                            _buildModuleGrid(width, height, context),
+                        // Modules with Button Press Feel
+                        _buildModuleGrid(width, height, context),
 
-                            // Bottom Info Bar
-                            Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.symmetric(
-                                vertical: height * 0.02,
-                                horizontal: width * 0.04,
-                              ),
-                              margin: EdgeInsets.only(top: height * 0.02),
-                              decoration: BoxDecoration(
-                                color: _isDarkMode
-                                    ? Colors.black.withOpacity(0.3)
-                                    : Colors.grey[50],
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(width * 0.05),
-                                  topRight: Radius.circular(width * 0.05),
-                                ),
-                                border: Border.all(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                        SizedBox(height: height * 0.03),
+
+                        // Bottom Info
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            vertical: height * 0.018,
+                            horizontal: width * 0.04,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
                                 children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.security,
-                                        size: width * 0.04,
-                                        color: Colors.green,
-                                      ),
-                                      SizedBox(width: width * 0.015),
-                                      Text(
-                                        'Secure Connection',
-                                        style: TextStyle(
-                                          fontSize: width * 0.03,
-                                          color: Colors.grey[600],
-                                          height: 1.0,
-                                        ),
-                                      ),
-                                    ],
+                                  Icon(
+                                    Icons.security_rounded,
+                                    size: width * 0.04,
+                                    color: skyBlue.withOpacity(0.7),
                                   ),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.sync_rounded,
-                                        size: width * 0.04,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
+                                  SizedBox(width: width * 0.015),
+                                  Text(
+                                    'Secure',
+                                    style: TextStyle(
+                                      fontSize: _getResponsiveFontSize(
+                                        width * 0.028,
+                                        width,
                                       ),
-                                      SizedBox(width: width * 0.015),
-                                      Text(
-                                        'Last sync: ${_getFormattedTime()}',
-                                        style: TextStyle(
-                                          fontSize: width * 0.03,
-                                          color: Colors.grey[600],
-                                          height: 1.0,
-                                        ),
-                                      ),
-                                    ],
+                                      color: textSecondary,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-
-                            // Extra padding at bottom for smooth scrolling
-                            SizedBox(height: height * 0.02),
-                          ],
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.sync_rounded,
+                                    size: width * 0.04,
+                                    color: skyBlue.withOpacity(0.7),
+                                  ),
+                                  SizedBox(width: width * 0.015),
+                                  Text(
+                                    'Synced',
+                                    style: TextStyle(
+                                      fontSize: _getResponsiveFontSize(
+                                        width * 0.028,
+                                        width,
+                                      ),
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+
+                        SizedBox(height: height * 0.02),
+                      ],
                     ),
-            ),
-          ],
+                  ),
+                ),
         ),
       ),
     );
-  }
-
-  String _getFormattedTime() {
-    final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
   }
 }

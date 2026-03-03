@@ -9,6 +9,7 @@ import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
 import 'package:management_app/providers/slide_provider.dart';
 import 'package:management_app/providers/attendance_provider.dart';
+import 'package:management_app/services/auth_service.dart';
 import 'package:management_app/services/checkin_service.dart';
 import 'package:management_app/services/location_service.dart';
 import 'package:management_app/services/connectivity_service.dart';
@@ -58,6 +59,24 @@ class _HomemainScreenState extends State<HomemainScreen>
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
   late AnimationController _glowAnimationController;
+
+  // Sky Blue Color Palette - Matching Dashboard
+  static const Color skyBlue = Color(0xFF87CEEB); // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE); // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0); // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0); // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
+  // Get header gradient colors based on theme (matching dashboard)
+  List<Color> _getHeaderGradientColors(bool isDarkMode) {
+    return isDarkMode
+        ? [charcoal, slate, const Color(0xFF1E1E2E)]
+        : [skyBlue, mediumSky, deepSky];
+  }
 
   @override
   void initState() {
@@ -243,10 +262,10 @@ class _HomemainScreenState extends State<HomemainScreen>
   }
 
   Color _fingerprintColor(PunchProvider punchProvider) {
-    if (_isPunching) return Colors.orange.shade600;
-    if (punchProvider.punchInTime == null) return Colors.blue.shade600;
-    if (punchProvider.punchOutTime == null) return Colors.red.shade600;
-    return Colors.green.shade600;
+    if (_isPunching) return skyBlue;
+    if (punchProvider.punchInTime == null) return skyBlue;
+    if (punchProvider.punchOutTime == null) return deepSky;
+    return mediumSky;
   }
 
   String _punchText(PunchProvider punchProvider) {
@@ -256,9 +275,9 @@ class _HomemainScreenState extends State<HomemainScreen>
   }
 
   Color _punchButtonColor(PunchProvider punchProvider) {
-    if (punchProvider.punchInTime == null) return Colors.blue;
-    if (punchProvider.punchOutTime == null) return Colors.red;
-    return Colors.green;
+    if (punchProvider.punchInTime == null) return skyBlue;
+    if (punchProvider.punchOutTime == null) return deepSky;
+    return mediumSky;
   }
 
   List<BoxShadow> _getButtonShadows(PunchProvider punchProvider) {
@@ -295,12 +314,15 @@ class _HomemainScreenState extends State<HomemainScreen>
     ];
   }
 
-  // ==================== NEW DIALOGS (20% height, 70% width) ====================
+  // ==================== PREMIUM DIALOGS ====================
 
   void _showSuccessDialog({required String message, required bool isPunchIn}) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+    final gradientColors = _getHeaderGradientColors(
+      Theme.of(context).brightness == Brightness.dark,
+    );
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -313,15 +335,22 @@ class _HomemainScreenState extends State<HomemainScreen>
             width: screenWidth * 0.7,
             height: screenHeight * 0.2,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? slate
+                  : pureWhite,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: gradientColors.first.withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                  offset: const Offset(0, 8),
                 ),
               ],
+              border: Border.all(
+                color: gradientColors.first.withOpacity(0.2),
+                width: 1.5,
+              ),
             ),
             child: Center(
               child: Row(
@@ -330,12 +359,19 @@ class _HomemainScreenState extends State<HomemainScreen>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      gradient: LinearGradient(colors: gradientColors),
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: gradientColors.first.withOpacity(0.4),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
                     child: Icon(
                       isPunchIn ? Icons.login_rounded : Icons.logout_rounded,
-                      color: Colors.green.shade600,
+                      color: Colors.white,
                       size: 24,
                     ),
                   ),
@@ -343,10 +379,12 @@ class _HomemainScreenState extends State<HomemainScreen>
                   Expanded(
                     child: Text(
                       message,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? pureWhite
+                            : charcoal,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -371,7 +409,7 @@ class _HomemainScreenState extends State<HomemainScreen>
   void _showErrorDialog(String message) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -384,15 +422,22 @@ class _HomemainScreenState extends State<HomemainScreen>
             width: screenWidth * 0.7,
             height: screenHeight * 0.2,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? slate
+                  : pureWhite,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: Colors.red.withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                  offset: const Offset(0, 8),
                 ),
               ],
+              border: Border.all(
+                color: Colors.red.withOpacity(0.3),
+                width: 1.5,
+              ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -400,12 +445,12 @@ class _HomemainScreenState extends State<HomemainScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: Colors.red,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.error_outline_rounded,
-                    color: Colors.red.shade600,
+                    color: Colors.white,
                     size: 24,
                   ),
                 ),
@@ -417,8 +462,8 @@ class _HomemainScreenState extends State<HomemainScreen>
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.red.shade700,
-                      fontWeight: FontWeight.w500,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -442,7 +487,10 @@ class _HomemainScreenState extends State<HomemainScreen>
   void _showInfoDialog(String message, {Color color = Colors.blue}) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+    final gradientColors = _getHeaderGradientColors(
+      Theme.of(context).brightness == Brightness.dark,
+    );
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -455,8 +503,22 @@ class _HomemainScreenState extends State<HomemainScreen>
             width: screenWidth * 0.7,
             height: screenHeight * 0.2,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? slate
+                  : pureWhite,
               borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: gradientColors.first.withOpacity(0.2),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+              border: Border.all(
+                color: gradientColors.first.withOpacity(0.2),
+                width: 1.5,
+              ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -464,12 +526,12 @@ class _HomemainScreenState extends State<HomemainScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    gradient: LinearGradient(colors: gradientColors),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.info_outline_rounded,
-                    color: color,
+                    color: Colors.white,
                     size: 24,
                   ),
                 ),
@@ -479,9 +541,12 @@ class _HomemainScreenState extends State<HomemainScreen>
                   child: Text(
                     message,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? pureWhite
+                          : charcoal,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -515,7 +580,8 @@ class _HomemainScreenState extends State<HomemainScreen>
     }
 
     // Check if already completed
-    if (punchProvider.punchInTime != null && punchProvider.punchOutTime != null) {
+    if (punchProvider.punchInTime != null &&
+        punchProvider.punchOutTime != null) {
       _showInfoDialog('You have already completed your shift today');
       return;
     }
@@ -523,7 +589,8 @@ class _HomemainScreenState extends State<HomemainScreen>
     HapticFeedback.lightImpact();
 
     // Show slide button for punch in/out
-    if (punchProvider.punchInTime != null && punchProvider.punchOutTime == null) {
+    if (punchProvider.punchInTime != null &&
+        punchProvider.punchOutTime == null) {
       slideProvider.showSlideButton(false, _performPunch);
     } else if (punchProvider.punchInTime == null) {
       slideProvider.showSlideButton(true, _performPunch);
@@ -663,7 +730,7 @@ class _HomemainScreenState extends State<HomemainScreen>
 
       // Handle offline mode
       if (result['offlineMode'] == true) {
-        _successText = isPunchIn 
+        _successText = isPunchIn
             ? "✓ Checked in (Offline Mode)"
             : "✓ Checked out (Offline Mode)";
 
@@ -678,7 +745,10 @@ class _HomemainScreenState extends State<HomemainScreen>
           await punchProvider.setPunchOut(utcNow);
         }
 
-        _showInfoDialog(result['message'] ?? 'Punch saved offline', color: Colors.orange);
+        _showInfoDialog(
+          result['message'] ?? 'Punch saved offline',
+          color: Colors.orange,
+        );
 
         Timer(const Duration(seconds: 2), () {
           if (mounted) setState(() => _showSuccess = false);
@@ -735,7 +805,6 @@ class _HomemainScreenState extends State<HomemainScreen>
           }
         });
       }
-
     } catch (e) {
       setState(() {
         _isPunching = false;
@@ -756,36 +825,52 @@ class _HomemainScreenState extends State<HomemainScreen>
     }
   }
 
+  // ==================== PREMIUM UI WIDGETS ====================
+
   Widget _buildTimeWidget(
     String time,
     String label,
     Color color,
     IconData icon,
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: MediaQuery.of(context).size.width * 0.02,
+        horizontal: screenWidth * 0.02,
         vertical: 10,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.1)),
+        color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 15,
+            spreadRadius: 2,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: MediaQuery.of(context).size.width * 0.05,
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: screenWidth * 0.05),
           ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.005),
           Text(
             time,
             style: TextStyle(
-              fontSize: MediaQuery.of(context).size.width * 0.035,
-              fontWeight: FontWeight.w700,
+              fontSize: screenWidth * 0.035,
+              fontWeight: FontWeight.w800,
               color: color,
               letterSpacing: 0.3,
             ),
@@ -794,9 +879,9 @@ class _HomemainScreenState extends State<HomemainScreen>
           Text(
             label,
             style: TextStyle(
-              fontSize: MediaQuery.of(context).size.width * 0.028,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
+              fontSize: screenWidth * 0.028,
+              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -806,33 +891,43 @@ class _HomemainScreenState extends State<HomemainScreen>
 
   Widget _buildLocationWidget() {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     if (_isLocationLoading) {
       return Container(
         padding: EdgeInsets.symmetric(
           horizontal: screenWidth * 0.04,
-          vertical: 8,
+          vertical: 12,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.blue,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: skyBlue.withOpacity(0.3), width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              "Fetching location...",
-              style: TextStyle(
-                fontSize: screenWidth * 0.03,
-                color: Colors.grey.shade600,
+              const SizedBox(width: 8),
+              Text(
+                "Fetching location...",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.03,
+                  color: skyBlue,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -880,43 +975,53 @@ class _HomemainScreenState extends State<HomemainScreen>
       return Container(
         padding: EdgeInsets.symmetric(
           horizontal: screenWidth * 0.04,
-          vertical: 8,
+          vertical: 12,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(errorIcon, size: 16, color: errorColor),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: errorColor.withOpacity(0.3), width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(errorIcon, size: 16, color: errorColor),
+              const SizedBox(width: 4),
+              Text(
                 _locationError,
                 style: TextStyle(
                   fontSize: screenWidth * 0.03,
                   color: errorColor,
+                  fontWeight: FontWeight.w600,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
+                maxLines: 1,
               ),
-            ),
-            GestureDetector(
-              onTap: onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: errorColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  buttonText,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.025,
-                    color: errorColor,
-                    fontWeight: FontWeight.w600,
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: errorColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    buttonText,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.025,
+                      color: errorColor,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -924,48 +1029,56 @@ class _HomemainScreenState extends State<HomemainScreen>
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: screenWidth * 0.04,
-        vertical: 8,
+        vertical: 12,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: skyBlue.withOpacity(0.3), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: skyBlue.withOpacity(0.1),
+              blurRadius: 15,
+              spreadRadius: 2,
+              offset: const Offset(0, 5),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.location_on_rounded,
-                  size: 14,
-                  color: Colors.green.shade600,
-                ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    _locationAddress,
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.03,
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-              ],
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: skyBlue.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.location_on_rounded, size: 14, color: skyBlue),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                _locationAddress,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.03,
+                  color: skyBlue,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildInternetStatusWidget() {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     if (!_hasInternet) {
       return Container(
@@ -974,27 +1087,23 @@ class _HomemainScreenState extends State<HomemainScreen>
           vertical: 8,
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.red.shade50,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.red.shade200),
+            color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.red.withOpacity(0.3), width: 1.5),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.wifi_off_rounded,
-                size: 14,
-                color: Colors.red.shade600,
-              ),
-              const SizedBox(width: 4),
+              Icon(Icons.wifi_off_rounded, size: 16, color: Colors.red),
+              const SizedBox(width: 8),
               Text(
                 "No Internet Connection",
                 style: TextStyle(
                   fontSize: screenWidth * 0.03,
-                  color: Colors.red.shade600,
-                  fontWeight: FontWeight.w500,
+                  color: Colors.red,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -1008,6 +1117,7 @@ class _HomemainScreenState extends State<HomemainScreen>
 
   Widget _buildProgressWidget(PunchProvider punchProvider) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     if (punchProvider.punchInTime == null) {
       return Column(
@@ -1018,8 +1128,8 @@ class _HomemainScreenState extends State<HomemainScreen>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: screenWidth * 0.04,
-              color: Colors.blue.shade600,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              color: skyBlue,
             ),
           ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.005),
@@ -1028,7 +1138,7 @@ class _HomemainScreenState extends State<HomemainScreen>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: screenWidth * 0.032,
-              color: Colors.blue.shade400,
+              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1045,8 +1155,8 @@ class _HomemainScreenState extends State<HomemainScreen>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: screenWidth * 0.04,
-              color: Colors.red.shade600,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              color: deepSky,
             ),
           ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.005),
@@ -1055,7 +1165,7 @@ class _HomemainScreenState extends State<HomemainScreen>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: screenWidth * 0.032,
-              color: Colors.red.shade400,
+              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1072,16 +1182,16 @@ class _HomemainScreenState extends State<HomemainScreen>
             vertical: MediaQuery.of(context).size.height * 0.01,
           ),
           decoration: BoxDecoration(
-            color: Colors.green.shade50,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.green.shade100),
+            color: mediumSky.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: mediumSky.withOpacity(0.3), width: 1.5),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.check_circle_rounded,
-                color: Colors.green.shade600,
+                color: mediumSky,
                 size: screenWidth * 0.045,
               ),
               SizedBox(width: screenWidth * 0.02),
@@ -1089,8 +1199,8 @@ class _HomemainScreenState extends State<HomemainScreen>
                 "Shift completed",
                 style: TextStyle(
                   fontSize: screenWidth * 0.038,
-                  color: Colors.green.shade700,
-                  fontWeight: FontWeight.w600,
+                  color: mediumSky,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -1101,413 +1211,11 @@ class _HomemainScreenState extends State<HomemainScreen>
           "Great work today!",
           style: TextStyle(
             fontSize: screenWidth * 0.032,
-            color: Colors.green.shade500,
-            fontWeight: FontWeight.w500,
+            color: mediumSky,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height;
-    final screenWidth = mediaQuery.size.width;
-    final isPortrait = screenHeight > screenWidth;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    final buttonSize = isPortrait ? screenWidth * 0.45 : screenHeight * 0.45;
-    final progressSize = buttonSize * 1.15;
-    final glowSize = buttonSize * 1.25;
-
-    final punchProvider = Provider.of<PunchProvider>(context);
-
-    final List<Color> headerGradientColors = isDarkMode
-        ? [Colors.grey.shade900, Colors.grey.shade800]
-        : [Colors.blue.shade50, Colors.purple.shade50];
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
-        statusBarBrightness: isDarkMode ? Brightness.dark : Brightness.light,
-        systemNavigationBarColor: isDarkMode ? Colors.grey.shade900 : Colors.white,
-        systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
-      ),
-      child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Column(
-          children: [
-            Container(
-              height: mediaQuery.padding.top,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: headerGradientColors,
-                ),
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: headerGradientColors,
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(25),
-                          bottomRight: Radius.circular(25),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          top: screenHeight * 0.02,
-                          left: screenWidth * 0.05,
-                          right: screenWidth * 0.05,
-                          bottom: screenHeight * 0.02,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Consumer<ProfileProvider>(
-                              builder: (_, provider, __) {
-                                final user = provider.profileData;
-                                final imagePath = user?['user_image'];
-                                return Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => Navigator.pushNamed(
-                                        context,
-                                        '/settingScreen',
-                                      ),
-                                      child: Container(
-                                        width: screenWidth * 0.12,
-                                        height: screenWidth * 0.12,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.1),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 3),
-                                            ),
-                                          ],
-                                        ),
-                                        child: CircleAvatar(
-                                          backgroundColor: Colors.blue.shade50,
-                                          backgroundImage: (imagePath != null &&
-                                                  imagePath.isNotEmpty)
-                                              ? NetworkImage(
-                                                  "https://ppecon.erpnext.com$imagePath",
-                                                )
-                                              : const AssetImage(
-                                                      "assets/images/app_icon.png",
-                                                    )
-                                                  as ImageProvider,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: screenWidth * 0.03),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            _greeting,
-                                            style: TextStyle(
-                                              fontSize: screenWidth * 0.03,
-                                              color: isDarkMode
-                                                  ? Colors.grey.shade300
-                                                  : Colors.grey.shade700,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          SizedBox(height: screenHeight * 0.003),
-                                          Text(
-                                            user?['full_name'] ?? "Employee",
-                                            style: TextStyle(
-                                              fontSize: screenWidth * 0.045,
-                                              fontWeight: FontWeight.w700,
-                                              color: isDarkMode
-                                                  ? Colors.white
-                                                  : Colors.grey.shade900,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            SizedBox(height: screenHeight * 0.025),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _currentTime,
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.13,
-                                    fontWeight: FontWeight.w900,
-                                    color: isDarkMode ? Colors.white : Colors.grey.shade900,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                SizedBox(height: screenHeight * 0.005),
-                                Text(
-                                  _currentDate,
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.035,
-                                    color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: screenHeight * 0.02),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
-                        vertical: screenHeight * 0.025,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                width: glowSize,
-                                height: glowSize,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      _punchButtonColor(punchProvider).withOpacity(0.08),
-                                      Colors.transparent,
-                                    ],
-                                    radius: 0.8,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                width: progressSize,
-                                height: progressSize,
-                                child: CircularProgressIndicator(
-                                  value: punchProvider.progressValue().clamp(0.0, 1.0),
-                                  strokeWidth: screenWidth * 0.015,
-                                  color: _punchButtonColor(punchProvider),
-                                  backgroundColor: Colors.grey.shade200,
-                                  strokeCap: StrokeCap.round,
-                                ),
-                              ),
-                              if (punchProvider.punchInTime != null &&
-                                  punchProvider.punchOutTime == null)
-                                ScaleTransition(
-                                  scale: _pulseAnimation,
-                                  child: Container(
-                                    width: progressSize * 0.95,
-                                    height: progressSize * 0.95,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.transparent,
-                                      border: Border.all(
-                                        color: Colors.red.withOpacity(0.25),
-                                        width: screenWidth * 0.008,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              Material(
-                                color: Colors.transparent,
-                                shape: const CircleBorder(),
-                                child: InkWell(
-                                  customBorder: const CircleBorder(),
-                                  borderRadius: BorderRadius.circular(buttonSize),
-                                  onTap: () {
-                                    final slideProvider = Provider.of<SlideProvider>(
-                                      context,
-                                      listen: false,
-                                    );
-                                    if (!slideProvider.showSlideToPunch) {
-                                      _onPunchTap();
-                                    }
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    width: buttonSize,
-                                    height: buttonSize,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Theme.of(context).cardColor,
-                                      boxShadow: _getButtonShadows(punchProvider),
-                                      border: Border.all(
-                                        color: _punchButtonColor(punchProvider).withOpacity(0.15),
-                                        width: screenWidth * 0.005,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: _buildCenterContent(
-                                        punchProvider,
-                                        Theme.of(context),
-                                        buttonSize,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: screenHeight * 0.03),
-                          Container(
-                            padding: EdgeInsets.all(screenWidth * 0.04),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor.withOpacity(0.1),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _buildTimeWidget(
-                                  punchProvider.punchInTime == null
-                                      ? "--:--"
-                                      : DateFormat('hh:mm a').format(
-                                          punchProvider.punchInTime!.add(
-                                            const Duration(hours: 3),
-                                          ),
-                                        ),
-                                  "Punch In",
-                                  Colors.blue,
-                                  Icons.login_rounded,
-                                ),
-                                _buildTimeWidget(
-                                  punchProvider.punchOutTime == null
-                                      ? "--:--"
-                                      : DateFormat('hh:mm a').format(
-                                          punchProvider.punchOutTime!.add(
-                                            const Duration(hours: 3),
-                                          ),
-                                        ),
-                                  "Punch Out",
-                                  Colors.red,
-                                  Icons.logout_rounded,
-                                ),
-                                _buildTimeWidget(
-                                  punchProvider.totalHours(),
-                                  "Total",
-                                  Colors.green,
-                                  Icons.timer_rounded,
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: screenHeight * 0.015),
-                          _buildInternetStatusWidget(),
-                          SizedBox(height: screenHeight * 0.015),
-                          _buildLocationWidget(),
-                          SizedBox(height: screenHeight * 0.015),
-                          _buildProgressWidget(punchProvider),
-                          if (_hasError)
-                            Padding(
-                              padding: EdgeInsets.only(top: screenHeight * 0.02),
-                              child: AnimatedSlide(
-                                duration: const Duration(milliseconds: 300),
-                                offset: _hasError ? Offset.zero : const Offset(0, -1),
-                                child: Container(
-                                  padding: EdgeInsets.all(screenWidth * 0.04),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.shade50,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: Colors.red.shade200,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.error_outline_rounded,
-                                        color: Colors.red.shade600,
-                                        size: screenWidth * 0.06,
-                                      ),
-                                      SizedBox(width: screenWidth * 0.03),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              "Attention",
-                                              style: TextStyle(
-                                                color: Colors.red.shade800,
-                                                fontSize: screenWidth * 0.035,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            SizedBox(height: screenHeight * 0.002),
-                                            Text(
-                                              _errorMessage,
-                                              style: TextStyle(
-                                                color: Colors.red.shade700,
-                                                fontSize: screenWidth * 0.03,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          SizedBox(
-                            height: mediaQuery.viewInsets.bottom + screenHeight * 0.02,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1518,16 +1226,31 @@ class _HomemainScreenState extends State<HomemainScreen>
   ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final iconSize = buttonSize * 0.3;
+    final isDarkMode = theme.brightness == Brightness.dark;
 
     if (_showSuccess) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.check_circle_rounded,
-            color: Colors.green,
-            size: iconSize * 0.8,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: skyBlue,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: skyBlue.withOpacity(0.4),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: iconSize * 0.6,
+            ),
           ),
           SizedBox(height: buttonSize * 0.03),
           Text(
@@ -1536,9 +1259,9 @@ class _HomemainScreenState extends State<HomemainScreen>
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               fontSize: screenWidth * 0.032,
-              color: Colors.green,
+              color: skyBlue,
             ),
           ),
         ],
@@ -1555,7 +1278,7 @@ class _HomemainScreenState extends State<HomemainScreen>
             height: iconSize * 0.6,
             child: CircularProgressIndicator(
               strokeWidth: screenWidth * 0.008,
-              color: _punchButtonColor(punchProvider),
+              valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
             ),
           ),
           SizedBox(height: buttonSize * 0.04),
@@ -1563,8 +1286,8 @@ class _HomemainScreenState extends State<HomemainScreen>
             "Processing...",
             style: TextStyle(
               fontSize: screenWidth * 0.035,
-              fontWeight: FontWeight.w700,
-              color: _punchButtonColor(punchProvider),
+              fontWeight: FontWeight.w800,
+              color: skyBlue,
             ),
           ),
         ],
@@ -1579,58 +1302,70 @@ class _HomemainScreenState extends State<HomemainScreen>
             punchProvider.punchOutTime == null)
           ScaleTransition(
             scale: _pulseAnimation,
-            child: ShaderMask(
-              shaderCallback: (bounds) {
-                return LinearGradient(
-                  colors: [Colors.red.shade400, Colors.red.shade600],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ).createShader(bounds);
-              },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: deepSky,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: deepSky.withOpacity(0.4),
+                    blurRadius: 25,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
               child: Icon(
                 Icons.fingerprint_rounded,
-                size: iconSize,
+                size: iconSize * 0.7,
                 color: Colors.white,
               ),
             ),
           )
         else
-          Icon(
-            Icons.fingerprint_rounded,
-            size: iconSize * 0.95,
-            color: _fingerprintColor(punchProvider),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: punchProvider.punchInTime == null ? skyBlue : mediumSky,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      (punchProvider.punchInTime == null ? skyBlue : mediumSky)
+                          .withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.fingerprint_rounded,
+              size: iconSize * 0.7,
+              color: Colors.white,
+            ),
           ),
 
         SizedBox(height: buttonSize * 0.05),
 
         if (punchProvider.punchInTime != null &&
             punchProvider.punchOutTime == null)
-          ShaderMask(
-            shaderCallback: (bounds) {
-              return LinearGradient(
-                colors: [Colors.red.shade400, Colors.red.shade600],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ).createShader(bounds);
-            },
-            child: Text(
-              _punchText(punchProvider),
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: screenWidth * 0.04,
-                color: Colors.white,
-                letterSpacing: 0.8,
-              ),
+          Text(
+            _punchText(punchProvider),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: screenWidth * 0.04,
+              color: deepSky,
+              letterSpacing: 0.8,
             ),
           )
         else
           Text(
             _punchText(punchProvider),
             style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: screenWidth * 0.038,
-              color: _fingerprintColor(punchProvider),
-              letterSpacing: 0.6,
+              fontWeight: FontWeight.w800,
+              fontSize: screenWidth * 0.04,
+              color: punchProvider.punchInTime == null ? skyBlue : mediumSky,
+              letterSpacing: 0.8,
             ),
           ),
 
@@ -1641,8 +1376,8 @@ class _HomemainScreenState extends State<HomemainScreen>
             "Start your day",
             style: TextStyle(
               fontSize: screenWidth * 0.03,
-              color: Colors.blue.shade400,
-              fontWeight: FontWeight.w500,
+              color: skyBlue,
+              fontWeight: FontWeight.w600,
             ),
           )
         else if (punchProvider.punchOutTime == null)
@@ -1650,8 +1385,8 @@ class _HomemainScreenState extends State<HomemainScreen>
             "End your shift",
             style: TextStyle(
               fontSize: screenWidth * 0.03,
-              color: Colors.red.shade400,
-              fontWeight: FontWeight.w500,
+              color: deepSky,
+              fontWeight: FontWeight.w600,
             ),
           )
         else
@@ -1659,11 +1394,599 @@ class _HomemainScreenState extends State<HomemainScreen>
             "Work completed",
             style: TextStyle(
               fontSize: screenWidth * 0.03,
-              color: Colors.green.shade500,
-              fontWeight: FontWeight.w500,
+              color: mediumSky,
+              fontWeight: FontWeight.w600,
             ),
-          ), 
+          ),
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
+    final isPortrait = screenHeight > screenWidth;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final gradientColors = _getHeaderGradientColors(isDarkMode);
+
+    final buttonSize = isPortrait ? screenWidth * 0.45 : screenHeight * 0.45;
+    final progressSize = buttonSize * 1.15;
+    final glowSize = buttonSize * 1.25;
+
+    final punchProvider = Provider.of<PunchProvider>(context);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: gradientColors.first,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: isDarkMode ? charcoal : pureWhite,
+        systemNavigationBarIconBrightness: isDarkMode
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: isDarkMode ? charcoal : offWhite,
+        body: SafeArea(
+          top: true,
+          bottom: false,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  child: Column(
+                    children: [
+                      // Premium Header with Sky Blue Gradient
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: gradientColors,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(40),
+                            bottomRight: Radius.circular(40),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: gradientColors.first.withOpacity(0.3),
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            // Decorative circles
+                            Positioned(
+                              top: -screenHeight * 0.1,
+                              right: -screenWidth * 0.1,
+                              child: Container(
+                                width: screenWidth * 0.5,
+                                height: screenWidth * 0.5,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Colors.white.withOpacity(0.2),
+                                      Colors.white.withOpacity(0.05),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: -screenHeight * 0.05,
+                              left: -screenWidth * 0.1,
+                              child: Container(
+                                width: screenWidth * 0.4,
+                                height: screenWidth * 0.4,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Colors.white.withOpacity(0.15),
+                                      Colors.white.withOpacity(0.02),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: screenHeight * 0.02,
+                                left: screenWidth * 0.05,
+                                right: screenWidth * 0.05,
+                                bottom: screenHeight * 0.03,
+                              ),
+                              child: Column(
+                                children: [
+                                  Consumer<ProfileProvider>(
+                                    builder: (_, provider, __) {
+                                      final user = provider.profileData;
+                                      final imagePath = user?['user_image'];
+                                      return Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () => Navigator.pushNamed(
+                                              context,
+                                              '/profilescreen',
+                                            ),
+                                            child: Container(
+                                              width: screenWidth * 0.12,
+                                              height: screenWidth * 0.12,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white
+                                                      .withOpacity(0.5),
+                                                  width: 2,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.white
+                                                        .withOpacity(0.3),
+                                                    blurRadius: 20,
+                                                    spreadRadius: 2,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: CircleAvatar(
+                                                backgroundColor: lightSky,
+                                                child: ClipOval(
+                                                  child:
+                                                      (imagePath != null &&
+                                                          imagePath.isNotEmpty)
+                                                      ? Image.network(
+                                                          "https://ppecon.erpnext.com$imagePath",
+                                                          fit: BoxFit.cover,
+                                                          width:
+                                                              double.infinity,
+                                                          height:
+                                                              double.infinity,
+                                                          headers: {
+                                                            "Cookie":
+                                                                AuthService
+                                                                    .cookies
+                                                                    .join("; "),
+                                                          },
+                                                          errorBuilder:
+                                                              (
+                                                                context,
+                                                                error,
+                                                                stackTrace,
+                                                              ) {
+                                                                return Image.asset(
+                                                                  "assets/images/app_icon.png",
+                                                                  fit: BoxFit
+                                                                      .cover,
+                                                                );
+                                                              },
+                                                        )
+                                                      : Image.asset(
+                                                          "assets/images/app_icon.png",
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: screenWidth * 0.03),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  _greeting,
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        screenWidth * 0.035,
+                                                    color: Colors.white
+                                                        .withOpacity(0.9),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  height: screenHeight * 0.003,
+                                                ),
+                                                Text(
+                                                  user?['full_name'] ??
+                                                      "Employee",
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        screenWidth * 0.05,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                    letterSpacing: 0.5,
+                                                    shadows: [
+                                                      Shadow(
+                                                        color: Colors.black
+                                                            .withOpacity(0.3),
+                                                        blurRadius: 10,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  maxLines: 1,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  SizedBox(height: screenHeight * 0.025),
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _currentTime,
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.13,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          letterSpacing: 0.5,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withOpacity(
+                                                0.3,
+                                              ),
+                                              blurRadius: 15,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(height: screenHeight * 0.005),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.04,
+                                          vertical: screenHeight * 0.005,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.white.withOpacity(0.2),
+                                              Colors.white.withOpacity(0.1),
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(
+                                              0.3,
+                                            ),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          _currentDate,
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.035,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: screenHeight * 0.02),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Main Content
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.05,
+                          vertical: screenHeight * 0.025,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Premium Fingerprint Circle with Sky Blue Theme
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Glow effect
+                                Container(
+                                  width: glowSize,
+                                  height: glowSize,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        _punchButtonColor(
+                                          punchProvider,
+                                        ).withOpacity(0.15),
+                                        Colors.transparent,
+                                      ],
+                                      radius: 0.8,
+                                    ),
+                                  ),
+                                ),
+                                // Progress indicator
+                                SizedBox(
+                                  width: progressSize,
+                                  height: progressSize,
+                                  child: CircularProgressIndicator(
+                                    value: punchProvider.progressValue().clamp(
+                                      0.0,
+                                      1.0,
+                                    ),
+                                    strokeWidth: screenWidth * 0.015,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      _punchButtonColor(punchProvider),
+                                    ),
+                                    backgroundColor: isDarkMode
+                                        ? slate
+                                        : Colors.grey.shade200,
+                                    strokeCap: StrokeCap.round,
+                                  ),
+                                ),
+                                // Pulse ring for punch out state
+                                if (punchProvider.punchInTime != null &&
+                                    punchProvider.punchOutTime == null)
+                                  ScaleTransition(
+                                    scale: _pulseAnimation,
+                                    child: Container(
+                                      width: progressSize * 0.95,
+                                      height: progressSize * 0.95,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: deepSky.withOpacity(0.3),
+                                          width: screenWidth * 0.008,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                // Main fingerprint button
+                                Material(
+                                  color: Colors.transparent,
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    borderRadius: BorderRadius.circular(
+                                      buttonSize,
+                                    ),
+                                    onTap: () {
+                                      final slideProvider =
+                                          Provider.of<SlideProvider>(
+                                            context,
+                                            listen: false,
+                                          );
+                                      if (!slideProvider.showSlideToPunch) {
+                                        _onPunchTap();
+                                      }
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      width: buttonSize,
+                                      height: buttonSize,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isDarkMode ? slate : pureWhite,
+                                        boxShadow: _getButtonShadows(
+                                          punchProvider,
+                                        ),
+                                        border: Border.all(
+                                          color: _punchButtonColor(
+                                            punchProvider,
+                                          ).withOpacity(0.3),
+                                          width: screenWidth * 0.005,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: _buildCenterContent(
+                                          punchProvider,
+                                          Theme.of(context),
+                                          buttonSize,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: screenHeight * 0.03),
+
+                            // Premium Time Cards with Sky Blue Theme
+                            Container(
+                              padding: EdgeInsets.all(screenWidth * 0.04),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? slate.withOpacity(0.5)
+                                    : pureWhite,
+                                borderRadius: BorderRadius.circular(25),
+                                border: Border.all(
+                                  color: skyBlue.withOpacity(0.2),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: skyBlue.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    spreadRadius: 5,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _buildTimeWidget(
+                                    punchProvider.punchInTime == null
+                                        ? "--:--"
+                                        : DateFormat('hh:mm a').format(
+                                            punchProvider.punchInTime!.add(
+                                              const Duration(hours: 3),
+                                            ),
+                                          ),
+                                    "PUNCH IN",
+                                    skyBlue,
+                                    Icons.login_rounded,
+                                  ),
+                                  _buildTimeWidget(
+                                    punchProvider.punchOutTime == null
+                                        ? "--:--"
+                                        : DateFormat('hh:mm a').format(
+                                            punchProvider.punchOutTime!.add(
+                                              const Duration(hours: 3),
+                                            ),
+                                          ),
+                                    "PUNCH OUT",
+                                    deepSky,
+                                    Icons.logout_rounded,
+                                  ),
+                                  _buildTimeWidget(
+                                    punchProvider.totalHours(),
+                                    "TOTAL",
+                                    mediumSky,
+                                    Icons.timer_rounded,
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: screenHeight * 0.015),
+
+                            // Status widgets
+                            _buildInternetStatusWidget(),
+                            SizedBox(height: screenHeight * 0.015),
+                            _buildLocationWidget(),
+                            SizedBox(height: screenHeight * 0.015),
+
+                            // Progress message
+                            Container(
+                              padding: EdgeInsets.all(screenWidth * 0.04),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? slate.withOpacity(0.5)
+                                    : pureWhite,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: skyBlue.withOpacity(0.2),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: _buildProgressWidget(punchProvider),
+                            ),
+
+                            if (_hasError)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: screenHeight * 0.02,
+                                ),
+                                child: AnimatedSlide(
+                                  duration: const Duration(milliseconds: 300),
+                                  offset: _hasError
+                                      ? Offset.zero
+                                      : const Offset(0, -1),
+                                  child: Container(
+                                    padding: EdgeInsets.all(screenWidth * 0.04),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.red.withOpacity(0.3),
+                                          blurRadius: 20,
+                                          spreadRadius: 5,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(
+                                              0.2,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.error_outline_rounded,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
+                                        ),
+                                        SizedBox(width: screenWidth * 0.03),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Text(
+                                                "Attention",
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                height: screenHeight * 0.002,
+                                              ),
+                                              Text(
+                                                _errorMessage,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            SizedBox(
+                              height:
+                                  mediaQuery.viewInsets.bottom +
+                                  screenHeight * 0.02,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

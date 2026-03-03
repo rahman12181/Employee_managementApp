@@ -51,6 +51,14 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
   late Animation<double> _bounceAnimation;
   late Animation<double> _pulseAnimation;
 
+  // Sky Blue Color Palette - Matching all screens
+  static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
+  static const Color deepSky = Color(0xFF00A5E0);    // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+
   @override
   void initState() {
     super.initState();
@@ -202,7 +210,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
             "status_color": _getStatusColor(leave.status),
             "status_bg_color": _getStatusBgColor(leave.status),
             "icon": Icons.beach_access,
-            "icon_color": Colors.blue,
+            "icon_color": skyBlue,
             "created_date": leave.fromDate,
             "is_logged": true,
             "last_updated": DateTime.now().toIso8601String(),
@@ -237,7 +245,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
             "status_color": _getStatusColor(travel["status"] ?? "Pending"),
             "status_bg_color": _getStatusBgColor(travel["status"] ?? "Pending"),
             "icon": Icons.flight_takeoff,
-            "icon_color": Colors.orange,
+            "icon_color": deepSky,
             "title": travel["purpose_of_travel"] ?? "Travel Request",
             "subtitle": travel["employee_name"] ?? "",
             "created_date": travel["posting_date"] ?? "",
@@ -410,10 +418,10 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
     if (statusLower.contains("pending") ||
         statusLower.contains("draft") ||
         statusLower.contains("submitted")) {
-      return Colors.orange;
+      return skyBlue;
     }
 
-    return Colors.blue;
+    return skyBlue;
   }
 
   Color _getStatusBgColor(String status) {
@@ -425,10 +433,10 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
     if (statusLower.contains("pending") ||
         statusLower.contains("draft") ||
         statusLower.contains("submitted")) {
-      return Colors.orange.withOpacity(0.1);
+      return skyBlue.withOpacity(0.1);
     }
 
-    return Colors.blue.withOpacity(0.1);
+    return skyBlue.withOpacity(0.1);
   }
 
   @override
@@ -447,10 +455,10 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
     double responsiveHeight(double percentage) => screenHeight * percentage;
     double responsiveFontSize(double baseSize) => baseSize * (screenWidth / 375);
 
-    final primaryColor = isDark ? Colors.blue[300]! : const Color(0xFF2563EB);
-    final secondaryColor = isDark ? Colors.blue[400]! : const Color(0xFF3B82F6);
-    final backgroundColor = isDark ? Colors.grey[900]! : const Color(0xFFF8FAFD);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final primaryColor = skyBlue;
+    final secondaryColor = deepSky;
+    final backgroundColor = isDark ? charcoal : offWhite;
+    final cardColor = isDark ? slate : pureWhite;
     final textColor = isDark ? Colors.white : Colors.black;
     final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
 
@@ -474,7 +482,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                       ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [primaryColor, secondaryColor],
+                          colors: [skyBlue, deepSky],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -484,7 +492,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: skyBlue.withOpacity(0.3),
                             blurRadius: 20,
                             spreadRadius: 1,
                             offset: const Offset(0, 4),
@@ -599,7 +607,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                             decoration: BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: skyBlue.withOpacity(0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -617,10 +625,10 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                                 prefixIcon: Icon(
                                   Icons.search_rounded,
                                   size: responsiveWidth(0.05),
-                                  color: primaryColor,
+                                  color: skyBlue,
                                 ),
                                 filled: true,
-                                fillColor: isDark ? cardColor : Colors.white,
+                                fillColor: cardColor,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
                                   borderSide: BorderSide.none,
@@ -628,14 +636,14 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
                                   borderSide: BorderSide(
-                                    color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+                                    color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
                                     width: 1.5,
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
                                   borderSide: BorderSide(
-                                    color: primaryColor,
+                                    color: skyBlue,
                                     width: 2,
                                   ),
                                 ),
@@ -684,7 +692,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                                         ? Colors.green 
                                         : filter == "Travel" 
                                             ? Colors.orange 
-                                            : primaryColor;
+                                            : skyBlue;
                                     return ChoiceChip(
                                       label: Text(
                                         filter,
@@ -697,7 +705,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                                         ),
                                       ),
                                       selected: isSelected,
-                                      backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                                      backgroundColor: isDark ? slate : Colors.grey[200],
                                       selectedColor: isSelected ? filterColor : null,
                                       onSelected: (_) => _onFilterChanged(filter),
                                       shape: RoundedRectangleBorder(
@@ -736,7 +744,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                             _buildStatItem(
                               title: "Total",
                               count: _totalCount.toString(),
-                              color: Colors.blue,
+                              color: skyBlue,
                               icon: Icons.list_alt_rounded,
                               screenWidth: screenWidth,
                               screenHeight: screenHeight,
@@ -769,7 +777,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                             _buildStatItem(
                               title: "Pending",
                               count: _pendingCount.toString(),
-                              color: Colors.amber,
+                              color: skyBlue,
                               icon: Icons.pending_rounded,
                               screenWidth: screenWidth,
                               screenHeight: screenHeight,
@@ -786,8 +794,8 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                 if (_isRefreshing)
                   LinearProgressIndicator(
                     minHeight: 2,
-                    backgroundColor: primaryColor.withOpacity(0.2),
-                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                    backgroundColor: skyBlue.withOpacity(0.2),
+                    valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
                   ),
 
                 if (_employeeId.isEmpty && !_isLoading)
@@ -860,7 +868,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                         child: _buildFabOptionItem(
                           icon: Icons.flight_takeoff_outlined,
                           label: "Travel Request",
-                          color: Colors.blue,
+                          color: deepSky,
                           onTap: _navigateToTravelRequest,
                           theme: theme,
                           screenWidth: screenWidth,
@@ -875,7 +883,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                         child: _buildFabOptionItem(
                           icon: Icons.beach_access_outlined,
                           label: "Create Leave",
-                          color: Colors.green,
+                          color: skyBlue,
                           onTap: _navigateToLeaveRequest,
                           theme: theme,
                           screenWidth: screenWidth,
@@ -903,13 +911,13 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
-                      colors: [primaryColor, secondaryColor],
+                      colors: [skyBlue, deepSky],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withOpacity(0.4),
+                        color: skyBlue.withOpacity(0.4),
                         blurRadius: responsiveWidth(0.04),
                         spreadRadius: responsiveWidth(0.005),
                         offset: const Offset(0, 4),
@@ -945,6 +953,8 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
     required double Function(double) responsiveHeight,
     required double Function(double) responsiveFontSize,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Container(
@@ -956,7 +966,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
           borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: color.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -986,6 +996,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
               style: TextStyle(
                 fontSize: responsiveFontSize(10),
                 fontWeight: FontWeight.w500,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
               ),
             ),
           ],
@@ -1013,14 +1024,14 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
               height: responsiveWidth(0.15),
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                color: theme.primaryColor,
+                color: skyBlue,
               ),
             ),
             SizedBox(height: responsiveHeight(0.02)),
             Text(
               "Loading your requests...",
               style: TextStyle(
-                color: theme.hintColor,
+                color: isDark ? Colors.grey[400] : theme.hintColor,
                 fontSize: responsiveFontSize(16),
                 fontWeight: FontWeight.w500,
               ),
@@ -1064,7 +1075,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                 child: Text(
                   _errorMessage,
                   style: TextStyle(
-                    color: theme.hintColor,
+                    color: isDark ? Colors.grey[400] : theme.hintColor,
                     fontSize: responsiveFontSize(14),
                   ),
                   textAlign: TextAlign.center,
@@ -1113,7 +1124,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                       ? Icons.beach_access_rounded
                       : Icons.inbox_outlined,
               size: responsiveWidth(0.2),
-              color: theme.hintColor,
+              color: isDark ? Colors.grey[600] : theme.hintColor,
             ),
             SizedBox(height: responsiveHeight(0.02)),
             Text(
@@ -1121,7 +1132,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   ? "No requests found"
                   : "No $_selectedFilter requests",
               style: TextStyle(
-                color: theme.hintColor,
+                color: isDark ? Colors.grey[400] : theme.hintColor,
                 fontSize: responsiveFontSize(18),
                 fontWeight: FontWeight.w600,
               ),
@@ -1134,7 +1145,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   _onFilterChanged("All");
                 },
                 style: TextButton.styleFrom(
-                  foregroundColor: theme.primaryColor,
+                  foregroundColor: skyBlue,
                 ),
                 child: Text(
                   "Clear filters",
@@ -1153,7 +1164,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
       onRefresh: () async {
         await _fetchAllRequests(showLoading: false);
       },
-      color: theme.primaryColor,
+      color: skyBlue,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
@@ -1182,6 +1193,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
             child: _buildRequestCard(
               request, 
               theme, 
+              isDark,
               screenWidth, 
               screenHeight,
               responsiveWidth,
@@ -1197,6 +1209,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
   Widget _buildRequestCard(
     Map<String, dynamic> request,
     ThemeData theme,
+    bool isDark,
     double screenWidth,
     double screenHeight,
     double Function(double) responsiveWidth,
@@ -1213,6 +1226,8 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
     final iconColor = request["icon_color"];
     final isLogged = request["is_logged"] ?? false;
     final employeeName = request["employee_name"] ?? request["employee"] ?? "";
+    final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
+    final textColor = isDark ? Colors.white : Colors.black;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -1224,14 +1239,14 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
           borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: skyBlue.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Material(
-          color: theme.cardColor,
+          color: isDark ? slate : pureWhite,
           borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
           child: InkWell(
             onTap: () {
@@ -1287,7 +1302,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                                         ? "LEAVE REQUEST"
                                         : "TRAVEL REQUEST",
                                     style: TextStyle(
-                                      color: theme.hintColor,
+                                      color: subtitleColor,
                                       fontSize: responsiveFontSize(11),
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
@@ -1299,7 +1314,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: responsiveFontSize(16),
-                                      color: theme.textTheme.bodyLarge?.color,
+                                      color: textColor,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
@@ -1309,7 +1324,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                                       "Employee: $employeeName",
                                       style: TextStyle(
                                         fontSize: responsiveFontSize(13),
-                                        color: theme.hintColor,
+                                        color: subtitleColor,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1,
@@ -1379,6 +1394,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     _buildLeaveDetails(
                       data as LeaveApprovedModel,
                       theme,
+                      isDark,
                       screenWidth,
                       responsiveWidth,
                       responsiveHeight,
@@ -1388,6 +1404,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     _buildTravelDetails(
                       request, 
                       theme, 
+                      isDark,
                       screenWidth,
                       responsiveWidth,
                       responsiveHeight,
@@ -1405,11 +1422,15 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
   Widget _buildLeaveDetails(
     LeaveApprovedModel leave,
     ThemeData theme,
+    bool isDark,
     double screenWidth,
     double Function(double) responsiveWidth,
     double Function(double) responsiveHeight,
     double Function(double) responsiveFontSize,
   ) {
+    final textColor = isDark ? Colors.white : Colors.black;
+    final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
+    
     return Column(
       children: [
         Row(
@@ -1422,7 +1443,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   Text(
                     "EMPLOYEE",
                     style: TextStyle(
-                      color: theme.hintColor,
+                      color: subtitleColor,
                       fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
@@ -1433,7 +1454,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: responsiveFontSize(14),
-                      color: theme.textTheme.bodyLarge?.color,
+                      color: textColor,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1448,7 +1469,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   Text(
                     "FROM DATE",
                     style: TextStyle(
-                      color: theme.hintColor,
+                      color: subtitleColor,
                       fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
@@ -1459,7 +1480,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: responsiveFontSize(14),
-                      color: theme.textTheme.bodyLarge?.color,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -1473,7 +1494,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   Text(
                     "TO DATE",
                     style: TextStyle(
-                      color: theme.hintColor,
+                      color: subtitleColor,
                       fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
@@ -1484,7 +1505,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: responsiveFontSize(14),
-                      color: theme.textTheme.bodyLarge?.color,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -1500,7 +1521,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
               Text(
                 "REASON",
                 style: TextStyle(
-                  color: theme.hintColor,
+                  color: subtitleColor,
                   fontSize: responsiveFontSize(10),
                   letterSpacing: 0.5,
                 ),
@@ -1510,7 +1531,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                 leave.reason,
                 style: TextStyle(
                   fontSize: responsiveFontSize(14),
-                  color: theme.textTheme.bodyLarge?.color,
+                  color: textColor,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -1524,11 +1545,15 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
   Widget _buildTravelDetails(
     Map<String, dynamic> travel,
     ThemeData theme,
+    bool isDark,
     double screenWidth,
     double Function(double) responsiveWidth,
     double Function(double) responsiveHeight,
     double Function(double) responsiveFontSize,
   ) {
+    final textColor = isDark ? Colors.white : Colors.black;
+    final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1541,7 +1566,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   Text(
                     "PURPOSE",
                     style: TextStyle(
-                      color: theme.hintColor,
+                      color: subtitleColor,
                       fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
@@ -1552,7 +1577,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: responsiveFontSize(14),
-                      color: theme.textTheme.bodyLarge?.color,
+                      color: textColor,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
@@ -1568,7 +1593,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   Text(
                     "TYPE",
                     style: TextStyle(
-                      color: theme.hintColor,
+                      color: subtitleColor,
                       fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
@@ -1579,7 +1604,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: responsiveFontSize(14),
-                      color: theme.textTheme.bodyLarge?.color,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -1597,7 +1622,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   Text(
                     "FUNDING",
                     style: TextStyle(
-                      color: theme.hintColor,
+                      color: subtitleColor,
                       fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
@@ -1608,7 +1633,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: responsiveFontSize(14),
-                      color: theme.textTheme.bodyLarge?.color,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -1622,7 +1647,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                   Text(
                     "REQUESTED ON",
                     style: TextStyle(
-                      color: theme.hintColor,
+                      color: subtitleColor,
                       fontSize: responsiveFontSize(10),
                       letterSpacing: 0.5,
                     ),
@@ -1633,7 +1658,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: responsiveFontSize(14),
-                      color: theme.textTheme.bodyLarge?.color,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -1656,6 +1681,9 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
     required double Function(double) responsiveHeight,
     required double Function(double) responsiveFontSize,
   }) {
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1664,11 +1692,12 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
           vertical: responsiveWidth(0.03),
         ),
         decoration: BoxDecoration(
-          color: theme.cardColor,
+          color: isDark ? slate : pureWhite,
           borderRadius: BorderRadius.circular(responsiveWidth(0.06)),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: color.withOpacity(0.2),
               blurRadius: 10,
               spreadRadius: 2,
             ),
@@ -1692,7 +1721,7 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> with TickerPr
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: responsiveFontSize(15),
-                color: theme.textTheme.bodyLarge?.color,
+                color: textColor,
               ),
             ),
             SizedBox(width: responsiveWidth(0.02)),

@@ -34,6 +34,17 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Sky Blue Color Palette - Matching all screens
+  static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE);  // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0);  // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0);    // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
   @override
   void initState() {
     super.initState();
@@ -240,6 +251,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
   Future<bool> _showConfirmationDialog(double amount, String purpose) async {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return await showDialog<bool>(
           context: context,
@@ -253,15 +265,9 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
             child: Container(
               padding: EdgeInsets.all(screenWidth * 0.06),
               decoration: BoxDecoration(
+                color: isDarkMode ? slate : pureWhite,
                 borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white,
-                    Colors.grey.shade50,
-                  ],
-                ),
+                border: Border.all(color: skyBlue.withOpacity(0.3), width: 1.5),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -273,11 +279,11 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                         padding: EdgeInsets.all(screenWidth * 0.025),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.orange.shade50,
+                          color: skyBlue.withOpacity(0.1),
                         ),
                         child: Icon(
                           Icons.info_outline_rounded,
-                          color: Colors.orange.shade700,
+                          color: skyBlue,
                           size: screenWidth * 0.06,
                         ),
                       ),
@@ -288,7 +294,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                           style: TextStyle(
                             fontSize: screenWidth * 0.05,
                             fontWeight: FontWeight.w700,
-                            color: Colors.grey.shade900,
+                            color: isDarkMode ? Colors.white : Colors.grey.shade900,
                           ),
                         ),
                       ),
@@ -299,16 +305,16 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                     'Please review the details below before submitting:',
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
-                      color: Colors.grey.shade700,
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.02),
                   Container(
                     padding: EdgeInsets.all(screenWidth * 0.04),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: isDarkMode ? slate.withOpacity(0.3) : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: skyBlue.withOpacity(0.2)),
                     ),
                     child: Column(
                       children: [
@@ -317,25 +323,25 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                           'Amount:',
                           'SAR ${amount.toStringAsFixed(2)}',
                           Icons.currency_rupee_rounded,
-                          Colors.blue,
+                          skyBlue,
                         ),
-                        _buildDivider(screenWidth),
+                        _buildDivider(screenWidth, isDarkMode),
                         _buildConfirmationRow(
                           context,
                           'Purpose:',
                           purpose,
                           Icons.description_rounded,
-                          Colors.purple,
+                          deepSky,
                         ),
-                        _buildDivider(screenWidth),
+                        _buildDivider(screenWidth, isDarkMode),
                         _buildConfirmationRow(
                           context,
                           'Account:',
                           _selectedAccount ?? '',
                           Icons.account_balance_rounded,
-                          Colors.teal,
+                          mediumSky,
                         ),
-                        _buildDivider(screenWidth),
+                        _buildDivider(screenWidth, isDarkMode),
                         _buildConfirmationRow(
                           context,
                           'Payment Mode:',
@@ -343,7 +349,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                           Icons.payment_rounded,
                           Colors.green,
                         ),
-                        _buildDivider(screenWidth),
+                        _buildDivider(screenWidth, isDarkMode),
                         _buildConfirmationRow(
                           context,
                           'Repayment:',
@@ -358,15 +364,15 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                   Container(
                     padding: EdgeInsets.all(screenWidth * 0.03),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
+                      color: skyBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                      border: Border.all(color: Colors.orange.shade200),
+                      border: Border.all(color: skyBlue.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.info_rounded,
-                          color: Colors.orange.shade700,
+                          color: skyBlue,
                           size: screenWidth * 0.04,
                         ),
                         SizedBox(width: screenWidth * 0.03),
@@ -375,7 +381,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                             'Once submitted, this request cannot be modified. Your manager will review and respond within 24-48 hours.',
                             style: TextStyle(
                               fontSize: screenWidth * 0.032,
-                              color: Colors.orange.shade800,
+                              color: isDarkMode ? Colors.white70 : Colors.grey.shade800,
                               height: 1.4,
                             ),
                           ),
@@ -396,14 +402,14 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(screenWidth * 0.03),
                             ),
-                            side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                            side: BorderSide(color: skyBlue.withOpacity(0.3), width: 1.5),
                           ),
                           child: Text(
                             'CANCEL',
                             style: TextStyle(
                               fontSize: screenWidth * 0.038,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
+                              color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                             ),
                           ),
                         ),
@@ -413,7 +419,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                         child: ElevatedButton(
                           onPressed: () => Navigator.pop(context, true),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade700,
+                            backgroundColor: skyBlue,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
                               vertical: screenHeight * 0.018,
@@ -457,6 +463,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
     Color color,
   ) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -480,7 +487,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 label,
                 style: TextStyle(
                   fontSize: screenWidth * 0.032,
-                  color: Colors.grey.shade600,
+                  color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(height: 2),
@@ -491,7 +498,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                   style: TextStyle(
                     fontSize: screenWidth * 0.036,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade900,
+                    color: isDarkMode ? Colors.white : Colors.grey.shade900,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
@@ -504,12 +511,12 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
     );
   }
 
-  Widget _buildDivider(double screenWidth) {
+  Widget _buildDivider(double screenWidth, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Divider(
         height: 1,
-        color: Colors.grey.shade200,
+        color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade200,
       ),
     );
   }
@@ -520,6 +527,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
   }) async {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     await showDialog(
       context: context,
@@ -533,12 +541,9 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
         child: Container(
           padding: EdgeInsets.all(screenWidth * 0.06),
           decoration: BoxDecoration(
+            color: isDarkMode ? slate : pureWhite,
             borderRadius: BorderRadius.circular(screenWidth * 0.05),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.green.shade50, Colors.white],
-            ),
+            border: Border.all(color: Colors.green.withOpacity(0.3), width: 1.5),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -549,7 +554,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 padding: EdgeInsets.all(screenWidth * 0.05),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.green.shade100,
+                  color: Colors.green.withOpacity(0.1),
                 ),
                 child: Icon(
                   Icons.check_circle_rounded,
@@ -563,7 +568,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 style: TextStyle(
                   fontSize: screenWidth * 0.07,
                   fontWeight: FontWeight.w800,
-                  color: Colors.green.shade800,
+                  color: Colors.green,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -573,7 +578,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: screenWidth * 0.04,
-                  color: Colors.grey.shade700,
+                  color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                   height: 1.5,
                 ),
               ),
@@ -585,16 +590,16 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                     vertical: screenWidth * 0.03,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: skyBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(color: skyBlue.withOpacity(0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.confirmation_number_rounded,
-                        color: Colors.blue.shade700,
+                        color: skyBlue,
                         size: screenWidth * 0.05,
                       ),
                       SizedBox(width: screenWidth * 0.03),
@@ -605,7 +610,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                             'Reference ID',
                             style: TextStyle(
                               fontSize: screenWidth * 0.03,
-                              color: Colors.blue.shade700,
+                              color: skyBlue,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -614,7 +619,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                             style: TextStyle(
                               fontSize: screenWidth * 0.045,
                               fontWeight: FontWeight.w700,
-                              color: Colors.blue.shade900,
+                              color: isDarkMode ? Colors.white : Colors.grey.shade900,
                               letterSpacing: 1,
                             ),
                           ),
@@ -634,7 +639,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                         _navigateToHistory();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: skyBlue,
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(
                           vertical: screenHeight * 0.02,
@@ -671,14 +676,14 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(screenWidth * 0.03),
                         ),
-                        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                        side: BorderSide(color: skyBlue.withOpacity(0.3), width: 1.5),
                       ),
                       child: Text(
                         'Close',
                         style: TextStyle(
                           fontSize: screenWidth * 0.04,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
+                          color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                         ),
                       ),
                     ),
@@ -698,6 +703,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
   }) async {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     await showDialog(
       context: context,
@@ -711,12 +717,9 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
         child: Container(
           padding: EdgeInsets.all(screenWidth * 0.06),
           decoration: BoxDecoration(
+            color: isDarkMode ? slate : pureWhite,
             borderRadius: BorderRadius.circular(screenWidth * 0.05),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.red.shade50, Colors.white],
-            ),
+            border: Border.all(color: Colors.red.withOpacity(0.3), width: 1.5),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -727,7 +730,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 padding: EdgeInsets.all(screenWidth * 0.05),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.red.shade100,
+                  color: Colors.red.withOpacity(0.1),
                 ),
                 child: Icon(
                   Icons.error_outline_rounded,
@@ -741,7 +744,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 style: TextStyle(
                   fontSize: screenWidth * 0.07,
                   fontWeight: FontWeight.w800,
-                  color: Colors.red.shade800,
+                  color: Colors.red,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -751,14 +754,14 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: screenWidth * 0.04,
-                  color: Colors.grey.shade700,
+                  color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                   height: 1.5,
                 ),
               ),
               SizedBox(height: screenHeight * 0.025),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: isDarkMode ? slate.withOpacity(0.3) : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 ),
                 child: Theme(
@@ -768,7 +771,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                   child: ExpansionTile(
                     leading: Icon(
                       Icons.error_rounded,
-                      color: Colors.orange.shade700,
+                      color: skyBlue,
                       size: screenWidth * 0.05,
                     ),
                     title: Text(
@@ -776,7 +779,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade800,
+                        color: isDarkMode ? Colors.white70 : Colors.grey.shade800,
                       ),
                     ),
                     children: [
@@ -785,14 +788,14 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                         padding: EdgeInsets.all(screenWidth * 0.04),
                         margin: EdgeInsets.only(bottom: screenWidth * 0.02),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
+                          color: isDarkMode ? slate : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(screenWidth * 0.02),
                         ),
                         child: Text(
                           error,
                           style: TextStyle(
                             fontSize: screenWidth * 0.035,
-                            color: Colors.red.shade900,
+                            color: Colors.red,
                             fontFamily: 'monospace',
                             height: 1.4,
                           ),
@@ -808,7 +811,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade600,
+                    backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(
                       vertical: screenHeight * 0.018,
@@ -932,11 +935,11 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade50,
+      backgroundColor: isDarkMode ? charcoal : offWhite,
       body: SafeArea(
         child: Column(
           children: [
-            // Animated Header
+            // Animated Header with Sky Blue
             FadeTransition(
               opacity: _fadeAnimation,
               child: SlideTransition(
@@ -951,8 +954,8 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: isDarkMode
-                          ? [Colors.blue.shade800, Colors.blue.shade900]
-                          : [Colors.blue.shade600, Colors.blue.shade700],
+                          ? [slate, charcoal]
+                          : [skyBlue, deepSky],
                     ),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(30),
@@ -960,7 +963,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.shade400.withOpacity(0.3),
+                        color: skyBlue.withOpacity(0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -1049,7 +1052,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                               height: screenWidth * 0.15,
                               child: CircularProgressIndicator(
                                 strokeWidth: 3,
-                                color: theme.primaryColor,
+                                color: skyBlue,
                               ),
                             ),
                             SizedBox(height: screenHeight * 0.025),
@@ -1057,7 +1060,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                               _loadingMessage,
                               style: TextStyle(
                                 fontSize: screenWidth * 0.045,
-                                color: theme.hintColor,
+                                color: isDarkMode ? Colors.white70 : Colors.grey.shade600,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1073,7 +1076,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                       ),
                       child: Column(
                         children: [
-                          // Welcome Card
+                          // Welcome Card with Sky Blue
                           TweenAnimationBuilder(
                             tween: Tween<double>(begin: 0, end: 1),
                             duration: const Duration(milliseconds: 600),
@@ -1090,22 +1093,17 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                 bottom: screenHeight * 0.025,
                               ),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: isDarkMode
-                                      ? [
-                                          Colors.grey.shade800,
-                                          Colors.grey.shade900,
-                                        ]
-                                      : [Colors.white, Colors.grey.shade50],
-                                ),
+                                color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
                                 borderRadius: BorderRadius.circular(
                                   screenWidth * 0.05,
                                 ),
+                                border: Border.all(
+                                  color: skyBlue.withOpacity(0.2),
+                                  width: 1.5,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.08),
+                                    color: skyBlue.withOpacity(0.1),
                                     blurRadius: 20,
                                     offset: const Offset(0, 10),
                                   ),
@@ -1118,14 +1116,11 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       gradient: LinearGradient(
-                                        colors: [
-                                          Colors.blue.shade400,
-                                          Colors.blue.shade600,
-                                        ],
+                                        colors: [skyBlue, deepSky],
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.blue.shade400.withOpacity(0.3),
+                                          color: skyBlue.withOpacity(0.3),
                                           blurRadius: 12,
                                           offset: const Offset(0, 4),
                                         ),
@@ -1159,7 +1154,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                           style: TextStyle(
                                             fontSize: screenWidth * 0.035,
                                             color: isDarkMode
-                                                ? Colors.grey.shade300
+                                                ? Colors.grey.shade400
                                                 : Colors.grey.shade600,
                                             height: 1.4,
                                           ),
@@ -1172,7 +1167,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                             ),
                           ),
 
-                          // Form Card
+                          // Form Card with Sky Blue
                           FadeTransition(
                             opacity: _fadeAnimation,
                             child: SlideTransition(
@@ -1180,15 +1175,17 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                               child: Container(
                                 padding: EdgeInsets.all(screenWidth * 0.05),
                                 decoration: BoxDecoration(
-                                  color: isDarkMode
-                                      ? Colors.grey.shade800
-                                      : Colors.white,
+                                  color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
                                   borderRadius: BorderRadius.circular(
                                     screenWidth * 0.05,
                                   ),
+                                  border: Border.all(
+                                    color: skyBlue.withOpacity(0.2),
+                                    width: 1.5,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: skyBlue.withOpacity(0.1),
                                       blurRadius: 20,
                                       offset: const Offset(0, 10),
                                     ),
@@ -1220,7 +1217,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                             hintText: 'Enter amount (SAR)',
                                             hintStyle: TextStyle(
                                               color: isDarkMode
-                                                  ? Colors.grey.shade400
+                                                  ? Colors.grey.shade500
                                                   : Colors.grey.shade500,
                                               fontSize: screenWidth * 0.04,
                                               fontWeight: FontWeight.normal,
@@ -1229,7 +1226,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                             suffixText: 'SAR',
                                             suffixStyle: TextStyle(
                                               color: isDarkMode
-                                                  ? Colors.grey.shade300
+                                                  ? Colors.grey.shade400
                                                   : Colors.grey.shade700,
                                               fontSize: screenWidth * 0.038,
                                               fontWeight: FontWeight.w600,
@@ -1277,7 +1274,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                                 'Describe why you need this advance...',
                                             hintStyle: TextStyle(
                                               color: isDarkMode
-                                                  ? Colors.grey.shade400
+                                                  ? Colors.grey.shade500
                                                   : Colors.grey.shade500,
                                               fontSize: screenWidth * 0.035,
                                             ),
@@ -1299,7 +1296,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                                   color: currentLength > 150
                                                       ? Colors.orange
                                                       : isDarkMode
-                                                          ? Colors.grey.shade400
+                                                          ? Colors.grey.shade500
                                                           : Colors.grey.shade600,
                                                 ),
                                               ),
@@ -1361,7 +1358,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                         padding: EdgeInsets.all(screenWidth * 0.04),
                                         decoration: BoxDecoration(
                                           color: isDarkMode
-                                              ? Colors.grey.shade700
+                                              ? slate.withOpacity(0.3)
                                               : _repayFromSalary
                                                   ? Colors.green.shade50
                                                   : Colors.orange.shade50,
@@ -1446,8 +1443,6 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                             ),
                                             Switch.adaptive(
                                               value: _repayFromSalary,
-                                              // ignore: duplicate_ignore
-                                              // ignore: deprecated_member_use
                                               activeColor: Colors.green,
                                               activeTrackColor: Colors.green.shade200,
                                               inactiveTrackColor: Colors.orange.shade200,
@@ -1463,7 +1458,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
 
                                       SizedBox(height: screenHeight * 0.04),
 
-                                      // Submit Button
+                                      // Submit Button with Sky Blue
                                       AnimatedContainer(
                                         duration: const Duration(milliseconds: 300),
                                         width: double.infinity,
@@ -1474,7 +1469,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: _isSubmitting
                                                 ? Colors.grey.shade400
-                                                : Colors.blue.shade600,
+                                                : skyBlue,
                                             foregroundColor: Colors.white,
                                             padding: EdgeInsets.symmetric(
                                               vertical: screenHeight * 0.02,
@@ -1487,7 +1482,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                                             ),
                                             elevation: _isSubmitting ? 0 : 5,
                                             shadowColor:
-                                                Colors.blue.shade400.withOpacity(0.5),
+                                                skyBlue.withOpacity(0.5),
                                           ),
                                           child: _isSubmitting
                                               ? Row(
@@ -1572,16 +1567,16 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
           style: TextStyle(
             fontSize: screenWidth * 0.038,
             fontWeight: FontWeight.w600,
-            color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
           ),
         ),
         SizedBox(height: screenWidth * 0.015),
         Container(
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade50,
+            color: isDarkMode ? slate.withOpacity(0.3) : offWhite,
             borderRadius: BorderRadius.circular(screenWidth * 0.04),
             border: Border.all(
-              color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade200,
+              color: skyBlue.withOpacity(0.2),
               width: 1.5,
             ),
           ),
@@ -1595,12 +1590,12 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 Container(
                   padding: EdgeInsets.all(screenWidth * 0.01),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: skyBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   ),
                   child: Icon(
                     icon,
-                    color: Colors.blue.shade600,
+                    color: skyBlue,
                     size: screenWidth * 0.05,
                   ),
                 ),
@@ -1632,16 +1627,16 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
           style: TextStyle(
             fontSize: screenWidth * 0.038,
             fontWeight: FontWeight.w600,
-            color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
           ),
         ),
         SizedBox(height: screenWidth * 0.015),
         Container(
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade50,
+            color: isDarkMode ? slate.withOpacity(0.3) : offWhite,
             borderRadius: BorderRadius.circular(screenWidth * 0.04),
             border: Border.all(
-              color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade200,
+              color: skyBlue.withOpacity(0.2),
               width: 1.5,
             ),
           ),
@@ -1655,12 +1650,12 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                 Container(
                   padding: EdgeInsets.all(screenWidth * 0.01),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: skyBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   ),
                   child: Icon(
                     icon,
-                    color: Colors.blue.shade600,
+                    color: skyBlue,
                     size: screenWidth * 0.05,
                   ),
                 ),
@@ -1672,7 +1667,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                       isExpanded: true,
                       icon: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: Colors.blue.shade600,
+                        color: skyBlue,
                         size: screenWidth * 0.06,
                       ),
                       style: TextStyle(
@@ -1681,7 +1676,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                         color: isDarkMode ? Colors.white : Colors.grey.shade900,
                       ),
                       dropdownColor: isDarkMode
-                          ? Colors.grey.shade800
+                          ? slate
                           : Colors.white,
                       borderRadius: BorderRadius.circular(screenWidth * 0.03),
                       hint: Text(
@@ -1689,7 +1684,7 @@ class _EmployeeAdvanceScreenState extends State<EmployeeAdvanceScreen>
                         style: TextStyle(
                           fontSize: screenWidth * 0.04,
                           color: isDarkMode
-                              ? Colors.grey.shade400
+                              ? Colors.grey.shade500
                               : Colors.grey.shade500,
                           fontWeight: FontWeight.normal,
                         ),

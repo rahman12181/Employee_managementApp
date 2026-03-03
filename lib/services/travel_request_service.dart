@@ -18,10 +18,9 @@ class TravelRequestService {
       final cookies = prefs.getStringList("cookies");
 
       if (cookies == null || cookies.isEmpty) {
-        return _getDefaultFundingTypes(); // Return default if no session
+        return _getDefaultFundingTypes();
       }
 
-      // Try to fetch from ERP - adjust this API endpoint based on your ERP
       const url = "$_baseUrl/api/resource/Travel Funding Type?fields=[\"name\"]&limit=100";
       
       final response = await http.get(
@@ -51,7 +50,7 @@ class TravelRequestService {
       
       return _getDefaultFundingTypes();
     } catch (e) {
-      return _getDefaultFundingTypes(); // Return default on error
+      return _getDefaultFundingTypes();
     }
   }
 
@@ -91,114 +90,15 @@ class TravelRequestService {
         }
       }
       
-
       return _getDefaultPurposeTypes();
     } catch (e) {
       return _getDefaultPurposeTypes(); 
     }
   }
 
-  static List<Map<String, dynamic>> _getDefaultFundingTypes() {
-    return [
-      {
-        'value': 'Fully Sponsored',
-        'label': 'Fully Sponsored',
-        'icon': Icons.account_balance_wallet,
-        'color': Colors.purple
-      },
-      {
-        'value': 'Self Sponsored',
-        'label': 'Self Sponsored',
-        'icon': Icons.person,
-        'color': Colors.orange
-      },
-      {
-        'value': 'Partially Sponsored',
-        'label': 'Partially Sponsored',
-        'icon': Icons.account_balance,
-        'color': Colors.teal
-      },
-    ];
-  }
-
   // =====================================================
-  // DEFAULT PURPOSE TYPES (FALLBACK)
+  // SUBMIT ONE-WAY TRAVEL REQUEST
   // =====================================================
-  static List<Map<String, dynamic>> _getDefaultPurposeTypes() {
-    return [
-      {
-        'value': 'Business',
-        'label': 'Business Meeting',
-        'icon': Icons.business,
-        'color': Colors.blue
-      },
-      {
-        'value': 'Conference',
-        'label': 'Conference',
-        'icon': Icons.groups,
-        'color': Colors.purple
-      },
-      {
-        'value': 'Training',
-        'label': 'Training',
-        'icon': Icons.school,
-        'color': Colors.green
-      },
-      {
-        'value': 'Project',
-        'label': 'Project Work',
-        'icon': Icons.work,
-        'color': Colors.orange
-      },
-      {
-        'value': 'Personal',
-        'label': 'Personal',
-        'icon': Icons.person,
-        'color': Colors.red
-      },
-    ];
-  }
-
-
-  static IconData _getIconForFunding(String fundingName) {
-    final name = fundingName.toLowerCase();
-    if (name.contains('fully')) return Icons.account_balance_wallet;
-    if (name.contains('self')) return Icons.person;
-    if (name.contains('partial')) return Icons.account_balance;
-    return Icons.attach_money; // default icon
-  }
-
-  static Color _getColorForFunding(String fundingName) {
-    final name = fundingName.toLowerCase();
-    if (name.contains('fully')) return Colors.purple;
-    if (name.contains('self')) return Colors.orange;
-    if (name.contains('partial')) return Colors.teal;
-    return Colors.blue; // default color
-  }
-
-  static IconData _getIconForPurpose(String purposeName) {
-    final name = purposeName.toLowerCase();
-    if (name.contains('business')) return Icons.business;
-    if (name.contains('conference')) return Icons.groups;
-    if (name.contains('training') || name.contains('school')) return Icons.school;
-    if (name.contains('project')) return Icons.work;
-    if (name.contains('personal')) return Icons.person;
-    if (name.contains('meeting')) return Icons.people;
-    return Icons.flight_takeoff; // default icon
-  }
-
-  static Color _getColorForPurpose(String purposeName) {
-    final name = purposeName.toLowerCase();
-    if (name.contains('business')) return Colors.blue;
-    if (name.contains('conference')) return Colors.purple;
-    if (name.contains('training')) return Colors.green;
-    if (name.contains('project')) return Colors.orange;
-    if (name.contains('personal')) return Colors.red;
-    if (name.contains('meeting')) return Colors.teal;
-    return Colors.indigo; // default color
-  }
-
- 
   static Future<String> submitTravelRequest({
     required String travelType,
     required String travelFunding,
@@ -208,10 +108,10 @@ class TravelRequestService {
     required String mode,
     required String departureDate,
     required String description,
+    bool isTwoWay = false, // Added for clarity but not used in one-way
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-
       final cookies = prefs.getStringList("cookies");
       final employeeId = prefs.getString("employeeId");
 
@@ -255,7 +155,88 @@ class TravelRequestService {
     }
   }
 
-  
+  // =====================================================
+  // SUBMIT TWO-WAY TRAVEL REQUEST
+  // =====================================================
+  static Future<String> submitTwoWayTravelRequest({
+    required String travelType,
+    required String travelFunding,
+    required String purpose,
+    required String onwardFrom,
+    required String onwardTo,
+    required String onwardMode,
+    required String onwardDate,
+    required String returnFrom,
+    required String returnTo,
+    required String returnMode,
+    required String returnDate,
+    required String description,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cookies = prefs.getStringList("cookies");
+      final employeeId = prefs.getString("employeeId");
+
+      if (cookies == null || cookies.isEmpty || employeeId == null) {
+        throw "Session expired. Please login again.";
+      }
+
+      // Validate that return location matches onward destination
+      if (onwardTo.toLowerCase() != returnFrom.toLowerCase()) {
+        throw "Return journey must start from your destination";
+      }
+
+      if (onwardFrom.toLowerCase() != returnTo.toLowerCase()) {
+        throw "Return journey must end at your origin";
+      }
+
+      final response = await http.post(
+        Uri.parse(_customTravelApi),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Cookie": cookies.join("; "),
+        },
+        body: jsonEncode({
+          "employee": employeeId,
+          "personal_id_type": "Iqama",
+          "personal_id_number": "1234567890",
+          "travel_type": travelType,
+          "travel_funding": travelFunding,
+          "purpose_of_travel": purpose,
+          "description": description,
+          "itinerary": [
+            // Onward journey
+            {
+              "travel_from": onwardFrom,
+              "travel_to": onwardTo,
+              "mode_of_travel": onwardMode,
+              "departure_date": onwardDate,
+            },
+            // Return journey
+            {
+              "travel_from": returnFrom,
+              "travel_to": returnTo,
+              "mode_of_travel": returnMode,
+              "departure_date": returnDate,
+            }
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return "Two-Way Travel Request Submitted Successfully";
+      }
+
+      throw "Submit Failed: ${response.body}";
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  // =====================================================
+  // GET MY TRAVEL REQUESTS
+  // =====================================================
   static Future<List<Map<String, dynamic>>> getMyTravelRequests(
       String employeeId) async {
     try {
@@ -322,6 +303,105 @@ class TravelRequestService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  // =====================================================
+  // HELPER METHODS
+  // =====================================================
+  static List<Map<String, dynamic>> _getDefaultFundingTypes() {
+    return [
+      {
+        'value': 'Fully Sponsored',
+        'label': 'Fully Sponsored',
+        'icon': Icons.account_balance_wallet,
+        'color': Colors.purple
+      },
+      {
+        'value': 'Self Sponsored',
+        'label': 'Self Sponsored',
+        'icon': Icons.person,
+        'color': Colors.orange
+      },
+      {
+        'value': 'Partially Sponsored',
+        'label': 'Partially Sponsored',
+        'icon': Icons.account_balance,
+        'color': Colors.teal
+      },
+    ];
+  }
+
+  static List<Map<String, dynamic>> _getDefaultPurposeTypes() {
+    return [
+      {
+        'value': 'Business',
+        'label': 'Business Meeting',
+        'icon': Icons.business,
+        'color': Colors.blue
+      },
+      {
+        'value': 'Conference',
+        'label': 'Conference',
+        'icon': Icons.groups,
+        'color': Colors.purple
+      },
+      {
+        'value': 'Training',
+        'label': 'Training',
+        'icon': Icons.school,
+        'color': Colors.green
+      },
+      {
+        'value': 'Project',
+        'label': 'Project Work',
+        'icon': Icons.work,
+        'color': Colors.orange
+      },
+      {
+        'value': 'Personal',
+        'label': 'Personal',
+        'icon': Icons.person,
+        'color': Colors.red
+      },
+    ];
+  }
+
+  static IconData _getIconForFunding(String fundingName) {
+    final name = fundingName.toLowerCase();
+    if (name.contains('fully')) return Icons.account_balance_wallet;
+    if (name.contains('self')) return Icons.person;
+    if (name.contains('partial')) return Icons.account_balance;
+    return Icons.attach_money;
+  }
+
+  static Color _getColorForFunding(String fundingName) {
+    final name = fundingName.toLowerCase();
+    if (name.contains('fully')) return Colors.purple;
+    if (name.contains('self')) return Colors.orange;
+    if (name.contains('partial')) return Colors.teal;
+    return Colors.blue;
+  }
+
+  static IconData _getIconForPurpose(String purposeName) {
+    final name = purposeName.toLowerCase();
+    if (name.contains('business')) return Icons.business;
+    if (name.contains('conference')) return Icons.groups;
+    if (name.contains('training') || name.contains('school')) return Icons.school;
+    if (name.contains('project')) return Icons.work;
+    if (name.contains('personal')) return Icons.person;
+    if (name.contains('meeting')) return Icons.people;
+    return Icons.flight_takeoff;
+  }
+
+  static Color _getColorForPurpose(String purposeName) {
+    final name = purposeName.toLowerCase();
+    if (name.contains('business')) return Colors.blue;
+    if (name.contains('conference')) return Colors.purple;
+    if (name.contains('training')) return Colors.green;
+    if (name.contains('project')) return Colors.orange;
+    if (name.contains('personal')) return Colors.red;
+    if (name.contains('meeting')) return Colors.teal;
+    return Colors.indigo;
   }
 
   static String _getDisplayStatus(String? workflowState, int? docstatus) {

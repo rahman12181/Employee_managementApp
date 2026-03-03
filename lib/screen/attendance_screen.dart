@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/attendance_provider.dart';
@@ -18,6 +19,24 @@ class AttendanceScreen extends StatefulWidget {
 class _AttendanceScreenState extends State<AttendanceScreen> {
   DateTime _currentMonth = DateTime.now();
   late ScrollController _scrollController;
+
+  // Sky Blue Color Palette - Matching Dashboard and Home
+  static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE);  // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0);  // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0);    // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
+  // Get header gradient colors based on theme (matching dashboard)
+  List<Color> _getHeaderGradientColors(bool isDarkMode) {
+    return isDarkMode
+        ? [charcoal, slate, const Color(0xFF1E1E2E)]
+        : [skyBlue, mediumSky, deepSky];
+  }
 
   @override
   void initState() {
@@ -48,13 +67,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Color _getStatusColor(AttendanceStatus status) {
     switch (status) {
       case AttendanceStatus.completed:
-        return Colors.green;
+        return skyBlue;
       case AttendanceStatus.overtime:
-        return Colors.blue.shade600;
+        return deepSky;
       case AttendanceStatus.shortage:
         return Colors.orange;
       case AttendanceStatus.checkedIn:
-        return Colors.amber.shade600;
+        return mediumSky;
       case AttendanceStatus.absent:
         return Colors.red;
     }
@@ -90,21 +109,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
-  List<Color> _getHeaderGradientColors(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return isDarkMode
-        ? [Colors.grey.shade900, Colors.grey.shade800]
-        : [Colors.blue.shade50, Colors.purple.shade50];
-  }
-
   Widget _buildCalendarDay(int day, DateTime date, BuildContext context) {
     final attendanceProvider = context.watch<AttendanceProvider>();
     final punchProvider = context.read<PunchProvider>();
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final gradientColors = _getHeaderGradientColors(isDarkMode);
 
     Color? bgColor;
     Color? textColor;
@@ -123,9 +136,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     if (date.isAfter(today)) {
       bgColor = Colors.transparent;
-      textColor = theme.disabledColor;
+      textColor = isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400;
       border = Border.all(
-        color: theme.dividerColor.withOpacity(0.3),
+        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
         width: 1.0,
       );
       opacity = 0.5;
@@ -134,11 +147,17 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         status ??= AttendanceStatus.checkedIn;
         bgColor = _getStatusColor(status);
         textColor = Colors.white;
-        border = Border.all(color: theme.colorScheme.primary, width: 2.5);
+        border = Border.all(
+          color: skyBlue,
+          width: 2.5,
+        );
       } else {
-        bgColor = Colors.grey.withOpacity(0.1);
-        textColor = theme.disabledColor;
-        border = Border.all(color: Colors.grey.withOpacity(0.4), width: 1.5);
+        bgColor = isDarkMode ? slate.withOpacity(0.3) : Colors.grey.shade200;
+        textColor = isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600;
+        border = Border.all(
+          color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400,
+          width: 1.5,
+        );
       }
     } else {
       status ??= AttendanceStatus.absent;
@@ -156,18 +175,17 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         height: screenWidth * 0.11,
         margin: EdgeInsets.all(screenWidth * 0.005),
         decoration: BoxDecoration(
+          gradient: bgColor != Colors.transparent ? null : null,
           color: bgColor,
           border: border,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow:
-              date.isAtSameMomentAs(today) && punchProvider.punchInTime != null
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: date.isAtSameMomentAs(today) && punchProvider.punchInTime != null
               ? [
                   BoxShadow(
-                    color: _getStatusColor(
-                      status ?? AttendanceStatus.checkedIn,
-                    ).withOpacity(0.3),
-                    blurRadius: 6,
-                    spreadRadius: 1,
+                    color: skyBlue.withOpacity(0.3),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 4),
                   ),
                 ]
               : null,
@@ -181,7 +199,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 child: Text(
                   "$day",
                   style: TextStyle(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     fontSize: screenWidth * 0.035,
                     color: textColor,
                   ),
@@ -190,7 +208,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ),
               ),
             ),
-            SizedBox(height: screenHeight * 0.002),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.002),
             Flexible(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -199,7 +217,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   style: TextStyle(
                     fontSize: screenWidth * 0.022,
                     fontWeight: FontWeight.w600,
-                    color: textColor.withOpacity(0.8),
+                    color: textColor?.withOpacity(0.8),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -214,33 +232,39 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   Widget _buildAttendanceLog(AttendanceLog log) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final isToday = log.date.isAtSameMomentAs(today);
     final statusColor = _getStatusColor(log.status);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final gradientColors = _getHeaderGradientColors(isDarkMode);
 
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.015),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
+        color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: skyBlue.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 5,
+            offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+        border: Border.all(
+          color: skyBlue.withOpacity(0.2),
+          width: 1.5,
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.all(screenWidth * 0.035),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Date Badge
+            // Premium Date Badge
             Container(
               width: screenWidth * 0.14,
               height: screenWidth * 0.14,
@@ -248,9 +272,17 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [statusColor, statusColor.withOpacity(0.8)],
+                  colors: [statusColor, statusColor.withOpacity(0.7)],
                 ),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: statusColor.withOpacity(0.3),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -262,9 +294,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         DateFormat('dd').format(log.date),
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
                           fontSize: screenWidth * 0.045,
                           height: 0.9,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 5,
+                            ),
+                          ],
                         ),
                         maxLines: 1,
                       ),
@@ -278,7 +316,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: screenWidth * 0.025,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                         maxLines: 1,
                       ),
@@ -297,17 +335,24 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        _getStatusIcon(log.status),
-                        color: statusColor,
-                        size: screenWidth * 0.04,
+                      Container(
+                        padding: EdgeInsets.all(screenWidth * 0.015),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _getStatusIcon(log.status),
+                          color: statusColor,
+                          size: screenWidth * 0.04,
+                        ),
                       ),
                       SizedBox(width: screenWidth * 0.015),
                       Expanded(
                         child: Text(
                           _getStatusText(log.status),
                           style: TextStyle(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                             color: statusColor,
                             fontSize: screenWidth * 0.035,
                           ),
@@ -318,24 +363,29 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       if (isToday)
                         Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.02,
+                            horizontal: screenWidth * 0.025,
                             vertical: screenHeight * 0.004,
                           ),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [
-                                Colors.blue.shade400,
-                                Colors.blue.shade600,
-                              ],
+                              colors: gradientColors,
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: skyBlue.withOpacity(0.3),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
                           child: Text(
-                            "Today",
+                            "TODAY",
                             style: TextStyle(
                               fontSize: screenWidth * 0.025,
                               color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
@@ -348,8 +398,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   Container(
                     padding: EdgeInsets.all(screenWidth * 0.025),
                     decoration: BoxDecoration(
-                      color: theme.scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(10),
+                      color: isDarkMode ? slate.withOpacity(0.3) : Colors.grey[50]!,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: skyBlue.withOpacity(0.1),
+                        width: 1,
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -361,7 +415,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 "Punch In",
                                 log.formattedCheckIn,
                                 Icons.login_rounded,
-                                Colors.blue,
+                                skyBlue,
                               ),
                             ),
                             SizedBox(width: screenWidth * 0.025),
@@ -371,7 +425,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 "Punch Out",
                                 log.formattedCheckOut,
                                 Icons.logout_rounded,
-                                Colors.red,
+                                deepSky,
                               ),
                             ),
                           ],
@@ -379,7 +433,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                         SizedBox(height: screenHeight * 0.008),
 
-                        // Total Hours
+                        // Total Hours with premium design
                         Container(
                           width: double.infinity,
                           padding: EdgeInsets.symmetric(
@@ -387,24 +441,27 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             vertical: screenHeight * 0.008,
                           ),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.blue.shade50,
-                                Colors.purple.shade50,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                            color: skyBlue.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: skyBlue.withOpacity(0.2),
+                              width: 1,
                             ),
-                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              Icon(
+                                Icons.timer_rounded,
+                                size: screenWidth * 0.035,
+                                color: skyBlue,
+                              ),
+                              SizedBox(width: screenWidth * 0.015),
                               Text(
                                 "Total: ",
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.03,
-                                  color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.9),
+                                  color: isDarkMode ? Colors.white70 : Colors.grey[700],
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -412,8 +469,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 log.formattedTotalHours,
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.035,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w900,
+                                  color: skyBlue,
                                 ),
                               ),
                             ],
@@ -440,6 +497,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -448,7 +506,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           padding: EdgeInsets.all(screenWidth * 0.02),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: color.withOpacity(0.2),
+              width: 1,
+            ),
           ),
           child: Icon(icon, color: color, size: screenWidth * 0.035),
         ),
@@ -462,8 +524,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 label,
                 style: TextStyle(
                   fontSize: screenWidth * 0.028,
-                  color: theme.hintColor,
-                  fontWeight: FontWeight.w500,
+                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -473,8 +535,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 time,
                 style: TextStyle(
                   fontSize: screenWidth * 0.032,
-                  fontWeight: FontWeight.w700,
-                  color: theme.textTheme.bodyLarge?.color,
+                  fontWeight: FontWeight.w800,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -486,6 +548,111 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
+  Widget _buildLegend(Color color, String text) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.025,
+        vertical: screenWidth * 0.012,
+      ),
+      decoration: BoxDecoration(
+        color: isDarkMode ? slate.withOpacity(0.3) : pureWhite,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: skyBlue.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: screenWidth * 0.025,
+            height: screenWidth * 0.025,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [color, color.withOpacity(0.7)],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: screenWidth * 0.015),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: screenWidth * 0.028,
+              fontWeight: FontWeight.w600,
+              color: isDarkMode ? Colors.white70 : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendBorder(Color color, String text) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.025,
+        vertical: screenWidth * 0.012,
+      ),
+      decoration: BoxDecoration(
+        color: isDarkMode ? slate.withOpacity(0.3) : pureWhite,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: skyBlue.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: screenWidth * 0.025,
+            height: screenWidth * 0.025,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: skyBlue,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: skyBlue.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: screenWidth * 0.015),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: screenWidth * 0.028,
+              fontWeight: FontWeight.w600,
+              color: skyBlue,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -494,7 +661,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final now = DateTime.now();
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final gradientColors = _getHeaderGradientColors(context);
+    final gradientColors = _getHeaderGradientColors(isDarkMode);
 
     final canGoNext =
         _currentMonth.year < now.year ||
@@ -507,442 +674,449 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     final monthlyLogs = attendanceProvider.getMonthlyLogs(_currentMonth);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Column(
-        children: [
-          Container(
-            height: screenHeight * 0.015,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: gradientColors,
-              ),
-            ),
-          ),
-          // Rest of the content
-          Expanded(
-            child: RefreshIndicator.adaptive(
-              onRefresh: _refreshAttendance,
-              color: Colors.blue,
-              backgroundColor: theme.cardColor,
-              child: CustomScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: gradientColors.first,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: isDarkMode ? charcoal : pureWhite,
+        systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: isDarkMode ? charcoal : offWhite,
+        body: SafeArea(
+          top: true,
+          bottom: false,
+          child: Column(
+            children: [
+              // Premium Header with Sky Blue Gradient
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.05,
+                  vertical: screenHeight * 0.015,
                 ),
-                slivers: [
-                  SliverAppBar(
-                    expandedHeight: 0, 
-                    toolbarHeight: kToolbarHeight, 
-                    backgroundColor: gradientColors.first,
-                    elevation: 0,
-                    pinned: true,
-                    floating: true,
-                    flexibleSpace: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: gradientColors,
-                        ),
-                      ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: gradientColors,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: skyBlue.withOpacity(0.3),
+                      blurRadius: 25,
+                      spreadRadius: 5,
+                      offset: const Offset(0, 8),
                     ),
-                    title: Text(
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
                       "Attendance",
                       style: TextStyle(
-                        fontSize: screenWidth * 0.05,
+                        fontSize: screenWidth * 0.06,
                         fontWeight: FontWeight.w800,
-                        color: isDarkMode ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    centerTitle: false,
-                    actions: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.refresh_rounded,
-                          size: screenWidth * 0.055,
-                          color: isDarkMode ? Colors.white : Colors.black,
-                        ),
-                        onPressed: _refreshAttendance,
-                        tooltip: 'Refresh',
-                      ),
-                    ],
-                  ),
-
-                  // Calendar Section
-                  SliverToBoxAdapter(
-                    child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.035),
-                      padding: EdgeInsets.all(screenWidth * 0.035),
-                      decoration: BoxDecoration(
-                        color: theme.cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.2),
                             blurRadius: 10,
-                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      child: Column(
-                        children: [
-                          // Month Selector
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.02,
-                              vertical: screenHeight * 0.008,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.scaffoldBackgroundColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.chevron_left_rounded,
-                                    size: screenWidth * 0.055,
-                                    color: theme.iconTheme.color,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _currentMonth = DateTime(
-                                        _currentMonth.year,
-                                        _currentMonth.month - 1,
-                                      );
-                                    });
-                                    _refreshAttendance();
-                                  },
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.2),
+                            Colors.white.withOpacity(0.1),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.refresh_rounded,
+                          size: screenWidth * 0.06,
+                          color: Colors.white,
+                        ),
+                        onPressed: _refreshAttendance,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: screenWidth * 0.04,
-                                    vertical: screenHeight * 0.008,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: isDarkMode
-                                          ? [
-                                              Colors.blue.shade800,
-                                              Colors.green.shade800,
-                                            ]
-                                          : [
-                                              Colors.blue.shade50,
-                                              Colors.purple.shade50,
-                                            ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 5,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    DateFormat('MMMM yyyy').format(_currentMonth),
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.04,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withOpacity(0.2),
-                                          blurRadius: 2,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ],
-                                    ),
+              // Main Content
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refreshAttendance,
+                  color: skyBlue,
+                  backgroundColor: isDarkMode ? slate : pureWhite,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    slivers: [
+                      // Calendar Section
+                      SliverToBoxAdapter(
+                        child: Container(
+                          margin: EdgeInsets.all(screenWidth * 0.035),
+                          padding: EdgeInsets.all(screenWidth * 0.035),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: skyBlue.withOpacity(0.2),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: skyBlue.withOpacity(0.1),
+                                blurRadius: 25,
+                                spreadRadius: 5,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              // Premium Month Selector
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.02,
+                                  vertical: screenHeight * 0.008,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: skyBlue.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: skyBlue.withOpacity(0.3),
+                                    width: 1,
                                   ),
                                 ),
-
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.chevron_right_rounded,
-                                    size: screenWidth * 0.055,
-                                    color: canGoNext
-                                        ? theme.iconTheme.color
-                                        : theme.disabledColor,
-                                  ),
-                                  onPressed: canGoNext
-                                      ? () {
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
                                           setState(() {
                                             _currentMonth = DateTime(
                                               _currentMonth.year,
-                                              _currentMonth.month + 1,
+                                              _currentMonth.month - 1,
                                             );
                                           });
                                           _refreshAttendance();
-                                        }
-                                      : null,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
+                                        },
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Container(
+                                          padding: EdgeInsets.all(screenWidth * 0.02),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: gradientColors,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.chevron_left_rounded,
+                                            size: screenWidth * 0.05,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.04,
+                                        vertical: screenHeight * 0.01,
+                                      ),
+                                      child: Text(
+                                        DateFormat('MMMM yyyy').format(_currentMonth),
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.045,
+                                          fontWeight: FontWeight.w800,
+                                          color: skyBlue,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: canGoNext
+                                            ? () {
+                                                setState(() {
+                                                  _currentMonth = DateTime(
+                                                    _currentMonth.year,
+                                                    _currentMonth.month + 1,
+                                                  );
+                                                });
+                                                _refreshAttendance();
+                                              }
+                                            : null,
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Container(
+                                          padding: EdgeInsets.all(screenWidth * 0.02),
+                                          decoration: BoxDecoration(
+                                            gradient: canGoNext
+                                                ? LinearGradient(
+                                                    colors: gradientColors,
+                                                  )
+                                                : LinearGradient(
+                                                    colors: [Colors.grey, Colors.grey],
+                                                  ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.chevron_right_rounded,
+                                            size: screenWidth * 0.05,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              SizedBox(height: screenHeight * 0.02),
+
+                              // Loading Indicator
+                              if (attendanceProvider.isLoading)
+                                LinearProgressIndicator(
+                                  backgroundColor: isDarkMode ? slate : Colors.grey[200],
+                                  valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
+                                  minHeight: 2,
+                                ),
+
+                              // Error Message
+                              if (attendanceProvider.errorMessage != null)
+                                Container(
+                                  padding: EdgeInsets.all(screenWidth * 0.03),
+                                  margin: EdgeInsets.only(bottom: screenHeight * 0.015),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.red.withOpacity(0.3),
+                                        blurRadius: 15,
+                                        spreadRadius: 2,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.error_outline_rounded,
+                                          size: 20,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(width: screenWidth * 0.02),
+                                      Expanded(
+                                        child: Text(
+                                          attendanceProvider.errorMessage!,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                              SizedBox(height: screenHeight * 0.015),
+
+                              // Calendar Grid
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 7,
+                                  crossAxisSpacing: screenWidth * 0.01,
+                                  mainAxisSpacing: screenWidth * 0.01,
+                                  childAspectRatio: 1,
+                                ),
+                                itemCount: daysInMonth,
+                                itemBuilder: (context, index) {
+                                  final day = index + 1;
+                                  final date = DateTime(
+                                    _currentMonth.year,
+                                    _currentMonth.month,
+                                    day,
+                                  );
+                                  return _buildCalendarDay(day, date, context);
+                                },
+                              ),
+
+                              SizedBox(height: screenHeight * 0.025),
+
+                              // Premium Legend
+                              Wrap(
+                                spacing: screenWidth * 0.02,
+                                runSpacing: screenHeight * 0.01,
+                                alignment: WrapAlignment.center,
+                                children: [
+                                  _buildLegend(skyBlue, "Completed"),
+                                  _buildLegend(deepSky, "Overtime"),
+                                  _buildLegend(Colors.orange, "Shortage"),
+                                  _buildLegend(mediumSky, "Checked In"),
+                                  _buildLegend(Colors.red, "Absent"),
+                                  _buildLegend(Colors.grey, "Future"),
+                                  _buildLegendBorder(skyBlue, "Today"),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Attendance Logs Title
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            screenWidth * 0.05,
+                            screenHeight * 0.025,
+                            screenWidth * 0.05,
+                            screenHeight * 0.015,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(screenWidth * 0.02),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: gradientColors,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.history_rounded,
+                                  size: screenWidth * 0.04,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(width: screenWidth * 0.02),
+                              Text(
+                                "Attendance Logs",
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.045,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Attendance Logs List
+                      if (monthlyLogs.isNotEmpty)
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            screenWidth * 0.05,
+                            0,
+                            screenWidth * 0.05,
+                            screenHeight * 0.03,
+                          ),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((context, index) {
+                              final log = monthlyLogs[index];
+                              final now = DateTime.now();
+                              final today = DateTime(now.year, now.month, now.day);
+
+                              if (log.date.isAtSameMomentAs(today)) {
+                                final punchProvider = context.read<PunchProvider>();
+                                if (punchProvider.punchInTime == null) {
+                                  return const SizedBox.shrink();
+                                }
+                              }
+
+                              return _buildAttendanceLog(log);
+                            }, childCount: monthlyLogs.length),
+                          ),
+                        )
+                      else if (!attendanceProvider.isLoading)
+                        SliverToBoxAdapter(
+                          child: Container(
+                            margin: EdgeInsets.all(screenWidth * 0.05),
+                            padding: EdgeInsets.all(screenWidth * 0.08),
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? slate.withOpacity(0.5) : pureWhite,
+                              borderRadius: BorderRadius.circular(25),
+                              border: Border.all(
+                                color: skyBlue.withOpacity(0.2),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(screenWidth * 0.04),
+                                  decoration: BoxDecoration(
+                                    color: skyBlue.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.calendar_today_rounded,
+                                    size: screenWidth * 0.1,
+                                    color: skyBlue,
+                                  ),
+                                ),
+                                SizedBox(height: screenHeight * 0.015),
+                                Text(
+                                  "No attendance records",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.04,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                                  ),
+                                ),
+                                SizedBox(height: screenHeight * 0.008),
+                                Text(
+                                  "Attendance records will appear here",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.032,
+                                    color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
                           ),
-
-                          SizedBox(height: screenHeight * 0.02),
-
-                          // Loading Indicator
-                          if (attendanceProvider.isLoading)
-                            LinearProgressIndicator(
-                              backgroundColor: theme.scaffoldBackgroundColor,
-                              color: Colors.blue,
-                              minHeight: 1.5,
-                            ),
-
-                          // Error Message
-                          if (attendanceProvider.errorMessage != null)
-                            Container(
-                              padding: EdgeInsets.all(screenWidth * 0.03),
-                              margin: EdgeInsets.only(bottom: screenHeight * 0.015),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.red.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.error_outline_rounded,
-                                    size: screenWidth * 0.045,
-                                    color: Colors.red,
-                                  ),
-                                  SizedBox(width: screenWidth * 0.02),
-                                  Expanded(
-                                    child: Text(
-                                      attendanceProvider.errorMessage!,
-                                      style: TextStyle(
-                                        fontSize: screenWidth * 0.032,
-                                        color: Colors.red.shade700,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                          SizedBox(height: screenHeight * 0.015),
-
-                          // Calendar Grid
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 7,
-                              crossAxisSpacing: screenWidth * 0.01,
-                              mainAxisSpacing: screenWidth * 0.01,
-                              childAspectRatio: 1,
-                            ),
-                            itemCount: daysInMonth,
-                            itemBuilder: (context, index) {
-                              final day = index + 1;
-                              final date = DateTime(
-                                _currentMonth.year,
-                                _currentMonth.month,
-                                day,
-                              );
-                              return _buildCalendarDay(day, date, context);
-                            },
-                          ),
-
-                          SizedBox(height: screenHeight * 0.025),
-
-                          // Legend
-                          Wrap(
-                            spacing: screenWidth * 0.02,
-                            runSpacing: screenHeight * 0.01,
-                            alignment: WrapAlignment.center,
-                            children: [
-                              _buildLegend(Colors.green, "Completed"),
-                              _buildLegend(Colors.blue.shade600, "Overtime"),
-                              _buildLegend(Colors.orange, "Shortage"),
-                              _buildLegend(Colors.amber.shade600, "Checked In"),
-                              _buildLegend(Colors.red, "Absent"),
-                              _buildLegend(Colors.grey.withOpacity(0.3), "Future"),
-                              _buildLegendBorder(Colors.blue, "Today"),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                    ],
                   ),
-
-                  // Attendance Logs Title
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        screenWidth * 0.035,
-                        screenHeight * 0.025,
-                        screenWidth * 0.035,
-                        screenHeight * 0.015,
-                      ),
-                      child: Text(
-                        "Attendance Logs",
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.045,
-                          fontWeight: FontWeight.w700,
-                          color: theme.textTheme.titleLarge?.color,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Attendance Logs List
-                  if (monthlyLogs.isNotEmpty)
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        screenWidth * 0.035,
-                        0,
-                        screenWidth * 0.035,
-                        screenHeight * 0.03,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final log = monthlyLogs[index];
-                          final now = DateTime.now();
-                          final today = DateTime(now.year, now.month, now.day);
-
-                          if (log.date.isAtSameMomentAs(today)) {
-                            final punchProvider = context.read<PunchProvider>();
-                            if (punchProvider.punchInTime == null) {
-                              return const SizedBox.shrink();
-                            }
-                          }
-
-                          return _buildAttendanceLog(log);
-                        }, childCount: monthlyLogs.length),
-                      ),
-                    )
-                  else if (!attendanceProvider.isLoading)
-                    SliverToBoxAdapter(
-                      child: Container(
-                        margin: EdgeInsets.all(screenWidth * 0.035),
-                        padding: EdgeInsets.all(screenWidth * 0.05),
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_rounded,
-                              size: screenWidth * 0.12,
-                              color: theme.disabledColor.withOpacity(0.5),
-                            ),
-                            SizedBox(height: screenHeight * 0.015),
-                            Text(
-                              "No attendance records",
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.038,
-                                color: theme.hintColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: screenHeight * 0.008),
-                            Text(
-                              "Attendance records will appear here",
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.032,
-                                color: theme.hintColor.withOpacity(0.7),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegend(Color color, String text) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.025,
-        vertical: screenWidth * 0.012,
-      ),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: screenWidth * 0.025,
-            height: screenWidth * 0.025,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          SizedBox(width: screenWidth * 0.015),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: screenWidth * 0.028,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendBorder(Color color, String text) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.025,
-        vertical: screenWidth * 0.012,
-      ),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: screenWidth * 0.025,
-            height: screenWidth * 0.025,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: color, width: 1.5),
-            ),
-          ),
-          SizedBox(width: screenWidth * 0.015),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: screenWidth * 0.028,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

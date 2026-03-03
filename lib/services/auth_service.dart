@@ -2,12 +2,16 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
   static const String baseUrl = "https://ppecon.erpnext.com";
+
   static List<String> cookies = [];
   static Client client = Client();
+  static const FlutterSecureStorage secureStorage = FlutterSecureStorage();
 
+  // ================= COOKIE MANAGEMENT =================
   static Future<void> saveCookies() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('cookies', cookies);
@@ -18,49 +22,37 @@ class AuthService {
     cookies = prefs.getStringList('cookies') ?? [];
   }
 
-  void _updateCookies(http.Response response) {
-    String? rawCookie = response.headers['set-cookie'];
+  static void updateCookies(http.Response response) {
+    final rawCookie = response.headers['set-cookie'];
     if (rawCookie != null) {
-      if (rawCookie.contains('Path=/,')) {
-        cookies = rawCookie.split('Path=/,').map((c) {
-          String cookie = c.trim();
-          if (cookie.contains(';')) {
-            return cookie.split(';')[0];
-          }
-          return cookie;
-        }).toList();
-      } else {
-        if (rawCookie.contains(';')) {
-          cookies = [rawCookie.split(';')[0]];
-        } else {
-          cookies = [rawCookie];
-        }
-      }
+      final cookieList = rawCookie.split(RegExp(r',(?! )'));
+      cookies = cookieList.map((c) => c.split(';')[0].trim()).toList();
       saveCookies();
     }
   }
 
-  Map<String, String> _buildHeaders() {
-    Map<String, String> headers = {
-      "Content-Type": "application/x-www-form-urlencoded",
+  Map<String, String> buildHeaders({bool isJson = false}) {
+    final headers = <String, String>{
+      "Content-Type": "application/json",
+      "Accept": "application/json",
     };
+    
     if (cookies.isNotEmpty) {
       headers["Cookie"] = cookies.join('; ');
     }
     return headers;
   }
 
-  String? _extractSidFromCookies() {
-    try {
-      for (final cookie in cookies) {
-        if (cookie.startsWith("sid=")) {
-          return cookie.replaceAll("sid=", "").trim();
-        }
+  String? extractSid() {
+    for (final cookie in cookies) {
+      if (cookie.startsWith("sid=")) {
+        return cookie.replaceFirst("sid=", "").trim();
       }
-    } catch (_) {}
+    }
     return null;
   }
 
+  // ================= LOGIN (FIXED) =================
   Future<Map<String, dynamic>> loginUser({
     required String email,
     required String password,
@@ -69,111 +61,139 @@ class AuthService {
 
     try {
       cookies.clear();
+
+      print("📱 Logging in with: $email");
       
       final response = await client.post(
         url,
-        headers: _buildHeaders(),
-        body: {"usr": email, "pwd": password},
+        headers: buildHeaders(isJson: true),
+        body: jsonEncode({"usr": email, "pwd": password}),
       );
 
-      _updateCookies(response);
+      print("📱 Response Status: ${response.statusCode}");
+      print("📱 Response Body: ${response.body}");
+
+      updateCookies(response);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data["message"] == "Logged In") {
         final prefs = await SharedPreferences.getInstance();
+
         await prefs.setBool("isLoggedIn", true);
         await prefs.setString("email", email);
-        await prefs.setString("full_name", data["full_name"] ?? "");
         
-        String? employeeId;
+        // full_name agar API mein nahi hai to email se le lo
+        String fullName = data["full_name"] ?? email.split('@')[0];
+        await prefs.setString("full_name", fullName);
         
-        try {
-          final empResponse = await client.get(
-            Uri.parse(
-              '$baseUrl/api/resource/Employee'
-              '?filters=[["user_id","=","$email"]]'
-              '&fields=["name"]'
-            ),
-            headers: {
-              "Cookie": cookies.join(';'),
-            },
-          );
-          
-          final empJson = jsonDecode(empResponse.body);
-          if (empJson["data"] != null && empJson["data"].isNotEmpty) {
-            employeeId = empJson["data"][0]["name"];
-            await prefs.setString("employeeId", employeeId!);
-          }
-        // ignore: empty_catches
-        } catch (e) {
-        }
-        
+        // home_page set karo
+        await prefs.setString("home_page", "/homeScreen");
+
+        await secureStorage.write(key: "password", value: password);
+
+        print("✅ Login Successful for: $fullName");
+
         return {
           "success": true,
-          "message": data["message"],
-          "default_route": data["default_route"],
-          "home_page": data["home_page"],
-          "full_name": data["full_name"],
-          "employee_id": employeeId,
-          "sid": _extractSidFromCookies(),
+          "message": "Login successful",
+          "full_name": fullName,
+          "sid": extractSid(),
           "email": email,
+          "cookies": cookies,
         };
       }
 
-      if (data["exc_type"] == "AuthenticationError") {
-        return {"success": false, "message": "Incorrect password", "exc_type": "AuthenticationError"};
-      }
-
-      if (data["exc_type"] == "DoesNotExistError") {
-        return {"success": false, "message": "User does not exist", "exc_type": "DoesNotExistError"};
-      }
-
-      return {"success": false, "message": data["message"] ?? "Login failed"};
+      print("❌ Login Failed: ${data["message"]}");
+      return {
+        "success": false,
+        "message": data["message"] ?? "Login failed",
+        "exc_type": data["exc_type"] ?? "UnknownError",
+      };
     } catch (e) {
-      return {"success": false, "message": "Something went wrong", "error": e.toString()};
+      print("❌ Login Error: $e");
+      return {
+        "success": false,
+        "message": "Something went wrong: $e",
+        "error": e.toString()
+      };
     }
   }
 
-  Future<String> getInitialRoute() async {
+  // ================= AUTO RELOGIN =================
+  static Future<bool> _autoRelogin() async {
     final prefs = await SharedPreferences.getInstance();
-    final isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
-    final route = prefs.getString("home_page");
-    if (isLoggedIn && route != null && route.isNotEmpty) {
-      return route; 
-    }
-    return '/loginScreen';
+    final email = prefs.getString("email");
+    final password = await secureStorage.read(key: "password");
+
+    if (email == null || password == null) return false;
+
+    final auth = AuthService();
+    final result = await auth.loginUser(email: email, password: password);
+    return result["success"] == true;
   }
 
+  // ================= SAFE REQUEST =================
+  static Future<http.Response> safeRequest(
+      Future<http.Response> Function() requestFunction) async {
+    await loadCookies();
+    http.Response response = await requestFunction();
+
+    if (response.statusCode == 401) {
+      final reloginSuccess = await _autoRelogin();
+      if (reloginSuccess) {
+        response = await requestFunction();
+      }
+    }
+    return response;
+  }
+
+  // ================= LOGOUT =================
   Future<Map<String, dynamic>> logoutUser() async {
     final url = Uri.parse("$baseUrl/api/method/logout");
+
     try {
-      await client.get(url, headers: _buildHeaders());
+      await client.get(url, headers: buildHeaders());
       cookies.clear();
       await saveCookies();
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool("isLoggedIn", false);
+      await prefs.clear();
+      await secureStorage.delete(key: "password");
+
       return {"success": true, "message": "Logged out successfully"};
     } catch (e) {
       return {"success": false, "message": "Something went wrong"};
     }
   }
 
+  // ================= FORGOT PASSWORD =================
   Future<String> forgotPassword(String email) async {
-    const url = "$baseUrl/api/method/frappe.core.doctype.user.user.reset_password";
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {"Content-Type": "application/x-www-form-urlencoded"},
-      body: {"user": email},
-    );
+    final url = Uri.parse(
+        "$baseUrl/api/method/frappe.core.doctype.user.user.reset_password");
+
+    final response = await safeRequest(() {
+      return http.post(
+        url,
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: {"user": email},
+      );
+    });
+
     if (response.statusCode == 200) {
-      return "A password reset link has been sent to your registered email address.";
-    } else if (response.statusCode == 404) {
-      throw "User not found. Please check the email you entered.";
-    } else if (response.statusCode == 500) {
-      throw "Server error. Please try again later.";
+      return "Reset link sent successfully.";
     } else {
-      throw "Request failed with status: ${response.statusCode}. Please try again.";
+      throw "Request failed: ${response.statusCode}";
     }
   }
 
+  // ================= INITIAL ROUTE =================
+  Future<String> getInitialRoute() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
+    
+    if (isLoggedIn) {
+      return '/homeScreen';
+    }
+    return '/loginScreen';
+  }
 }

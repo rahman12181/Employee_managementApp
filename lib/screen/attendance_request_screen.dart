@@ -38,6 +38,17 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
   late double screenHeight;
   late bool isDarkMode;
 
+  // Sky Blue Color Palette - Matching all screens
+  static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE);  // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0);  // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0);    // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
   double responsiveWidth(double v) => screenWidth * v;
   double responsiveFontSize(double v) => screenWidth * (v / 375);
 
@@ -60,7 +71,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
   };
 
   final Map<String, Color> reasonColors = {
-    "On Duty": Colors.blue,
+    "On Duty": skyBlue,  // Changed to sky blue
     "Missed Punch": Colors.amber,
     "System Issue": Colors.red,
     "Medical Emergency": Colors.green,
@@ -144,7 +155,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
 
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
-        systemNavigationBarColor: isDark ? Colors.black : Colors.white,
+        systemNavigationBarColor: isDark ? charcoal : pureWhite,
         systemNavigationBarIconBrightness: isDark
             ? Brightness.light
             : Brightness.dark,
@@ -182,7 +193,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
         fontWeight: FontWeight.w500,
       ),
       floatingLabelStyle: TextStyle(
-        color: isDarkMode ? Colors.blue[300]! : Colors.blue[700]!,
+        color: skyBlue,
         fontSize: responsiveFontSize(14),
         fontWeight: FontWeight.w600,
       ),
@@ -204,25 +215,25 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(responsiveWidth(0.035)),
         borderSide: BorderSide(
-          color: isDarkMode ? Colors.blue[400]! : Colors.blue[600]!,
+          color: skyBlue,
           width: 2.0,
         ),
       ),
       filled: true,
-      fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
+      fillColor: isDarkMode ? slate.withOpacity(0.5) : offWhite,
       prefixIcon: icon != null
           ? Icon(
               icon,
               size: screenWidth * 0.05,
-              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              color: skyBlue,
             )
           : null,
-      prefixIconColor: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+      prefixIconColor: skyBlue,
       suffixIcon: label == "Date"
           ? Icon(
               Icons.calendar_today_rounded,
               size: screenWidth * 0.05,
-              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              color: skyBlue,
             )
           : null,
     );
@@ -336,7 +347,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                 child: Container(
                   padding: EdgeInsets.all(screenWidth * 0.08),
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey[900]! : Colors.white,
+                    color: isDarkMode ? slate : pureWhite,
                     borderRadius: BorderRadius.circular(screenWidth * 0.06),
                     boxShadow: [
                       BoxShadow(
@@ -345,6 +356,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                         spreadRadius: 5,
                       ),
                     ],
+                    border: Border.all(color: skyBlue.withOpacity(0.3), width: 1.5),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -458,7 +470,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
               setState(() => reason = reasonOption);
             }
           },
-          backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+          backgroundColor: isDarkMode ? slate.withOpacity(0.5) : Colors.grey[200],
           selectedColor: reasonColors[reasonOption]?.withOpacity(0.8),
           side: BorderSide(
             color: isSelected
@@ -486,20 +498,20 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
 
     _updateSystemNavigationBar();
 
-    final backgroundColor = isDarkMode ? Colors.grey[900]! : const Color(0xFFF8FAFD);
-    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
-    final primaryColor = isDarkMode ? Colors.blue[300]! : const Color(0xFF2563EB);
-    final secondaryColor = isDarkMode ? Colors.blue[400]! : const Color(0xFF3B82F6);
+    final backgroundColor = isDarkMode ? charcoal : offWhite;
+    final cardColor = isDarkMode ? slate.withOpacity(0.5) : pureWhite;
+    final primaryColor = skyBlue;
+    final secondaryColor = deepSky;
     final textColor = isDarkMode ? Colors.white : Colors.black;
     final subtitleColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
-    final shadowColor = isDarkMode ? Colors.black.withOpacity(0.5) : Colors.blueGrey.withOpacity(0.1);
+    final shadowColor = isDarkMode ? Colors.black.withOpacity(0.5) : skyBlue.withOpacity(0.1);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
         statusBarBrightness: isDarkMode ? Brightness.dark : Brightness.light,
-        systemNavigationBarColor: isDarkMode ? Colors.black : Colors.white,
+        systemNavigationBarColor: isDarkMode ? charcoal : pureWhite,
         systemNavigationBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
@@ -540,7 +552,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
           flexibleSpace: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [primaryColor, secondaryColor],
+                colors: [skyBlue, deepSky],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -556,10 +568,11 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
           actions: [
             PopupMenuButton<String>(
               icon: Icon(Icons.more_vert, color: Colors.white, size: screenWidth * 0.06),
-              color: isDarkMode ? Colors.grey[900] : Colors.white,
-              surfaceTintColor: isDarkMode ? Colors.grey[800] : Colors.white,
+              color: isDarkMode ? slate : pureWhite,
+              surfaceTintColor: isDarkMode ? slate : pureWhite,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: skyBlue.withOpacity(0.3), width: 1),
               ),
               elevation: 4,
               onSelected: (value) async {
@@ -582,13 +595,13 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.blue[800]! : Colors.blue[50]!,
+                          color: skyBlue.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.history,
                           size: 18,
-                          color: isDarkMode ? Colors.blue[200]! : Colors.blue[700]!,
+                          color: skyBlue,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -645,14 +658,12 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                         padding: EdgeInsets.all(screenWidth * 0.05),
                         margin: EdgeInsets.only(bottom: screenHeight * 0.03),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isDarkMode
-                                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                                : [const Color(0xFFE0F2FE), const Color(0xFFF0F9FF)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: cardColor,
                           borderRadius: BorderRadius.circular(responsiveWidth(0.05)),
+                          border: Border.all(
+                            color: skyBlue.withOpacity(0.2),
+                            width: 1.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: shadowColor,
@@ -670,13 +681,13 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                 Container(
                                   padding: EdgeInsets.all(screenWidth * 0.03),
                                   decoration: BoxDecoration(
-                                    color: primaryColor.withOpacity(0.1),
+                                    color: skyBlue.withOpacity(0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
                                     Icons.calendar_month_rounded,
                                     size: screenWidth * 0.07,
-                                    color: primaryColor,
+                                    color: skyBlue,
                                   ),
                                 ),
                                 SizedBox(width: screenWidth * 0.04),
@@ -716,7 +727,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                               style: TextStyle(
                                 fontSize: responsiveFontSize(11),
                                 fontStyle: FontStyle.italic,
-                                color: isDarkMode ? Colors.amber[200] : Colors.amber[800],
+                                color: isDarkMode ? skyBlue : deepSky,
                               ),
                             ),
                           ],
@@ -735,6 +746,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(responsiveWidth(0.05)),
+                        side: BorderSide(color: skyBlue.withOpacity(0.2), width: 1.5),
                       ),
                       color: cardColor,
                       child: Padding(
@@ -767,13 +779,13 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                       return Theme(
                                         data: Theme.of(context).copyWith(
                                           colorScheme: ColorScheme.light(
-                                            primary: primaryColor,
+                                            primary: skyBlue,
                                             onPrimary: Colors.white,
-                                            surface: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                                            surface: isDarkMode ? slate : pureWhite,
                                             onSurface: textColor,
                                           ),
                                           dialogTheme: DialogThemeData(
-                                            backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                                            backgroundColor: isDarkMode ? slate : pureWhite,
                                             shape: RoundedRectangleBorder(
                                               borderRadius: BorderRadius.circular(20),
                                             ),
@@ -794,10 +806,10 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                     vertical: screenHeight * 0.02,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
+                                    color: isDarkMode ? slate.withOpacity(0.3) : offWhite,
                                     borderRadius: BorderRadius.circular(responsiveWidth(0.035)),
                                     border: Border.all(
-                                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                                      color: skyBlue.withOpacity(0.3),
                                       width: 1.5,
                                     ),
                                   ),
@@ -806,7 +818,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                       Icon(
                                         Icons.calendar_today_rounded,
                                         size: screenWidth * 0.05,
-                                        color: primaryColor,
+                                        color: skyBlue,
                                       ),
                                       SizedBox(width: screenWidth * 0.03),
                                       Expanded(
@@ -922,12 +934,12 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                                 child: ElevatedButton(
                                   onPressed: isSubmitting ? null : submitAttendanceRequest,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isSubmitting ? Colors.grey.shade400 : primaryColor,
+                                    backgroundColor: isSubmitting ? Colors.grey.shade400 : skyBlue,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(responsiveWidth(0.035)),
                                     ),
                                     elevation: isSubmitting ? 0 : 5,
-                                    shadowColor: primaryColor.withOpacity(0.5),
+                                    shadowColor: skyBlue.withOpacity(0.5),
                                   ),
                                   child: Stack(
                                     alignment: Alignment.center,
@@ -1016,7 +1028,7 @@ class _AttendanceRequestScreenState extends State<AttendanceRequestScreen>
                         Icon(
                           Icons.info_outline_rounded,
                           size: screenWidth * 0.04,
-                          color: subtitleColor,
+                          color: skyBlue,
                         ),
                         SizedBox(width: screenWidth * 0.015),
                         Flexible(

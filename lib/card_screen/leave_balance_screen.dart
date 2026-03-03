@@ -15,13 +15,18 @@ class LeaveBalanceScreen extends StatefulWidget {
 class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     with TickerProviderStateMixin {
   final LeaveBalanceService _leaveService = LeaveBalanceService();
-  Map<String, double> _leaveBalances = {
-    'Annual Leave': 0.0,
-    'Sick Leave': 0.0,
+  
+  Map<String, Map<String, double>> _leaveDetails = {};
+  Map<String, double> _totals = {
+    'allocated': 0,
+    'taken': 0,
+    'remaining': 0,
   };
+  
   bool _isLoading = true;
   String? _errorMessage;
   String? _employeeName;
+  String? _employeeId;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -56,6 +61,34 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
       'color': Colors.purple,
       'gradient': [const Color(0xFFAB47BC), const Color(0xFFBA68C8)],
     },
+    {
+      'key': 'Privilege Leave',
+      'title': 'Privilege Leave',
+      'icon': Icons.star_border,
+      'color': Colors.teal,
+      'gradient': [const Color(0xFF00897B), const Color(0xFF26A69A)],
+    },
+    {
+      'key': 'Maternity Leave',
+      'title': 'Maternity Leave',
+      'icon': Icons.family_restroom,
+      'color': Colors.pink,
+      'gradient': [const Color(0xFFD81B60), const Color(0xFFEC407A)],
+    },
+    {
+      'key': 'Paternity Leave',
+      'title': 'Paternity Leave',
+      'icon': Icons.family_restroom,
+      'color': Colors.indigo,
+      'gradient': [const Color(0xFF1E88E5), const Color(0xFF42A5F5)],
+    },
+    {
+      'key': 'Loss of Pay',
+      'title': 'Loss of Pay',
+      'icon': Icons.money_off,
+      'color': Colors.red,
+      'gradient': [const Color(0xFFE53935), const Color(0xFFEF5350)],
+    },
   ];
 
   @override
@@ -84,7 +117,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
       ),
     );
     
-    _testConnectionAndLoadData();
+    _loadEmployeeData();
   }
 
   @override
@@ -93,9 +126,24 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     super.dispose();
   }
 
-  Future<void> _testConnectionAndLoadData() async {
-    await LeaveBalanceService.testCredentials();
-    await _loadLeaveData();
+  Future<void> _loadEmployeeData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _employeeName = prefs.getString('employeeName') ?? 
+                       prefs.getString('employee_name') ?? 
+                       'Employee';
+        _employeeId = prefs.getString('employeeId') ?? 
+                     prefs.getString('employee_id') ?? 
+                     prefs.getString('emp_code') ??
+                     'HR-EMP-00152';
+      });
+      
+      await _loadLeaveData();
+    } catch (e) {
+      debugPrint('Error loading employee data: $e');
+      await _loadLeaveData();
+    }
   }
 
   Future<void> _loadLeaveData() async {
@@ -105,17 +153,26 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _employeeName = prefs.getString('employee_name') ?? 'Employee';
-      
-      final balances = await _leaveService.fetchLeaveBalances();
+      final result = await _leaveService.fetchLeaveBalances();
       
       if (mounted) {
-        setState(() {
-          _leaveBalances = balances;
-          _isLoading = false;
-        });
-        _animationController.forward();
+        if (result['success'] == true) {
+          setState(() {
+            _leaveDetails = Map<String, Map<String, double>>.from(
+              result['leaveDetails'] ?? {}
+            );
+            _totals = Map<String, double>.from(
+              result['totals'] ?? {'allocated': 0, 'taken': 0, 'remaining': 0}
+            );
+            _isLoading = false;
+          });
+          _animationController.forward();
+        } else {
+          setState(() {
+            _errorMessage = result['message'] ?? 'Failed to load leave data';
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error loading leave data: $e');
@@ -136,7 +193,6 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     final width = media.size.width;
     final height = media.size.height;
     final padding = media.padding;
-    final safeTop = padding.top;
     final safeBottom = padding.bottom;
     
     // Responsive sizes
@@ -162,7 +218,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                 parent: BouncingScrollPhysics(),
               ),
               slivers: [
-                // AppBar like Travel Request Screen
+                // App Bar
                 SliverAppBar(
                   expandedHeight: height * 0.15,
                   floating: false,
@@ -235,7 +291,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                   padding: EdgeInsets.all(width * 0.04),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      // Welcome Card with Animation
+                      // Welcome Card
                       FadeTransition(
                         opacity: _fadeAnimation,
                         child: SlideTransition(
@@ -243,6 +299,15 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                           child: _buildWelcomeCard(isDark, width, height, isTablet),
                         ),
                       ),
+
+                      SizedBox(height: height * 0.025),
+
+                      // Summary Cards (Allocated, Taken, Remaining)
+                      if (!_isLoading && _errorMessage == null)
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: _buildSummaryCards(isDark, width, height, isTablet),
+                        ),
 
                       SizedBox(height: height * 0.025),
 
@@ -268,7 +333,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                                 ),
                                 SizedBox(width: width * 0.02),
                                 Text(
-                                  'Leave Summary',
+                                  'Leave Breakdown',
                                   style: TextStyle(
                                     fontSize: isTablet ? 20 : 16,
                                     fontWeight: FontWeight.w700,
@@ -339,42 +404,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
 
                       // Leave Cards Grid
                       if (!_isLoading && _errorMessage == null)
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: isTablet ? 4 : 2,
-                            crossAxisSpacing: width * 0.03,
-                            mainAxisSpacing: height * 0.015,
-                            childAspectRatio: 1.0,
-                          ),
-                          itemCount: _leaveTypes.length,
-                          itemBuilder: (context, index) {
-                            final leaveType = _leaveTypes[index];
-                            final balance = _leaveBalances[leaveType['key']] ?? 0.0;
-                            
-                            return TweenAnimationBuilder(
-                              tween: Tween<double>(begin: 0, end: 1),
-                              duration: Duration(milliseconds: 500 + (index * 100)),
-                              curve: Curves.easeOutBack,
-                              builder: (context, double value, child) {
-                                return Transform.scale(
-                                  scale: value,
-                                  child: _buildLeaveCard(
-                                    title: leaveType['title'],
-                                    balance: balance,
-                                    icon: leaveType['icon'],
-                                    gradientColors: leaveType['gradient'],
-                                    index: index,
-                                    isDark: isDark,
-                                    width: width,
-                                    height: height,
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
+                        _buildLeaveCardsGrid(isDark, width, height, isTablet),
 
                       SizedBox(height: height * 0.02),
 
@@ -438,7 +468,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                                 SizedBox(width: width * 0.02),
                                 Expanded(
                                   child: Text(
-                                    'Leave balances are updated automatically based on your attendance and leave requests.',
+                                    'Leave balances are updated automatically based on your approved leave allocations.',
                                     style: TextStyle(
                                       color: isDark ? Colors.grey[400] : Colors.grey[600],
                                       fontSize: isTablet ? 13 : 11,
@@ -560,15 +590,180 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     );
   }
 
-  String _getFormattedDate() {
-    final now = DateTime.now();
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${now.day} ${months[now.month - 1]}, ${now.year}';
+  Widget _buildSummaryCards(bool isDark, double width, double height, bool isTablet) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildSummaryCard(
+            title: 'Allocated',
+            value: _totals['allocated']?.floor().toString() ?? '0',
+            icon: Icons.card_giftcard,
+            color: Colors.blue,
+            isDark: isDark,
+            width: width,
+          ),
+        ),
+        SizedBox(width: width * 0.02),
+        Expanded(
+          child: _buildSummaryCard(
+            title: 'Taken',
+            value: _totals['taken']?.floor().toString() ?? '0',
+            icon: Icons.event_busy,
+            color: Colors.orange,
+            isDark: isDark,
+            width: width,
+          ),
+        ),
+        SizedBox(width: width * 0.02),
+        Expanded(
+          child: _buildSummaryCard(
+            title: 'Remaining',
+            value: _totals['remaining']?.floor().toString() ?? '0',
+            icon: Icons.account_balance_wallet,
+            color: Colors.green,
+            isDark: isDark,
+            width: width,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required bool isDark,
+    required double width,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(width * 0.025),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.white,
+        borderRadius: BorderRadius.circular(width * 0.025),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(width * 0.015),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: width * 0.04),
+          ),
+          SizedBox(height: width * 0.01),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: width * 0.04,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: width * 0.025,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeaveCardsGrid(bool isDark, double width, double height, bool isTablet) {
+    // Filter leave types that have data
+    final availableLeaveTypes = _leaveTypes.where((type) {
+      return _leaveDetails.containsKey(type['key']);
+    }).toList();
+
+    if (availableLeaveTypes.isEmpty) {
+      return Container(
+        padding: EdgeInsets.all(width * 0.08),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[800] : Colors.white,
+          borderRadius: BorderRadius.circular(width * 0.04),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: width * 0.1,
+              color: Colors.grey,
+            ),
+            SizedBox(height: height * 0.01),
+            Text(
+              'No leave allocations found',
+              style: TextStyle(
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                fontSize: isTablet ? 16 : 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isTablet ? 4 : 2,
+        crossAxisSpacing: width * 0.03,
+        mainAxisSpacing: height * 0.015,
+        childAspectRatio: 1.0,
+      ),
+      itemCount: availableLeaveTypes.length,
+      itemBuilder: (context, index) {
+        final leaveType = availableLeaveTypes[index];
+        final key = leaveType['key'] as String;
+        final details = _leaveDetails[key] ?? {'allocated': 0, 'taken': 0, 'remaining': 0};
+        final balance = details['remaining'] ?? 0.0;
+        final allocated = details['allocated'] ?? 0.0;
+        
+        return TweenAnimationBuilder(
+          tween: Tween<double>(begin: 0, end: 1),
+          duration: Duration(milliseconds: 500 + (index * 100)),
+          curve: Curves.easeOutBack,
+          builder: (context, double value, child) {
+            return Transform.scale(
+              scale: value,
+              child: _buildLeaveCard(
+                title: leaveType['title'],
+                balance: balance,
+                allocated: allocated,
+                icon: leaveType['icon'],
+                gradientColors: leaveType['gradient'],
+                index: index,
+                isDark: isDark,
+                width: width,
+                height: height,
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildLeaveCard({
     required String title,
     required double balance,
+    required double allocated,
     required IconData icon,
     required List<Color> gradientColors,
     required int index,
@@ -580,6 +775,9 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
       gradientColors.first,
       gradientColors.last,
     ];
+    
+    // Calculate percentage for progress bar
+    double percentage = allocated > 0 ? ((allocated - balance) / allocated) : 0;
     
     return Container(
       decoration: BoxDecoration(
@@ -602,7 +800,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
-            _showLeaveDetails(context, title, balance, icon, colors.first);
+            _showLeaveDetails(context, title, balance, allocated, icon, colors.first);
           },
           borderRadius: BorderRadius.circular(width * 0.035),
           child: Padding(
@@ -635,7 +833,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                         borderRadius: BorderRadius.circular(width * 0.03),
                       ),
                       child: Text(
-                        '${_getUsagePercentage(balance)}%',
+                        '${_getUsagePercentage(balance, allocated)}%',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: width * 0.022,
@@ -659,7 +857,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      balance.toStringAsFixed(1),
+                      balance.floor().toString(),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: width * 0.07,
@@ -682,11 +880,19 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                 ),
                 SizedBox(height: height * 0.003),
                 LinearProgressIndicator(
-                  value: (balance / 30).clamp(0.0, 1.0),
+                  value: percentage.clamp(0.0, 1.0),
                   backgroundColor: Colors.white.withOpacity(0.15),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                   minHeight: height * 0.003,
                   borderRadius: BorderRadius.circular(2),
+                ),
+                SizedBox(height: height * 0.002),
+                Text(
+                  'of ${allocated.floor()} days',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: width * 0.02,
+                  ),
                 ),
               ],
             ),
@@ -831,11 +1037,11 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     );
   }
 
-  // Bottom Sheet with Safe Area
-  void _showLeaveDetails(BuildContext context, String title, double balance, IconData icon, Color color) {
+  void _showLeaveDetails(BuildContext context, String title, double remaining, double allocated, IconData icon, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final width = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final taken = allocated - remaining;
     
     showModalBottomSheet(
       context: context,
@@ -882,13 +1088,14 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                   color: isDark ? Colors.white : Colors.grey[900],
                 ),
               ),
-              SizedBox(height: 6),
-              Text(
-                '${balance.toStringAsFixed(1)} days available',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                ),
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildDetailColumn('Allocated', allocated.floor().toString(), Colors.blue),
+                  _buildDetailColumn('Taken', taken.floor().toString(), Colors.orange),
+                  _buildDetailColumn('Remaining', remaining.floor().toString(), Colors.green),
+                ],
               ),
               SizedBox(height: 15),
             ],
@@ -898,7 +1105,38 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     );
   }
 
-  int _getUsagePercentage(double balance) {
-    return ((balance / 30) * 100).round().clamp(0, 100);
+  Widget _buildDetailColumn(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getFormattedDate() {
+    final now = DateTime.now();
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${now.day} ${months[now.month - 1]}, ${now.year}';
+  }
+
+  int _getUsagePercentage(double remaining, double allocated) {
+    if (allocated == 0) return 0;
+    final used = allocated - remaining;
+    return ((used / allocated) * 100).round().clamp(0, 100);
   }
 }

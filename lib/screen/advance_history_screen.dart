@@ -23,6 +23,17 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Sky Blue Color Palette - Matching all screens
+  static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
+  static const Color lightSky = Color(0xFFE0F2FE);  // Very light sky
+  static const Color mediumSky = Color(0xFF7EC8E0);  // Medium sky
+  static const Color deepSky = Color(0xFF00A5E0);    // Deep sky for accents
+  static const Color offWhite = Color(0xFFF8FAFC);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color charcoal = Color(0xFF1E293B);
+  static const Color slate = Color(0xFF334155);
+  static const Color steel = Color(0xFF475569);
+
   @override
   void initState() {
     super.initState();
@@ -122,7 +133,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
       case 'rejected':
         return const Color(0xFFEF4444);
       case 'pending':
-        return const Color(0xFFF59E0B);
+        return skyBlue;  // Changed to sky blue for pending
       default:
         return Colors.grey.shade500;
     }
@@ -140,8 +151,8 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             : const Color(0xFFEF4444).withOpacity(0.1);
       case 'pending':
         return isDarkMode
-            ? const Color(0xFFF59E0B).withOpacity(0.2)
-            : const Color(0xFFF59E0B).withOpacity(0.1);
+            ? skyBlue.withOpacity(0.2)
+            : skyBlue.withOpacity(0.1);
       default:
         return isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100;
     }
@@ -198,13 +209,11 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? const Color(0xFF0A0A0A)
-          : Colors.grey.shade50,
+      backgroundColor: isDarkMode ? charcoal : offWhite,
       body: SafeArea(
         child: Column(
           children: [
-            // Animated Header
+            // Animated Header with Sky Blue
             FadeTransition(
               opacity: _fadeAnimation,
               child: SlideTransition(
@@ -219,8 +228,8 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: isDarkMode
-                          ? [Colors.blue.shade800, Colors.blue.shade900]
-                          : [Colors.blue.shade600, Colors.blue.shade700],
+                          ? [slate, charcoal]
+                          : [skyBlue, deepSky],
                     ),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(30),
@@ -228,9 +237,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.shade400.withOpacity(
-                          isDarkMode ? 0.2 : 0.3,
-                        ),
+                        color: skyBlue.withOpacity(isDarkMode ? 0.2 : 0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -347,7 +354,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               height: screenWidth * 0.15,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                color: Colors.blue.shade600,
+                color: skyBlue,
               ),
             ),
             SizedBox(height: screenHeight * 0.025),
@@ -390,14 +397,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               padding: EdgeInsets.all(screenWidth * 0.06),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: isDarkMode
-                      ? [
-                          Colors.red.shade900.withOpacity(0.3),
-                          Colors.red.shade900.withOpacity(0.1),
-                        ]
-                      : [Colors.red.shade50, Colors.red.shade100],
-                ),
+                color: Colors.red.withOpacity(0.1),
               ),
               child: Icon(
                 Icons.error_outline_rounded,
@@ -478,19 +478,12 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
               padding: EdgeInsets.all(screenWidth * 0.06),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: isDarkMode
-                      ? [
-                          Colors.blue.shade900.withOpacity(0.3),
-                          Colors.blue.shade900.withOpacity(0.1),
-                        ]
-                      : [Colors.blue.shade50, Colors.blue.shade100],
-                ),
+                color: skyBlue.withOpacity(0.1),
               ),
               child: Icon(
                 Icons.account_balance_wallet_rounded,
                 size: screenWidth * 0.15,
-                color: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade600,
+                color: isDarkMode ? skyBlue : skyBlue,
               ),
             ),
             SizedBox(height: screenHeight * 0.03),
@@ -518,9 +511,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isDarkMode
-                    ? Colors.blue.shade700
-                    : Colors.blue.shade600,
+                backgroundColor: skyBlue,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.08,
@@ -572,7 +563,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
       opacity: _fadeAnimation,
       child: Column(
         children: [
-          // Stats Cards
+          // Stats Cards with Sky Blue
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: screenWidth * 0.04,
@@ -589,7 +580,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         title: 'Total Advances',
                         value: _advances.length.toString(),
                         icon: Icons.list_alt_rounded,
-                        color: Colors.blue,
+                        color: skyBlue,
                         subtitle:
                             '${_advances.length} Request${_advances.length != 1 ? 's' : ''}',
                         amount: _totalAmount,
@@ -622,7 +613,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         title: 'Pending',
                         value: pendingCount.toString(),
                         icon: Icons.pending_rounded,
-                        color: Colors.orange,
+                        color: skyBlue,  // Changed to sky blue
                         subtitle: pendingCount > 0
                             ? 'Awaiting review'
                             : 'No pending',
@@ -654,7 +645,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
             ),
           ),
 
-          // Filter Chips
+          // Filter Chips with Sky Blue
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: screenWidth * 0.04,
@@ -695,7 +686,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         );
                       },
                       backgroundColor: isDarkMode
-                          ? Colors.grey.shade800
+                          ? slate.withOpacity(0.3)
                           : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(screenWidth * 0.02),
@@ -745,8 +736,8 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   ),
                   decoration: BoxDecoration(
                     color: isDarkMode
-                        ? Colors.blue.shade900.withOpacity(0.3)
-                        : Colors.blue.shade50,
+                        ? skyBlue.withOpacity(0.2)
+                        : skyBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   ),
                   child: Row(
@@ -755,9 +746,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         'SAR',
                         style: TextStyle(
                           fontSize: screenWidth * 0.032,
-                          color: isDarkMode
-                              ? Colors.blue.shade300
-                              : Colors.blue.shade700,
+                          color: skyBlue,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -765,9 +754,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                       Icon(
                         Icons.arrow_downward_rounded,
                         size: screenWidth * 0.04,
-                        color: isDarkMode
-                            ? Colors.blue.shade300
-                            : Colors.blue.shade700,
+                        color: skyBlue,
                       ),
                     ],
                   ),
@@ -780,9 +767,9 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
           Expanded(
             child: RefreshIndicator.adaptive(
               onRefresh: _loadAdvances,
-              color: Colors.blue,
+              color: skyBlue,
               backgroundColor: isDarkMode
-                  ? const Color(0xFF1E1E1E)
+                  ? slate
                   : theme.cardColor,
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(
@@ -956,17 +943,17 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.015),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: isDarkMode ? slate.withOpacity(0.5) : Colors.white,
         borderRadius: BorderRadius.circular(screenWidth * 0.04),
         border: Border.all(
-          color: isDarkMode ? Colors.grey.shade800 : Colors.transparent,
-          width: 0.5,
+          color: isDarkMode ? Colors.grey.shade800 : skyBlue.withOpacity(0.2),
+          width: 1,
         ),
         boxShadow: isDarkMode
             ? []
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: skyBlue.withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1110,15 +1097,15 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isDarkMode
-                              ? [Colors.blue.shade700, Colors.blue.shade900]
-                              : [Colors.blue.shade400, Colors.blue.shade600],
+                              ? [skyBlue, deepSky]
+                              : [skyBlue, deepSky],
                         ),
                         shape: BoxShape.circle,
                         boxShadow: isDarkMode
                             ? []
                             : [
                                 BoxShadow(
-                                  color: Colors.blue.shade400.withOpacity(0.3),
+                                  color: skyBlue.withOpacity(0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1143,7 +1130,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   ),
                   decoration: BoxDecoration(
                     color: isDarkMode
-                        ? const Color(0xFF2A2A2A)
+                        ? slate.withOpacity(0.3)
                         : theme.scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(screenWidth * 0.03),
                   ),
@@ -1154,7 +1141,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         screenWidth: screenWidth,
                         icon: Icons.payment_rounded,
                         label: paymentMode,
-                        color: Colors.blue,
+                        color: skyBlue,
                         isDarkMode: isDarkMode,
                       ),
                       _buildInfoChip(
@@ -1166,7 +1153,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                                 .split(' - ')
                                 .last ??
                             'N/A',
-                        color: Colors.purple,
+                        color: deepSky,
                         isDarkMode: isDarkMode,
                       ),
                       _buildInfoChip(
@@ -1175,7 +1162,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         label: DateFormat(
                           'hh:mm a',
                         ).format(DateTime.parse(date)),
-                        color: Colors.orange,
+                        color: mediumSky,
                         isDarkMode: isDarkMode,
                       ),
                     ],
@@ -1237,12 +1224,11 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => SafeArea(
-        // Added SafeArea here
         child: Container(
-          height: MediaQuery.of(context).size.height * 0.9, // Fixed height
+          height: MediaQuery.of(context).size.height * 0.9,
           margin: EdgeInsets.only(top: screenHeight * 0.02),
           decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF1E1E1E) : theme.cardColor,
+            color: isDarkMode ? slate : theme.cardColor,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(30),
               topRight: Radius.circular(30),
@@ -1329,7 +1315,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                 color: isDarkMode ? Colors.grey.shade800 : null,
               ),
 
-              // Details - Now properly scrollable
+              // Details
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -1341,7 +1327,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         label: 'Advance Amount',
                         value: '$currency ${amount.toStringAsFixed(2)}',
                         icon: Icons.currency_rupee_rounded,
-                        color: Colors.blue,
+                        color: skyBlue,
                         isDarkMode: isDarkMode,
                       ),
                       SizedBox(height: screenHeight * 0.015),
@@ -1360,7 +1346,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                         value:
                             advance['purpose']?.toString() ?? 'Not specified',
                         icon: Icons.description_rounded,
-                        color: Colors.purple,
+                        color: deepSky,
                         isDarkMode: isDarkMode,
                       ),
                       SizedBox(height: screenHeight * 0.015),
@@ -1397,7 +1383,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                                 .last ??
                             'N/A',
                         icon: Icons.account_balance_rounded,
-                        color: Colors.teal,
+                        color: mediumSky,
                         isDarkMode: isDarkMode,
                       ),
                       SizedBox(height: screenHeight * 0.015),
@@ -1417,7 +1403,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                 ),
               ),
 
-              // Close Button
+              // Close Button with Sky Blue
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   screenWidth * 0.06,
@@ -1430,9 +1416,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDarkMode
-                          ? Colors.blue.shade700
-                          : Colors.blue.shade600,
+                      backgroundColor: skyBlue,
                       foregroundColor: Colors.white,
                       padding: EdgeInsets.symmetric(
                         vertical: screenHeight * 0.018,
@@ -1452,7 +1436,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
                   ),
                 ),
               ),
-              SizedBox(height: screenHeight * 0.01), // Extra padding at bottom
+              SizedBox(height: screenHeight * 0.01),
             ],
           ),
         ),

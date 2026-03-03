@@ -20,10 +20,18 @@ class TravelDetailScreen extends StatelessWidget {
     double responsiveHeight(double percentage) => screenHeight * percentage;
     double responsiveFontSize(double baseSize) => baseSize * (screenWidth / 375);
 
-    final primaryColor = isDark ? Colors.blue[300]! : const Color(0xFF2563EB);
-    final secondaryColor = isDark ? Colors.blue[400]! : const Color(0xFF3B82F6);
-    final backgroundColor = isDark ? Colors.grey[900]! : const Color(0xFFF8FAFD);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    // Sky Blue Color Palette - Matching all screens
+    final Color skyBlue = const Color(0xFF87CEEB);
+    final Color deepSky = const Color(0xFF00A5E0);
+    final Color offWhite = const Color(0xFFF8FAFC);
+    final Color pureWhite = const Color(0xFFFFFFFF);
+    final Color charcoal = const Color(0xFF1E293B);
+    final Color slate = const Color(0xFF334155);
+
+    final primaryColor = skyBlue;
+    final secondaryColor = deepSky;
+    final backgroundColor = isDark ? charcoal : offWhite;
+    final cardColor = isDark ? slate : pureWhite;
     final textColor = isDark ? Colors.white : Colors.black;
     final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
 
@@ -47,9 +55,9 @@ class TravelDetailScreen extends StatelessWidget {
       if (statusLower.contains("pending") ||
           statusLower.contains("draft") ||
           statusLower.contains("submitted")) {
-        return Colors.orange;
+        return skyBlue;  // Changed to sky blue for pending
       }
-      return Colors.blue;
+      return skyBlue;
     }
 
     final status = travelData["status"] ?? travelData["workflow_state"] ?? "Pending";
@@ -60,7 +68,7 @@ class TravelDetailScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Animated Header
+            // Animated Header with Sky Blue Gradient
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: responsiveWidth(0.05),
@@ -68,7 +76,7 @@ class TravelDetailScreen extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [primaryColor, secondaryColor],
+                  colors: [skyBlue, deepSky],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -78,7 +86,7 @@ class TravelDetailScreen extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: skyBlue.withOpacity(0.3),
                     blurRadius: 20,
                     spreadRadius: 1,
                     offset: const Offset(0, 4),
@@ -144,9 +152,13 @@ class TravelDetailScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: cardColor,
                         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+                        border: Border.all(
+                          color: skyBlue.withOpacity(0.2),
+                          width: 1.5,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: skyBlue.withOpacity(0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -204,9 +216,13 @@ class TravelDetailScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: cardColor,
                         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+                        border: Border.all(
+                          color: skyBlue.withOpacity(0.2),
+                          width: 1.5,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: skyBlue.withOpacity(0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -220,12 +236,12 @@ class TravelDetailScreen extends StatelessWidget {
                               Container(
                                 padding: EdgeInsets.all(responsiveWidth(0.02)),
                                 decoration: BoxDecoration(
-                                  color: primaryColor.withOpacity(0.1),
+                                  color: skyBlue.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.description_rounded,
-                                  color: primaryColor,
+                                  color: skyBlue,
                                   size: responsiveWidth(0.06),
                                 ),
                               ),
@@ -245,20 +261,20 @@ class TravelDetailScreen extends StatelessWidget {
                             label: "Purpose of Travel",
                             value: travelData["purpose_of_travel"] ?? "N/A",
                             icon: Icons.travel_explore,
-                            color: Colors.blue,
+                            color: skyBlue,
                             responsiveWidth: responsiveWidth,
                             responsiveFontSize: responsiveFontSize,
                           ),
-                          _buildDivider(),
+                          _buildDivider(isDark),
                           _buildDetailItem(
                             label: "Travel Type",
                             value: travelData["travel_type"] ?? "N/A",
                             icon: Icons.flight_takeoff,
-                            color: Colors.orange,
+                            color: deepSky,
                             responsiveWidth: responsiveWidth,
                             responsiveFontSize: responsiveFontSize,
                           ),
-                          _buildDivider(),
+                          _buildDivider(isDark),
                           _buildDetailItem(
                             label: "Travel Funding",
                             value: travelData["travel_funding"] ?? "N/A",
@@ -280,9 +296,13 @@ class TravelDetailScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: cardColor,
                         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+                        border: Border.all(
+                          color: skyBlue.withOpacity(0.2),
+                          width: 1.5,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: skyBlue.withOpacity(0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -325,7 +345,7 @@ class TravelDetailScreen extends StatelessWidget {
                             responsiveWidth: responsiveWidth,
                             responsiveFontSize: responsiveFontSize,
                           ),
-                          _buildDivider(),
+                          _buildDivider(isDark),
                           _buildDetailItem(
                             label: "Posting Date",
                             value: formatDate(travelData["posting_date"]),
@@ -347,9 +367,13 @@ class TravelDetailScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: cardColor,
                         borderRadius: BorderRadius.circular(responsiveWidth(0.04)),
+                        border: Border.all(
+                          color: skyBlue.withOpacity(0.2),
+                          width: 1.5,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: skyBlue.withOpacity(0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -392,7 +416,7 @@ class TravelDetailScreen extends StatelessWidget {
                             responsiveWidth: responsiveWidth,
                             responsiveFontSize: responsiveFontSize,
                           ),
-                          _buildDivider(),
+                          _buildDivider(isDark),
                           _buildDetailItem(
                             label: "Employee ID",
                             value: travelData["employee"] ?? "N/A",
@@ -407,19 +431,20 @@ class TravelDetailScreen extends StatelessWidget {
 
                     SizedBox(height: responsiveHeight(0.03)),
 
-                    // Close Button
+                    // Close Button with Sky Blue
                     SizedBox(
                       width: double.infinity,
                       height: responsiveHeight(0.065),
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
+                          backgroundColor: skyBlue,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(responsiveWidth(0.03)),
                           ),
                           elevation: 5,
+                          shadowColor: skyBlue.withOpacity(0.5),
                         ),
                         child: Text(
                           "Close",
@@ -500,12 +525,12 @@ class TravelDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Divider(
         height: 1,
-        color: Colors.grey.withOpacity(0.3),
+        color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
       ),
     );
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CheckuserUtils {
-
+  // ================= CHECK USER =================
   static Future<void> checkUser(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -12,22 +12,18 @@ class CheckuserUtils {
 
     final isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
     final token = prefs.getString("authToken");
-    final employeeId = prefs.getString("employeeId");
 
-    if (isLoggedIn &&
-        token != null &&
-        token.isNotEmpty &&
-        employeeId != null &&
-        employeeId.isNotEmpty) {
+    print("📱 CheckUser - isLoggedIn: $isLoggedIn, token: $token");
 
+    // Sirf isLoggedIn check karo, employeeId optional hai
+    if (isLoggedIn && token != null && token.isNotEmpty) {
       Navigator.pushReplacementNamed(context, "/homeScreen");
       return;
     }
     Navigator.pushReplacementNamed(context, "/loginScreen");
   }
 
-
-  // ================= SAVE LOGIN =================
+  // ================= SAVE LOGIN STATUS (FIXED) =================
   static Future<void> saveloginStatus({
     required String route,
     required String employeeId,
@@ -35,67 +31,57 @@ class CheckuserUtils {
     String? authToken,
     List<String>? cookies,
   }) async {
-
     final prefs = await SharedPreferences.getInstance();
 
-    // ================= BASIC =================
+    print("📱 Saving login status...");
+    print("📱 UserName: $userName");
+    print("📱 AuthToken: $authToken");
+    print("📱 Cookies: $cookies");
+
+    // BASIC
     await prefs.setBool("isLoggedIn", true);
     await prefs.setString("home_page", "/homeScreen");
 
-
-    // ================= EMPLOYEE =================
-    final empId = employeeId.trim();
-
-    if (empId.isEmpty) {
-      throw Exception("Employee ID cannot be empty");
+    // EMPLOYEE ID - Agar empty hai to bhi save mat karo
+    if (employeeId.isNotEmpty) {
+      await prefs.setString("employeeId", employeeId);
     }
 
-    await prefs.setString("employeeId", empId);
-
-
-    // ================= USER =================
+    // USER NAME
     if (userName != null && userName.trim().isNotEmpty) {
       await prefs.setString("userName", userName.trim());
     }
 
-
-    // ================= TOKEN =================
+    // TOKEN
     String? finalToken = authToken;
     if ((finalToken == null || finalToken.isEmpty) &&
         cookies != null &&
         cookies.isNotEmpty) {
-
       try {
-        final sid = cookies.firstWhere(
-          (c) => c.startsWith("sid="),
-        );
-
+        final sid = cookies.firstWhere((c) => c.startsWith("sid="));
         finalToken = sid.replaceAll("sid=", "").trim();
-
+        print("📱 Extracted SID from cookies: $finalToken");
       } catch (_) {}
     }
-
 
     if (finalToken != null && finalToken.isNotEmpty) {
       await prefs.setString("authToken", finalToken.trim());
     }
 
-
-    // ================= COOKIES =================
+    // COOKIES
     if (cookies != null && cookies.isNotEmpty) {
       await prefs.setStringList("cookies", cookies);
     }
-  }
 
+    print("📱 Login status saved successfully");
+  }
 
   // ================= LOGOUT =================
   static Future<void> logout(BuildContext context) async {
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
     if (!context.mounted) return;
-
     Navigator.pushReplacementNamed(context, "/loginScreen");
-  }
+  } 
 }

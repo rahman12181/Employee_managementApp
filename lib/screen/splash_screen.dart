@@ -228,7 +228,7 @@ class _SplashScreenState extends State<SplashScreen>
                       children: [
                         SizedBox(height: screenHeight * 0.12),
 
-                        // Logo with Multiple Shadows and Glow
+                        // Logo with Multiple Shadows and Glow - SIRF LOGO KA GRADIENT CHANGED
                         ScaleTransition(
                           scale: _logoScaleAnimation,
                           child: AnimatedBuilder(
@@ -265,8 +265,8 @@ class _SplashScreenState extends State<SplashScreen>
                                       // Secondary Glow
                                       BoxShadow(
                                         color: (_isDarkMode
-                                                ? Colors.purple[400]!
-                                                : Colors.purple[300]!)
+                                                ? Colors.blue[400]!
+                                                : Colors.blue[300]!)
                                             .withOpacity(0.3),
                                         blurRadius: 40,
                                         spreadRadius: 2,
@@ -275,14 +275,14 @@ class _SplashScreenState extends State<SplashScreen>
                                     gradient: RadialGradient(
                                       colors: _isDarkMode
                                           ? [
-                                              Colors.blue[700]!,
-                                              Colors.blue[900]!,
-                                              Colors.purple[900]!,
+                                              Colors.blue[300]!,      // Light blue
+                                              Colors.blue[400]!,      // Medium blue
+                                              Colors.blue[500]!,      // Dark blue
                                             ]
                                           : [
-                                              Colors.blue[400]!,
-                                              Colors.blue[600]!,
-                                              Colors.purple[600]!,
+                                              Colors.blue[200]!,      // Very light blue
+                                              Colors.blue[300]!,      // Light blue
+                                              Colors.blue[400]!,      // Medium blue
                                             ],
                                       stops: const [0.2, 0.6, 1.0],
                                     ),
@@ -307,7 +307,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                         SizedBox(height: screenHeight * 0.06),
 
-                        // Text Section with Enhanced Styling
+                        // Text Section with Enhanced Styling (BACK TO ORIGINAL)
                         IntrinsicHeight(
                           child: AnimatedOpacity(
                             opacity: _textOpacityAnimation.value,
@@ -316,7 +316,7 @@ class _SplashScreenState extends State<SplashScreen>
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Main Title with Gradient
+                                // Main Title with Gradient (BACK TO ORIGINAL)
                                 ShaderMask(
                                   shaderCallback: (bounds) {
                                     return LinearGradient(
@@ -352,7 +352,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                                 SizedBox(height: screenHeight * 0.015),
 
-                                // Tagline with Animation
+                                // Tagline with Animation (BACK TO ORIGINAL)
                                 AnimatedOpacity(
                                   opacity: displayedText == fullText
                                       ? 1.0
@@ -399,7 +399,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   ),
                                 ),
 
-                                // Version Number
+                                // Version Number (BACK TO ORIGINAL)
                                 SizedBox(height: screenHeight * 0.02),
                                 AnimatedOpacity(
                                   opacity: displayedText == fullText
@@ -427,12 +427,12 @@ class _SplashScreenState extends State<SplashScreen>
 
                         const Spacer(),
 
-                        // Bottom Section with Loading and Company Name
+                        // Bottom Section with Loading and Company Name (BACK TO ORIGINAL)
                         Padding(
                           padding: EdgeInsets.only(bottom: screenHeight * 0.05),
                           child: Column(
                             children: [
-                              // Animated Loading Bar
+                              // Animated Loading Bar (BACK TO ORIGINAL)
                               AnimatedOpacity(
                                 opacity: _logoController.value > 0.6 ? 1.0 : 0.0,
                                 duration: const Duration(milliseconds: 400),
@@ -468,7 +468,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                               SizedBox(height: screenHeight * 0.02),
 
-                              // Company Name
+                              // Company Name (BACK TO ORIGINAL)
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -497,7 +497,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                               SizedBox(height: screenHeight * 0.005),
 
-                              // Copyright
+                              // Copyright (BACK TO ORIGINAL)
                               Text(
                                 "© 2024 All Rights Reserved",
                                 style: TextStyle(
@@ -523,7 +523,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-// Background Pattern Painter (Only Concentric Circles - No Bubbles)
+// Background Pattern Painter (BACK TO ORIGINAL - with pink/purple for background)
 class _BackgroundPatternPainter extends CustomPainter {
   final double animationValue;
   final bool isDarkMode;
@@ -541,7 +541,7 @@ class _BackgroundPatternPainter extends CustomPainter {
 
     final center = Offset(size.width / 2, size.height / 2);
 
-    // Draw concentric circles only (no bubbles/particles)
+    // Draw concentric circles only (no bubbles/particles) - BACK TO ORIGINAL
     for (int i = 0; i < 8; i++) {
       final radius = (i + 1) * 50.0 * animationValue;
       final opacity = (0.02 * (8 - i) * animationValue).clamp(0.0, 0.1);
@@ -551,7 +551,7 @@ class _BackgroundPatternPainter extends CustomPainter {
       canvas.drawCircle(center, radius, paint);
     }
 
-    // Draw diagonal lines for subtle texture
+    // Draw diagonal lines for subtle texture - BACK TO ORIGINAL
     paint.color = (isDarkMode ? Colors.purple[400]! : Colors.purple[500]!).withOpacity(0.03 * animationValue);
     paint.strokeWidth = 1;
 
