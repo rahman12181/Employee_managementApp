@@ -19,6 +19,7 @@ class AttendanceScreen extends StatefulWidget {
 class _AttendanceScreenState extends State<AttendanceScreen> {
   DateTime _currentMonth = DateTime.now();
   late ScrollController _scrollController;
+  bool _isLoading = false;
 
   // Sky Blue Color Palette - Matching Dashboard and Home
   static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
@@ -54,13 +55,75 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Future<void> _refreshAttendance() async {
-    final employeeProvider = context.read<EmployeeProvider>();
-    final attendanceProvider = context.read<AttendanceProvider>();
+    if (_isLoading) return; // Prevent multiple simultaneous refreshes
 
-    final employeeId = employeeProvider.employeeId;
+    setState(() => _isLoading = true);
 
-    if (employeeId != null) {
+    try {
+      final employeeProvider = context.read<EmployeeProvider>();
+      final attendanceProvider = context.read<AttendanceProvider>();
+
+      final employeeId = employeeProvider.employeeId;
+
+      if (employeeId == null) {
+        print("❌ Employee ID is null");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(child: Text("Employee ID not found")),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+        return;
+      }
+
+      print("📅 Loading attendance for employee: $employeeId, month: ${_currentMonth.month}");
+      
+      // Clear previous error
+      attendanceProvider.clearError();
+      
       await attendanceProvider.loadMonthAttendance(employeeId, _currentMonth);
+      
+      print("✅ Attendance loaded successfully");
+      print("📊 Attendance map size: ${attendanceProvider.attendanceMap.length}");
+      print("📋 Monthly logs count: ${attendanceProvider.getMonthlyLogs(_currentMonth).length}");
+      
+      if (mounted) {
+        setState(() {}); // Force rebuild
+      }
+      
+    } catch (e) {
+      print("❌ Error in _refreshAttendance: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 12),
+                Expanded(child: Text("Failed to load attendance: ${e.toString()}")),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -125,6 +188,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     AttendanceStatus? status;
     double opacity = 1.0;
 
+    // Get status from attendance map
     for (final key in attendanceProvider.attendanceMap.keys) {
       if (key.year == date.year &&
           key.month == date.month &&
@@ -744,12 +808,21 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: Icon(
-                          Icons.refresh_rounded,
-                          size: screenWidth * 0.06,
-                          color: Colors.white,
-                        ),
-                        onPressed: _refreshAttendance,
+                        icon: _isLoading
+                            ? SizedBox(
+                                width: screenWidth * 0.06,
+                                height: screenWidth * 0.06,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Icon(
+                                Icons.refresh_rounded,
+                                size: screenWidth * 0.06,
+                                color: Colors.white,
+                              ),
+                        onPressed: _isLoading ? null : _refreshAttendance,
                       ),
                     ),
                   ],
@@ -811,7 +884,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                     Material(
                                       color: Colors.transparent,
                                       child: InkWell(
-                                        onTap: () {
+                                        onTap: _isLoading ? null : () {
                                           setState(() {
                                             _currentMonth = DateTime(
                                               _currentMonth.year,
@@ -856,7 +929,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                     Material(
                                       color: Colors.transparent,
                                       child: InkWell(
-                                        onTap: canGoNext
+                                        onTap: (canGoNext && !_isLoading)
                                             ? () {
                                                 setState(() {
                                                   _currentMonth = DateTime(
@@ -895,14 +968,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               SizedBox(height: screenHeight * 0.02),
 
                               // Loading Indicator
-                              if (attendanceProvider.isLoading)
+                              if (_isLoading)
                                 LinearProgressIndicator(
                                   backgroundColor: isDarkMode ? slate : Colors.grey[200],
                                   valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
                                   minHeight: 2,
                                 ),
 
-                              // Error Message
+                              // Error Message with Auto-dismiss
                               if (attendanceProvider.errorMessage != null)
                                 Container(
                                   padding: EdgeInsets.all(screenWidth * 0.03),
@@ -944,6 +1017,20 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                           ),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      // Close button to dismiss error
+                                      GestureDetector(
+                                        onTap: () {
+                                          attendanceProvider.clearError();
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          child: const Icon(
+                                            Icons.close,
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -1061,7 +1148,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             }, childCount: monthlyLogs.length),
                           ),
                         )
-                      else if (!attendanceProvider.isLoading)
+                      else if (!_isLoading && attendanceProvider.errorMessage == null)
                         SliverToBoxAdapter(
                           child: Container(
                             margin: EdgeInsets.all(screenWidth * 0.05),

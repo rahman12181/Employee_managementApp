@@ -41,12 +41,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     'approvedRequests': 0,
   };
 
-  // ✅ New variables for leave balance details
-  Map<String, dynamic> _leaveDetails = {};
-  double _totalAllocated = 0;
-  double _totalTaken = 0;
-  double _totalRemaining = 0;
-
   bool _isLoadingStats = true;
   String _employeeId = "";
   String _employeeName = "";
@@ -71,52 +65,52 @@ class _DashboardScreenState extends State<DashboardScreen>
   static const Color charcoal = Color(0xFF1E293B);
   static const Color slate = Color(0xFF334155);
 
-  // ✅ Updated Quick Stats Cards - SCREENSHOT STYLE with BORDERS
+  // ✅ Enhanced Quick Stats Cards - White and Sky Blue Theme Only (Single Line Titles)
   final List<Map<String, dynamic>> quickStatsCards = [
     {
-      'title': 'Total\nRequests',
+      'title': 'Total Requests', // Single line
       'value': '0',
       'icon': Icons.assignment_rounded,
       'subtitle': 'All requests',
       'color': skyBlue,
-      'bgColor': Colors.blue.shade50,
-      'borderColor': skyBlue,
+      'bgColor': pureWhite,
+      'borderColor': skyBlue.withOpacity(0.3),
     },
     {
-      'title': 'Leave\nRequests',
+      'title': 'Leave Requests', // Single line
       'value': '0',
       'icon': Icons.beach_access_rounded,
       'subtitle': 'Total leaves',
-      'color': Colors.green,
-      'bgColor': Colors.green.shade50,
-      'borderColor': Colors.green,
+      'color': skyBlue,
+      'bgColor': pureWhite,
+      'borderColor': skyBlue.withOpacity(0.3),
     },
     {
-      'title': 'Travel\nRequests',
+      'title': 'Travel Requests', // Single line
       'value': '0',
       'icon': Icons.flight_rounded,
       'subtitle': 'Total travels',
-      'color': Colors.orange,
-      'bgColor': Colors.orange.shade50,
-      'borderColor': Colors.orange,
+      'color': skyBlue,
+      'bgColor': pureWhite,
+      'borderColor': skyBlue.withOpacity(0.3),
     },
     {
-      'title': 'Pending\nApproval',
+      'title': 'Pending Approval', // Single line
       'value': '0',
       'icon': Icons.pending_actions_rounded,
       'subtitle': 'Awaiting review',
-      'color': Colors.purple,
-      'bgColor': Colors.purple.shade50,
-      'borderColor': Colors.purple,
+      'color': skyBlue,
+      'bgColor': pureWhite,
+      'borderColor': skyBlue.withOpacity(0.3),
     },
     {
-      'title': 'Approved\nRequests',
+      'title': 'Approved Requests', // Single line
       'value': '0',
       'icon': Icons.check_circle_rounded,
       'subtitle': 'Completed',
-      'color': Colors.teal,
-      'bgColor': Colors.teal.shade50,
-      'borderColor': Colors.teal,
+      'color': skyBlue,
+      'bgColor': pureWhite,
+      'borderColor': skyBlue.withOpacity(0.3),
     },
   ];
 
@@ -259,19 +253,15 @@ class _DashboardScreenState extends State<DashboardScreen>
       int totalLeaves = 0;
       int totalTravel = 0;
 
-      // ✅ Variables for leave status
+      // Variables for leave status
       int leavePending = 0;
       int leaveApproved = 0;
 
-      // ✅ Variables for travel status
+      // Variables for travel status
       int travelPending = 0;
       int travelApproved = 0;
 
-      _totalAllocated = 0;
-      _totalTaken = 0;
-      _totalRemaining = 0;
-
-      // ✅ Fetch and process leaves
+      // Fetch and process leaves
       try {
         final leaves = await LeaveApprovedService.fetchLeaves();
         final userLeaves = leaves.where((leave) {
@@ -285,7 +275,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
         totalLeaves = userLeaves.length;
 
-        // ✅ Count leave pending and approved
+        // Count leave pending and approved
         leavePending = userLeaves
             .where(
               (l) =>
@@ -304,22 +294,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                       l.status.toLowerCase() == 'completed'),
             )
             .length;
-
-        print(
-          "📊 Leaves - Total: $totalLeaves, Pending: $leavePending, Approved: $leaveApproved",
-        );
       } catch (e) {
         print("Error fetching leaves: $e");
       }
 
-      // ✅ Fetch and process travels
+      // Fetch and process travels
       try {
         final travels = await TravelRequestService.getMyTravelRequests(
           _employeeId,
         );
         totalTravel = travels.length;
 
-        // ✅ Count travel pending and approved
+        // Count travel pending and approved
         travelPending = travels.where((t) {
           final status = (t["status"] ?? "").toString().toLowerCase();
           return status.contains('pending') ||
@@ -331,47 +317,19 @@ class _DashboardScreenState extends State<DashboardScreen>
           final status = (t["status"] ?? "").toString().toLowerCase();
           return status.contains('approved') || status.contains('completed');
         }).length;
-
-        print(
-          "📊 Travels - Total: $totalTravel, Pending: $travelPending, Approved: $travelApproved",
-        );
       } catch (e) {
         print("Error fetching travels: $e");
       }
 
-      // ✅ Calculate combined totals
+      // Calculate combined totals
       int totalRequests = totalLeaves + totalTravel;
       int totalPending = leavePending + travelPending;
       int totalApproved = leaveApproved + travelApproved;
 
-      print(
-        "✅ COMBINED - Total Requests: $totalRequests, Pending: $totalPending, Approved: $totalApproved",
-      );
-
-      // ✅ Fetch leave balance
-      try {
-        final leaveService = LeaveBalanceService();
-        final result = await leaveService.fetchLeaveBalances();
-
-        if (result['success'] == true) {
-          _leaveDetails = result['leaveDetails'] ?? {};
-          final totals = result['totals'] ?? {};
-          _totalAllocated = totals['allocated'] ?? 0;
-          _totalTaken = totals['taken'] ?? 0;
-          _totalRemaining = totals['remaining'] ?? 0;
-
-          print(
-            "✅ Leave Balance - Allocated: $_totalAllocated, Taken: $_totalTaken, Remaining: $_totalRemaining",
-          );
-        }
-      } catch (e) {
-        print("❌ Error fetching leave balance: $e");
-      }
-
       if (mounted) {
         setState(() {
           _stats = {
-            'leaveBalance': _totalRemaining,
+            'leaveBalance': 0,
             'activeAdvances': 1,
             'totalLeaves': totalLeaves,
             'totalTravel': totalTravel,
@@ -851,8 +809,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ✅ Quick Stats with SCREENSHOT STYLE DESIGN
-  // ✅ Quick Stats with SCREENSHOT STYLE DESIGN - NO OVERFLOW
+  // ✅ ENHANCED Quick Stats with White & Sky Blue Theme - CLEAN & VISIBLE
   Widget _buildQuickStats(double width, double height, BuildContext context) {
     if (_isLoadingStats) {
       return Container(
@@ -872,18 +829,21 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
     }
 
-    // Responsive grid - 5 cards with PROPER ASPECT RATIO
-    int crossAxisCount = width < 400
-        ? 2
-        : (width < 600 ? 2 : (width < 900 ? 3 : 5));
-
-    // ✅ FIXED: Better aspect ratio calculation
-    double cardHeight = width < 400 ? height * 0.14 : height * 0.12;
-    double cardWidth =
-        (width - (crossAxisCount + 1) * width * 0.02) / crossAxisCount;
+    // Responsive grid calculation - PREVENT OVERFLOW
+    int crossAxisCount = width < 400 ? 2 : (width < 600 ? 2 : (width < 900 ? 3 : 5));
+    
+    // Calculate card dimensions to prevent overflow
+    double horizontalPadding = width * 0.04;
+    double totalSpacing = (crossAxisCount + 1) * width * 0.015;
+    double availableWidth = width - (horizontalPadding * 2) - totalSpacing;
+    double cardWidth = availableWidth / crossAxisCount;
+    
+    // Responsive card height - slightly taller for better spacing
+    double cardHeight = width < 400 ? height * 0.16 : 
+                       (width < 600 ? height * 0.15 : 
+                       (width < 900 ? height * 0.14 : height * 0.17));
+    
     double aspectRatio = cardWidth / cardHeight;
-
-    double spacing = width * 0.02;
 
     return Container(
       width: double.infinity,
@@ -894,7 +854,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           _buildSectionHeader(context, width, height, "Quick Stats"),
           SizedBox(height: height * 0.02),
 
-          // Stats Grid with Bounce Animation
+          // Stats Grid with Animation
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -902,8 +862,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
               childAspectRatio: aspectRatio,
-              crossAxisSpacing: spacing,
-              mainAxisSpacing: height * 0.01, // ✅ Reduced spacing
+              crossAxisSpacing: width * 0.015,
+              mainAxisSpacing: height * 0.01,
             ),
             itemBuilder: (context, index) {
               final card = quickStatsCards[index];
@@ -918,7 +878,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     scale: Curves.elasticOut.transform(animationValue),
                     child: Opacity(
                       opacity: animationValue,
-                      child: _buildStatCardScreenshotStyle(
+                      child: _buildWhiteSkyStatCard(
                         context,
                         width,
                         height,
@@ -930,20 +890,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             },
           ),
-
-          // Leave breakdown section
-          if (_leaveDetails.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(top: height * 0.02),
-              child: _buildLeaveBreakdown(width, height, context),
-            ),
         ],
       ),
     );
   }
 
-  // ✅ SCREENSHOT STYLE stat card - with colored background, border, and reduced height
-  Widget _buildStatCardScreenshotStyle(
+  // ✅ WHITE & SKY BLUE Stat Card - Left Aligned with Single Line Title
+  Widget _buildWhiteSkyStatCard(
     BuildContext context,
     double width,
     double height,
@@ -953,96 +906,90 @@ class _DashboardScreenState extends State<DashboardScreen>
     final textPrimary = _getTextPrimaryColor(context);
     final textSecondary = _getTextSecondaryColor(context);
 
-    final Color cardColor = card['color'] ?? skyBlue;
-    final Color borderColor = card['borderColor'] ?? cardColor;
-    final Color bgColor = isDark
-        ? cardColor.withOpacity(0.15)
-        : (card['bgColor'] ?? cardColor.withOpacity(0.1));
+    final Color bgColor = isDark ? slate : pureWhite;
+    final Color borderColor = skyBlue.withOpacity(0.3);
+    final Color iconBgColor = skyBlue.withOpacity(0.1);
+
+    // Clean the title by removing newlines and trimming
+    String cleanTitle = (card['title'] as String).replaceAll('\n', ' ').trim();
 
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12), // ✅ Smaller radius
-        border: Border.all(color: borderColor.withOpacity(0.5), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0, // Thin border
+        ),
         boxShadow: [
           BoxShadow(
-            color: cardColor.withOpacity(isDark ? 0.2 : 0.1),
-            blurRadius: 6,
+            color: skyBlue.withOpacity(isDark ? 0.1 : 0.08),
+            blurRadius: 8,
             offset: const Offset(0, 2),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(width * 0.015), // ✅ Reduced padding
+        padding: EdgeInsets.all(width * 0.02),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // LEFT ALIGNED
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Icon with background circle
+            // Larger Icon with light sky background
             Container(
-              padding: EdgeInsets.all(width * 0.01), // ✅ Smaller padding
+              padding: EdgeInsets.all(width * 0.018),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+                color: iconBgColor,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: cardColor.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
               ),
               child: Icon(
                 card['icon'] as IconData,
-                color: cardColor,
-                size: width * 0.04, // ✅ Smaller icon
+                color: skyBlue,
+                size: width * 0.065, // LARGER ICON
               ),
             ),
-
-            SizedBox(height: height * 0.006), // ✅ Reduced spacing
-            // Title - with line breaks
+            
+            SizedBox(height: height * 0.01),
+            
+            // Title (Card Name) - Single Line, Left Aligned
             Text(
-              card['title'] as String,
+              cleanTitle,
               style: TextStyle(
-                fontSize: _getResponsiveFontSize(
-                  width * 0.024,
-                  width,
-                ), // ✅ Smaller font
+                fontSize: _getResponsiveFontSize(width * 0.030, width),
                 fontWeight: FontWeight.w600,
                 color: textPrimary,
-                height: 1.1,
+                height: 1.2,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
+              textAlign: TextAlign.left, // LEFT ALIGNED
+              maxLines: 1, // SINGLE LINE ONLY
               overflow: TextOverflow.ellipsis,
             ),
 
-            SizedBox(height: height * 0.003), // ✅ Reduced spacing
-            // Value
+            SizedBox(height: height * 0.008),
+            
+            // BIGGER Value Number - Left Aligned
             Text(
               card['value'] as String,
               style: TextStyle(
-                fontSize: _getResponsiveFontSize(
-                  width * 0.036,
-                  width,
-                ), // ✅ Smaller font
+                fontSize: _getResponsiveFontSize(width * 0.060, width), // BIGGER NUMBERS
                 fontWeight: FontWeight.w800,
-                color: cardColor,
+                color: skyBlue,
               ),
-              textAlign: TextAlign.center,
+              textAlign: TextAlign.left, // LEFT ALIGNED
             ),
-
-            // Subtitle
+            
+            SizedBox(height: height * 0.004),
+            
+            // Subtitle - Left Aligned
             Text(
               card['subtitle'] as String,
               style: TextStyle(
-                fontSize: _getResponsiveFontSize(
-                  width * 0.018,
-                  width,
-                ), // ✅ Smaller font
+                fontSize: _getResponsiveFontSize(width * 0.025, width),
                 color: textSecondary,
+                fontWeight: FontWeight.w400,
               ),
-              textAlign: TextAlign.center,
+              textAlign: TextAlign.left, // LEFT ALIGNED
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1052,150 +999,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Leave breakdown widget
-  Widget _buildLeaveBreakdown(
-    double width,
-    double height,
-    BuildContext context,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = _getSurfaceColor(context);
-    final textPrimary = _getTextPrimaryColor(context);
-    final borderColor = _getBorderColor(context);
-
-    if (_leaveDetails.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(width * 0.04),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: skyBlue.withOpacity(isDark ? 0.1 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.pie_chart_rounded, color: skyBlue, size: width * 0.05),
-              SizedBox(width: width * 0.02),
-              Text(
-                'Leave Breakdown',
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(width * 0.04, width),
-                  fontWeight: FontWeight.w600,
-                  color: textPrimary,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: height * 0.015),
-          ..._leaveDetails.entries.map((entry) {
-            final leaveType = entry.key;
-            final details = entry.value as Map<String, double>;
-            final allocated = details['allocated'] ?? 0;
-            final taken = details['taken'] ?? 0;
-            final remaining = details['remaining'] ?? 0;
-
-            Color progressColor;
-            if (leaveType.toLowerCase().contains('sick')) {
-              progressColor = Colors.orange;
-            } else if (leaveType.toLowerCase().contains('annual')) {
-              progressColor = Colors.green;
-            } else {
-              progressColor = skyBlue;
-            }
-
-            return Padding(
-              padding: EdgeInsets.only(bottom: height * 0.012),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          leaveType,
-                          style: TextStyle(
-                            fontSize: _getResponsiveFontSize(
-                              width * 0.032,
-                              width,
-                            ),
-                            fontWeight: FontWeight.w500,
-                            color: textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        '${remaining.toStringAsFixed(1)} / ${allocated.toStringAsFixed(1)} days',
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(width * 0.03, width),
-                          color: progressColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: height * 0.004),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: allocated > 0
-                          ? (taken / allocated).clamp(0.0, 1.0)
-                          : 0,
-                      backgroundColor: borderColor,
-                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                      minHeight: height * 0.006,
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: height * 0.002),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Taken: ${taken.toStringAsFixed(1)}',
-                          style: TextStyle(
-                            fontSize: _getResponsiveFontSize(
-                              width * 0.024,
-                              width,
-                            ),
-                            color: Colors.grey,
-                          ),
-                        ),
-                        Text(
-                          'Remaining: ${remaining.toStringAsFixed(1)}',
-                          style: TextStyle(
-                            fontSize: _getResponsiveFontSize(
-                              width * 0.024,
-                              width,
-                            ),
-                            color: progressColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
-
-  // ✅ Module Grid with bgPattern (FIXED)
+  // ✅ Module Grid with bgPattern
   Widget _buildModuleGrid(double width, double height, BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = _getSurfaceColor(context);
@@ -1279,7 +1083,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     child: Stack(
                       children: [
-                        // Background Pattern (KEEP for modules)
+                        // Background Pattern
                         Positioned.fill(
                           child: Opacity(
                             opacity: isPressed ? 0.3 : 0.2,
@@ -1473,7 +1277,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         // Banner
                         _buildBannerSlider(width, height),
 
-                        // Quick Stats with SCREENSHOT STYLE
+                        // Quick Stats with White & Sky Blue Theme
                         _buildQuickStats(width, height, context),
 
                         SizedBox(height: height * 0.02),
