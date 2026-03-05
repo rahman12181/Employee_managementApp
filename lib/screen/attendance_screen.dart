@@ -66,11 +66,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       final employeeId = employeeProvider.employeeId;
 
       if (employeeId == null) {
-        print("❌ Employee ID is null");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
+              content: const Row(
                 children: [
                   Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
                   SizedBox(width: 12),
@@ -84,39 +83,31 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           );
         }
         return;
-      }
-
-      print("📅 Loading attendance for employee: $employeeId, month: ${_currentMonth.month}");
-      
+      }      
       // Clear previous error
       attendanceProvider.clearError();
       
       await attendanceProvider.loadMonthAttendance(employeeId, _currentMonth);
-      
-      print("✅ Attendance loaded successfully");
-      print("📊 Attendance map size: ${attendanceProvider.attendanceMap.length}");
-      print("📋 Monthly logs count: ${attendanceProvider.getMonthlyLogs(_currentMonth).length}");
       
       if (mounted) {
         setState(() {}); // Force rebuild
       }
       
     } catch (e) {
-      print("❌ Error in _refreshAttendance: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 12),
+                const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
                 Expanded(child: Text("Failed to load attendance: ${e.toString()}")),
               ],
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -130,7 +121,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Color _getStatusColor(AttendanceStatus status) {
     switch (status) {
       case AttendanceStatus.completed:
-        return skyBlue;
+        return Colors.green;
       case AttendanceStatus.overtime:
         return deepSky;
       case AttendanceStatus.shortage:
@@ -812,7 +803,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             ? SizedBox(
                                 width: screenWidth * 0.06,
                                 height: screenWidth * 0.06,
-                                child: CircularProgressIndicator(
+                                child: const CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.white,
                                 ),
@@ -948,7 +939,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                                 ? LinearGradient(
                                                     colors: gradientColors,
                                                   )
-                                                : LinearGradient(
+                                                : const LinearGradient(
                                                     colors: [Colors.grey, Colors.grey],
                                                   ),
                                             shape: BoxShape.circle,
@@ -971,7 +962,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               if (_isLoading)
                                 LinearProgressIndicator(
                                   backgroundColor: isDarkMode ? slate : Colors.grey[200],
-                                  valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
+                                  valueColor: const AlwaysStoppedAnimation<Color>(skyBlue),
                                   minHeight: 2,
                                 ),
 
@@ -1069,7 +1060,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 runSpacing: screenHeight * 0.01,
                                 alignment: WrapAlignment.center,
                                 children: [
-                                  _buildLegend(skyBlue, "Completed"),
+                                  _buildLegend(Colors.green, "Completed"),
                                   _buildLegend(deepSky, "Overtime"),
                                   _buildLegend(Colors.orange, "Shortage"),
                                   _buildLegend(mediumSky, "Checked In"),

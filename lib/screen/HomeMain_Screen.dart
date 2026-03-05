@@ -444,11 +444,11 @@ class _HomemainScreenState extends State<HomemainScreen>
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.error_outline_rounded,
                     color: Colors.white,
                     size: 24,
@@ -460,7 +460,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                   child: Text(
                     message,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Colors.red,
                       fontWeight: FontWeight.w600,
@@ -529,7 +529,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                     gradient: LinearGradient(colors: gradientColors),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.info_outline_rounded,
                     color: Colors.white,
                     size: 24,
@@ -909,7 +909,7 @@ class _HomemainScreenState extends State<HomemainScreen>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
@@ -1055,7 +1055,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                 color: skyBlue.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.location_on_rounded, size: 14, color: skyBlue),
+              child: const Icon(Icons.location_on_rounded, size: 14, color: skyBlue),
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -1096,7 +1096,7 @@ class _HomemainScreenState extends State<HomemainScreen>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.wifi_off_rounded, size: 16, color: Colors.red),
+              const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.red),
               const SizedBox(width: 8),
               Text(
                 "No Internet Connection",
@@ -1278,7 +1278,7 @@ class _HomemainScreenState extends State<HomemainScreen>
             height: iconSize * 0.6,
             child: CircularProgressIndicator(
               strokeWidth: screenWidth * 0.008,
-              valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
+              valueColor: const AlwaysStoppedAnimation<Color>(skyBlue),
             ),
           ),
           SizedBox(height: buttonSize * 0.04),

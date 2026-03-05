@@ -321,28 +321,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           SizedBox(height: screenHeight * 0.05),
 
                           // App Info with Sky Blue Theme
-                          Container(
-                            padding: EdgeInsets.all(screenWidth * 0.05),
-                            decoration: BoxDecoration(
-                              color: isDarkMode
-                                  ? slate.withOpacity(0.5)
-                                  : pureWhite,
-                              borderRadius: BorderRadius.circular(
-                                screenWidth * 0.04,
-                              ),
-                              border: Border.all(
-                                color: skyBlue.withOpacity(0.2),
-                                width: 1,
-                              ),
-                            ),
+                          Center(
                             child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  color: skyBlue.withOpacity(0.5),
-                                  size: screenWidth * 0.08,
-                                ),
-                                SizedBox(height: screenHeight * 0.01),
                                 Text(
                                   "Version 1.0.0",
                                   style: TextStyle(

@@ -146,8 +146,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           end: Alignment.bottomCenter,
           colors: isDarkMode 
               ? [
-                  const Color(0xFF1E1E1E), // Darker for dark mode
-                  const Color(0xFF2C2C2C),
+                 const Color(0xFF334155), // Darker for dark mode
+                  const Color(0xFF334155),
                 ]
               : [
                   Colors.white,
@@ -219,9 +219,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               screenWidth: screenWidth,
             ),
             _buildUniqueNavItem(
-              icon: Icons.person_outline_rounded,
-              activeIcon: Icons.person_rounded,
-              label: "Profile",
+              icon: Icons.settings_outlined,
+              activeIcon: Icons.settings_rounded,
+              label: "Setting",
               index: 3,
               isDarkMode: isDarkMode,
               iconSize: iconSize,

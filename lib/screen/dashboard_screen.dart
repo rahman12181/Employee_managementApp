@@ -120,7 +120,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       'title': 'Leave Request',
       'subtitle': 'Apply for leave',
       'icon': Icons.beach_access_rounded,
-      'bgPattern': Icons.waves_rounded,
+      'bgPattern': Icons.beach_access,
       'type': 'Leave_Request',
       'route': '/leaveRequest',
     },

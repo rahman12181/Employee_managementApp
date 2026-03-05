@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:management_app/services/profile_service.dart';
 import 'package:management_app/services/auth_service.dart';
@@ -713,47 +715,6 @@ class _ProfileScreenState extends State<Profilescreen>
         ],
         
         SizedBox(height: width * 0.04),
-        
-        // Account Information
-        _buildSectionTitle('Account Information', Icons.account_circle_rounded, skyBlue, width),
-        SizedBox(height: width * 0.03),
-        _buildInfoCard(
-          label: 'Username',
-          value: _profileData!['username'] ?? 'N/A',
-          icon: Icons.person_outline_rounded,
-          color: Colors.indigo,
-          width: width,
-          isDarkMode: isDarkMode,
-        ),
-        SizedBox(height: width * 0.02),
-        _buildInfoCard(
-          label: 'Language',
-          value: _profileData!['language'] ?? 'N/A',
-          icon: Icons.language_rounded,
-          color: Colors.cyan,
-          width: width,
-          isDarkMode: isDarkMode,
-        ),
-        SizedBox(height: width * 0.02),
-        _buildInfoCard(
-          label: 'Time Zone',
-          value: _profileData!['time_zone'] ?? 'N/A',
-          icon: Icons.access_time_rounded,
-          color: Colors.brown,
-          width: width,
-          isDarkMode: isDarkMode,
-        ),
-        SizedBox(height: width * 0.02),
-        _buildInfoCard(
-          label: 'Last Login',
-          value: ProfileService.formatDate(_profileData!['last_login']),
-          icon: Icons.login_rounded,
-          color: Colors.grey,
-          width: width,
-          isDarkMode: isDarkMode,
-        ),
-        
-        SizedBox(height: width * 0.1),
       ],
     );
   }

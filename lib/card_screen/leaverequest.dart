@@ -54,9 +54,9 @@ class _LeaveRequestState extends State<LeaveRequest> with TickerProviderStateMix
   static const Color steel = Color(0xFF475569);
 
   final List<Map<String, dynamic>> leaveTypes = [
-    {"code": "CL", "name": "Casual Leave", "color": skyBlue, "icon": Icons.beach_access},
+    {"code": "CL", "name": "Annual Leave", "color": skyBlue, "icon": Icons.beach_access},
     {"code": "SL", "name": "Sick Leave", "color": deepSky, "icon": Icons.local_hospital},
-    {"code": "EL", "name": "Earned Leave", "color": mediumSky, "icon": Icons.work},
+    {"code": "EL", "name": "Umrah Leave", "color": mediumSky, "icon": Icons.work},
     {"code": "UL", "name": "Unpaid Leave", "color": Colors.orange, "icon": Icons.money_off},
   ];
 
