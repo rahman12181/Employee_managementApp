@@ -9,7 +9,7 @@ class LeaveBalanceService {
   static const String _apiSecret = '3f8a6293af90228';
   static const String baseUrl = 'https://ppecon.erpnext.com';
 
-  // Fetch leave balances for logged in user
+  // Fetch leave balances for logged in user using custom API method
   Future<Map<String, dynamic>> fetchLeaveBalances() async {
     try {
       // Get employee ID from SharedPreferences
@@ -54,39 +54,21 @@ class LeaveBalanceService {
         }
       }
 
-      // Final fallback
+      // Final fallback for testing
       employeeId = employeeId ?? 'HR-EMP-00152';
       debugPrint('📌 Using Employee ID: $employeeId');
 
-      // Define fields to fetch - REMOVED status from filters
-      final fields = [
-        "name",
-        "employee",
-        "leave_type",
-        "total_leaves_allocated",
-        "from_date",
-        "to_date"
-      ];
+      // Use the custom API endpoint that returns processed leave balance data
+      final url = Uri.parse('$baseUrl/api/method/ppecon_erp.leave_application.leave_balance.get_my_leave_balance');
       
-      // Simplified filters - REMOVED status and docstatus
-      final filters = [
-        ["employee", "=", employeeId]
-      ];
-
-      final queryParams = {
-        'fields': jsonEncode(fields),
-        'filters': jsonEncode(filters),
-        'limit_page_length': '100'
-      };
-
-      final url = Uri.parse('$baseUrl/api/resource/Leave Allocation')
-          .replace(queryParameters: queryParams);
-
-      debugPrint('🌐 URL: $url');
+      // Add employee ID as query parameter if needed
+      final requestUrl = url.replace(queryParameters: {'employee': employeeId});
+      
+      debugPrint('🌐 URL: $requestUrl');
 
       // Make API request with your credentials
       final response = await http.get(
-        url,
+        requestUrl,
         headers: {
           'Authorization': 'token $_apiKey:$_apiSecret',
           'Content-Type': 'application/json',
@@ -95,79 +77,84 @@ class LeaveBalanceService {
       );
 
       debugPrint('📊 Status Code: ${response.statusCode}');
+      debugPrint('📦 Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-        final List<dynamic> allocations = jsonResponse['data'] ?? [];
         
-        // Initialize balances map
-        Map<String, Map<String, double>> leaveDetails = {};
-        double totalAllocated = 0;
+        // Extract the message/data from response
+        // The API returns { "message": { "employee": "...", "data": [...] } }
+        final Map<String, dynamic>? message = jsonResponse['message'];
         
-        debugPrint('📦 Found ${allocations.length} allocations');
-
-        // Process each allocation
-        for (var allocation in allocations) {
-          final leaveType = allocation['leave_type'] as String? ?? 'Unknown';
-          final allocated = (allocation['total_leaves_allocated'] ?? 0).toDouble();
-          final fromDate = allocation['from_date'] ?? '';
-          final toDate = allocation['to_date'] ?? '';
+        if (message != null && message['data'] != null) {
+          final List<dynamic> leaveData = message['data'] ?? [];
           
-          if (!leaveDetails.containsKey(leaveType)) {
-            leaveDetails[leaveType] = {
-              'allocated': 0,
-              'taken': 0,
-              'remaining': 0,
-            };
-          }
-          
-          leaveDetails[leaveType]!['allocated'] = 
-              (leaveDetails[leaveType]!['allocated']! + allocated);
-          leaveDetails[leaveType]!['remaining'] = 
-              (leaveDetails[leaveType]!['remaining']! + allocated);
-          
-          totalAllocated += allocated;
+          // Process the leave data
+          return _processLeaveData(leaveData, message['employee'] ?? employeeId);
+        } else {
+          debugPrint('⚠️ No data in response message');
+          return _getDemoData(employeeId);
         }
-        
-        // For demo purposes, let's assume some taken leaves (30% of allocated)
-        // In production, you'll need to fetch from Leave Application doctype
-        double totalTaken = totalAllocated * 0.3; // Example: 30% taken
-        double totalRemaining = totalAllocated - totalTaken;
-        
-        // Update taken values in leaveDetails
-        leaveDetails.forEach((key, value) {
-          double allocated = value['allocated'] ?? 0;
-          value['taken'] = allocated * 0.3; // 30% taken
-          value['remaining'] = allocated * 0.7; // 70% remaining
-        });
-        
-        debugPrint('✅ Final Balances: $leaveDetails');
-        debugPrint('📊 Total Allocated: $totalAllocated');
-        
-        return {
-          'success': true,
-          'employeeId': employeeId,
-          'leaveDetails': leaveDetails,
-          'totals': {
-            'allocated': totalAllocated,
-            'taken': totalTaken,
-            'remaining': totalRemaining,
-          }
-        };
       } else {
-        // Return demo data if API fails
-        debugPrint('⚠️ API failed, using demo data');
+        debugPrint('⚠️ API failed with status ${response.statusCode}: ${response.body}');
         return _getDemoData(employeeId);
       }
     } catch (e) {
       debugPrint('❌ Error in fetchLeaveBalances: $e');
-      // Return demo data on error
       return _getDemoData('HR-EMP-00152');
     }
   }
 
-  // Demo data for testing
+  // Process the leave data from API
+  Map<String, dynamic> _processLeaveData(List<dynamic> leaveData, String employeeId) {
+    Map<String, Map<String, double>> leaveDetails = {};
+    double totalAllocated = 0;
+    double totalTaken = 0;
+    double totalRemaining = 0;
+
+    debugPrint('📊 Processing ${leaveData.length} leave entries');
+
+    for (var item in leaveData) {
+      final leaveType = item['leave_type'] as String? ?? 'Unknown';
+      final allocated = (item['allocated'] ?? 0).toDouble();
+      final taken = (item['taken'] ?? 0).toDouble();
+      final remaining = (item['remaining'] ?? 0).toDouble();
+
+      // Add to leave details map
+      leaveDetails[leaveType] = {
+        'allocated': allocated,
+        'taken': taken,
+        'remaining': remaining,
+      };
+
+      // Update totals
+      totalAllocated += allocated;
+      totalTaken += taken;
+      totalRemaining += remaining;
+
+      debugPrint('📌 $leaveType: Allocated=$allocated, Taken=$taken, Remaining=$remaining');
+    }
+
+    debugPrint('✅ Total Allocated: $totalAllocated');
+    debugPrint('✅ Total Taken: $totalTaken');
+    debugPrint('✅ Total Remaining: $totalRemaining');
+
+    return {
+      'success': true,
+      'employeeId': employeeId,
+      'leaveDetails': leaveDetails,
+      'totals': {
+        'allocated': totalAllocated,
+        'taken': totalTaken,
+        'remaining': totalRemaining,
+      }
+    };
+  }
+
+  // Demo data for testing (when API fails)
   Map<String, dynamic> _getDemoData(String employeeId) {
+    debugPrint('⚠️ Using demo data for employee: $employeeId');
+    
     Map<String, Map<String, double>> leaveDetails = {
       'Annual Leave': {
         'allocated': 18,
@@ -184,16 +171,36 @@ class LeaveBalanceService {
         'taken': 1,
         'remaining': 7,
       },
+      'Privilege Leave': {
+        'allocated': 15,
+        'taken': 3,
+        'remaining': 12,
+      },
+      'Compensatory Off': {
+        'allocated': 5,
+        'taken': 0,
+        'remaining': 5,
+      },
     };
+
+    double totalAllocated = 0;
+    double totalTaken = 0;
+    double totalRemaining = 0;
+
+    leaveDetails.forEach((key, value) {
+      totalAllocated += value['allocated']!;
+      totalTaken += value['taken']!;
+      totalRemaining += value['remaining']!;
+    });
 
     return {
       'success': true,
       'employeeId': employeeId,
       'leaveDetails': leaveDetails,
       'totals': {
-        'allocated': 36,
-        'taken': 8,
-        'remaining': 28,
+        'allocated': totalAllocated,
+        'taken': totalTaken,
+        'remaining': totalRemaining,
       }
     };
   }
@@ -214,29 +221,24 @@ class LeaveBalanceService {
     }
   }
 
-  // Test method to verify credentials
+  // Test method to verify credentials and API
   static Future<void> testCredentials() async {
     try {
-      final url = Uri.parse('$baseUrl/api/resource/Leave Allocation')
-          .replace(queryParameters: {
-        'fields': jsonEncode(["name", "employee", "leave_type"]),
-        'filters': jsonEncode([
-          ["employee", "=", "HR-EMP-00152"]
-        ]),
-        'limit': '1'
-      });
+      final url = Uri.parse('$baseUrl/api/method/ppecon_erp.leave_application.leave_balance.get_my_leave_balance')
+          .replace(queryParameters: {'employee': 'HR-EMP-00152'});
 
       final response = await http.get(
         url,
         headers: {
           'Authorization': 'token $_apiKey:$_apiSecret',
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', 
         },
       );
 
       debugPrint('🧪 Test Status: ${response.statusCode}');
       if (response.statusCode == 200) {
         debugPrint('✅ Credentials are working!');
+        debugPrint('📦 Response: ${response.body}');
       } else {
         debugPrint('❌ Credentials test failed: ${response.body}');
       }

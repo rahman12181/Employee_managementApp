@@ -31,65 +31,6 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
-  final List<Map<String, dynamic>> _leaveTypes = [
-    {
-      'key': 'Annual Leave',
-      'title': 'Annual Leave',
-      'icon': Icons.beach_access,
-      'color': Colors.green,
-      'gradient': [const Color(0xFF43A047), const Color(0xFF66BB6A)],
-    },
-    {
-      'key': 'Sick Leave',
-      'title': 'Sick Leave',
-      'icon': Icons.medical_services,
-      'color': Colors.orange,
-      'gradient': [const Color(0xFFFFA726), const Color(0xFFFFB74D)],
-    },
-    {
-      'key': 'Casual Leave',
-      'title': 'Casual Leave',
-      'icon': Icons.free_breakfast,
-      'color': Colors.blue,
-      'gradient': [const Color(0xFF42A5F5), const Color(0xFF64B5F6)],
-    },
-    {
-      'key': 'Compensatory Off',
-      'title': 'Comp. Off',
-      'icon': Icons.access_time,
-      'color': Colors.purple,
-      'gradient': [const Color(0xFFAB47BC), const Color(0xFFBA68C8)],
-    },
-    {
-      'key': 'Privilege Leave',
-      'title': 'Privilege Leave',
-      'icon': Icons.star_border,
-      'color': Colors.teal,
-      'gradient': [const Color(0xFF00897B), const Color(0xFF26A69A)],
-    },
-    {
-      'key': 'Maternity Leave',
-      'title': 'Maternity Leave',
-      'icon': Icons.family_restroom,
-      'color': Colors.pink,
-      'gradient': [const Color(0xFFD81B60), const Color(0xFFEC407A)],
-    },
-    {
-      'key': 'Paternity Leave',
-      'title': 'Paternity Leave',
-      'icon': Icons.family_restroom,
-      'color': Colors.indigo,
-      'gradient': [const Color(0xFF1E88E5), const Color(0xFF42A5F5)],
-    },
-    {
-      'key': 'Loss of Pay',
-      'title': 'Loss of Pay',
-      'icon': Icons.money_off,
-      'color': Colors.red,
-      'gradient': [const Color(0xFFE53935), const Color(0xFFEF5350)],
-    },
-  ];
 
   @override
   void initState() {
@@ -185,6 +126,77 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     }
   }
 
+  // Define leave types with their properties
+  List<Map<String, dynamic>> get _leaveTypes {
+    return _leaveDetails.keys.map((key) {
+      // Map leave types to appropriate icons and colors
+      if (key.toLowerCase().contains('annual')) {
+        return {
+          'key': key,
+          'title': key,
+          'icon': Icons.beach_access,
+          'gradient': [const Color(0xFF43A047), const Color(0xFF66BB6A)],
+        };
+      } else if (key.toLowerCase().contains('sick')) {
+        return {
+          'key': key,
+          'title': key,
+          'icon': Icons.medical_services,
+          'gradient': [const Color(0xFFFFA726), const Color(0xFFFFB74D)],
+        };
+      } else if (key.toLowerCase().contains('casual')) {
+        return {
+          'key': key,
+          'title': key,
+          'icon': Icons.free_breakfast,
+          'gradient': [const Color(0xFF42A5F5), const Color(0xFF64B5F6)],
+        };
+      } else if (key.toLowerCase().contains('privilege')) {
+        return {
+          'key': key,
+          'title': key,
+          'icon': Icons.star_border,
+          'gradient': [const Color(0xFF00897B), const Color(0xFF26A69A)],
+        };
+      } else if (key.toLowerCase().contains('compensatory') || key.toLowerCase().contains('comp off')) {
+        return {
+          'key': key,
+          'title': 'Comp. Off',
+          'icon': Icons.access_time,
+          'gradient': [const Color(0xFFAB47BC), const Color(0xFFBA68C8)],
+        };
+      } else if (key.toLowerCase().contains('maternity')) {
+        return {
+          'key': key,
+          'title': key,
+          'icon': Icons.family_restroom,
+          'gradient': [const Color(0xFFD81B60), const Color(0xFFEC407A)],
+        };
+      } else if (key.toLowerCase().contains('paternity')) {
+        return {
+          'key': key,
+          'title': key,
+          'icon': Icons.family_restroom,
+          'gradient': [const Color(0xFF1E88E5), const Color(0xFF42A5F5)],
+        };
+      } else if (key.toLowerCase().contains('loss of pay') || key.toLowerCase().contains('lop')) {
+        return {
+          'key': key,
+          'title': key,
+          'icon': Icons.money_off,
+          'gradient': [const Color(0xFFE53935), const Color(0xFFEF5350)],
+        };
+      } else {
+        return {
+          'key': key,
+          'title': key,
+          'icon': Icons.event_note,
+          'gradient': [Colors.grey[700]!, Colors.grey[500]!],
+        };
+      }
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -218,7 +230,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                 parent: BouncingScrollPhysics(),
               ),
               slivers: [
-                // App Bar
+                // App Bar - Fixed the overflow issue
                 SliverAppBar(
                   expandedHeight: height * 0.15,
                   floating: false,
@@ -247,30 +259,36 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                   flexibleSpace: FlexibleSpaceBar(
                     titlePadding: EdgeInsets.only(
                       left: width * 0.05,
-                      bottom: height * 0.02,
+                      bottom: height * 0.01, // Reduced bottom padding
                     ),
-                    title: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Leave Balance',
-                          style: TextStyle(
-                            fontSize: isTablet ? 24 : 20,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.grey[900],
-                          ),
-                        ),
-                        if (_employeeName != null)
+                    title: Container(
+                      constraints: BoxConstraints(
+                        maxHeight: height * 0.06, // Constrain the height
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min, // Important: prevents overflow
+                        children: [
                           Text(
-                            _employeeName!,
+                            'Leave Balance',
                             style: TextStyle(
-                              fontSize: isTablet ? 14 : 12,
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                              fontSize: isTablet ? 24 : 20,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : Colors.grey[900],
                             ),
                           ),
-                      ],
+                          if (_employeeName != null)
+                            Text(
+                              _employeeName!,
+                              style: TextStyle(
+                                fontSize: isTablet ? 14 : 12,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     background: Container(
                       decoration: BoxDecoration(
@@ -522,6 +540,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Welcome back,',
@@ -539,6 +558,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                     fontSize: isTablet ? 22 : 18,
                     fontWeight: FontWeight.w700,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: height * 0.01),
                 Container(
@@ -655,6 +675,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: EdgeInsets.all(width * 0.015),
@@ -686,12 +707,9 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
   }
 
   Widget _buildLeaveCardsGrid(bool isDark, double width, double height, bool isTablet) {
-    // Filter leave types that have data
-    final availableLeaveTypes = _leaveTypes.where((type) {
-      return _leaveDetails.containsKey(type['key']);
-    }).toList();
+    final leaveTypes = _leaveTypes;
 
-    if (availableLeaveTypes.isEmpty) {
+    if (leaveTypes.isEmpty) {
       return Container(
         padding: EdgeInsets.all(width * 0.08),
         decoration: BoxDecoration(
@@ -699,6 +717,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
           borderRadius: BorderRadius.circular(width * 0.04),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.info_outline,
@@ -727,9 +746,9 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
         mainAxisSpacing: height * 0.015,
         childAspectRatio: 1.0,
       ),
-      itemCount: availableLeaveTypes.length,
+      itemCount: leaveTypes.length,
       itemBuilder: (context, index) {
-        final leaveType = availableLeaveTypes[index];
+        final leaveType = leaveTypes[index];
         final key = leaveType['key'] as String;
         final details = _leaveDetails[key] ?? {'allocated': 0, 'taken': 0, 'remaining': 0};
         final balance = details['remaining'] ?? 0.0;
@@ -777,7 +796,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     ];
     
     // Calculate percentage for progress bar
-    double percentage = allocated > 0 ? ((allocated - balance) / allocated) : 0;
+    double percentage = allocated > 0 ? (balance / allocated) : 0;
     
     return Container(
       decoration: BoxDecoration(
@@ -807,6 +826,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
             padding: EdgeInsets.all(width * 0.03),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -843,9 +863,9 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
                     ),
                   ],
                 ),
-                const Spacer(),
+                Spacer(),
                 Text(
-                  title,
+                  title.length > 12 ? '${title.substring(0, 10)}...' : title,
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: width * 0.03,
@@ -938,6 +958,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'No recent activity',
@@ -980,6 +1001,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: EdgeInsets.all(width * 0.03),
@@ -1107,6 +1129,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
 
   Widget _buildDetailColumn(String label, String value, Color color) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           value,

@@ -164,14 +164,14 @@ class _DashboardScreenState extends State<DashboardScreen>
       'type': 'Leave_Balance',
       'route': '/leaveBalaneceScreen',
     },
-    {
+    /*{
       'title': 'More',
       'subtitle': 'Additional features',
       'icon': Icons.apps_rounded,
       'bgPattern': Icons.more_horiz_rounded,
       'type': 'Check_More',
       'route': '/checkMore',
-    },
+    },*/
   ];
 
   // Theme-aware colors with sky blue
