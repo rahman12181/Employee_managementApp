@@ -21,12 +21,12 @@ class TravelDetailScreen extends StatelessWidget {
     double responsiveFontSize(double baseSize) => baseSize * (screenWidth / 375);
 
     // Sky Blue Color Palette - Matching all screens
-    final Color skyBlue = const Color(0xFF87CEEB);
-    final Color deepSky = const Color(0xFF00A5E0);
-    final Color offWhite = const Color(0xFFF8FAFC);
-    final Color pureWhite = const Color(0xFFFFFFFF);
-    final Color charcoal = const Color(0xFF1E293B);
-    final Color slate = const Color(0xFF334155);
+    const Color skyBlue = Color(0xFF87CEEB);
+    const Color deepSky = Color(0xFF00A5E0);
+    const Color offWhite = Color(0xFFF8FAFC);
+    const Color pureWhite = Color(0xFFFFFFFF);
+    const Color charcoal = Color(0xFF1E293B);
+    const Color slate = Color(0xFF334155);
 
     final primaryColor = skyBlue;
     final secondaryColor = deepSky;

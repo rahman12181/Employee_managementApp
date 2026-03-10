@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: unused_field, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -25,6 +25,7 @@ class _AdvanceHistoryScreenState extends State<AdvanceHistoryScreen>
 
   // Sky Blue Color Palette - Matching all screens
   static const Color skyBlue = Color(0xFF87CEEB);  // Sky blue primary
+  // ignore: unused_field
   static const Color lightSky = Color(0xFFE0F2FE);  // Very light sky
   static const Color mediumSky = Color(0xFF7EC8E0);  // Medium sky
   static const Color deepSky = Color(0xFF00A5E0);    // Deep sky for accents

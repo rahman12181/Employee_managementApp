@@ -1,9 +1,10 @@
-// ignore_for_file: deprecated_member_use, prefer_const_constructors, unused_local_variable
+// ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:management_app/services/leave_balance_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'dart:math' as math;
 
 class LeaveBalanceScreen extends StatefulWidget {
   const LeaveBalanceScreen({super.key});
@@ -27,10 +28,20 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
   String? _errorMessage;
   String? _employeeName;
   String? _employeeId;
+  String? _employeeImage;
+  bool _needsLogin = false;
+  int _currentYear = DateTime.now().year;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late AnimationController _pulseController;
+
+  final List<Color> _gradientColors = [
+    const Color(0xFF4158D0),
+    const Color(0xFFC850C0),
+    const Color(0xFFFFCC70),
+  ];
 
   @override
   void initState() {
@@ -40,6 +51,11 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
+    
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
     
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -64,25 +80,31 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   Future<void> _loadEmployeeData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        _employeeName = prefs.getString('employeeName') ?? 
-                       prefs.getString('employee_name') ?? 
-                       'Employee';
-        _employeeId = prefs.getString('employeeId') ?? 
-                     prefs.getString('employee_id') ?? 
-                     prefs.getString('emp_code') ??
-                     'HR-EMP-00152';
-      });
       
+      _employeeName = prefs.getString('employeeName') ?? 
+                      prefs.getString('employee_name') ?? 
+                      prefs.getString('full_name') ??
+                      'Employee';
+      
+      _employeeId = prefs.getString('employeeId') ?? 
+                    prefs.getString('employee_id') ?? 
+                    prefs.getString('emp_code');
+      
+      _employeeImage = prefs.getString('user_image');
+      
+      setState(() {});
+      
+      debugPrint('👤 Loaded: $_employeeName (ID: $_employeeId)');
       await _loadLeaveData();
     } catch (e) {
-      debugPrint('Error loading employee data: $e');
+      debugPrint('Error: $e');
       await _loadLeaveData();
     }
   }
@@ -91,6 +113,7 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _needsLogin = false;
     });
 
     try {
@@ -98,25 +121,28 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
       
       if (mounted) {
         if (result['success'] == true) {
+          final leaveDetails = Map<String, Map<String, double>>.from(
+            result['leaveDetails'] ?? {}
+          );
+          
           setState(() {
-            _leaveDetails = Map<String, Map<String, double>>.from(
-              result['leaveDetails'] ?? {}
-            );
+            _leaveDetails = leaveDetails;
             _totals = Map<String, double>.from(
               result['totals'] ?? {'allocated': 0, 'taken': 0, 'remaining': 0}
             );
             _isLoading = false;
           });
+          
           _animationController.forward();
         } else {
           setState(() {
             _errorMessage = result['message'] ?? 'Failed to load leave data';
+            _needsLogin = result['needsLogin'] == true;
             _isLoading = false;
           });
         }
       }
     } catch (e) {
-      debugPrint('Error loading leave data: $e');
       if (mounted) {
         setState(() {
           _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -126,72 +152,43 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     }
   }
 
-  // Define leave types with their properties
   List<Map<String, dynamic>> get _leaveTypes {
+    if (_leaveDetails.isEmpty) return [];
+    
     return _leaveDetails.keys.map((key) {
-      // Map leave types to appropriate icons and colors
-      if (key.toLowerCase().contains('annual')) {
+      final lowerKey = key.toLowerCase();
+      
+      if (lowerKey.contains('annual') || lowerKey.contains('earned') || lowerKey.contains('privilege')) {
         return {
           'key': key,
           'title': key,
           'icon': Icons.beach_access,
-          'gradient': [const Color(0xFF43A047), const Color(0xFF66BB6A)],
+          'gradient': const [Color(0xFF4158D0), Color(0xFFC850C0)],
+          'lightColor': const Color(0xFF4158D0).withOpacity(0.1),
         };
-      } else if (key.toLowerCase().contains('sick')) {
+      } else if (lowerKey.contains('sick') || lowerKey.contains('medical')) {
         return {
           'key': key,
           'title': key,
           'icon': Icons.medical_services,
-          'gradient': [const Color(0xFFFFA726), const Color(0xFFFFB74D)],
+          'gradient': const [Color(0xFFFFA726), Color(0xFFFF7043)],
+          'lightColor': const Color(0xFFFFA726).withOpacity(0.1),
         };
-      } else if (key.toLowerCase().contains('casual')) {
+      } else if (lowerKey.contains('casual')) {
         return {
           'key': key,
           'title': key,
           'icon': Icons.free_breakfast,
-          'gradient': [const Color(0xFF42A5F5), const Color(0xFF64B5F6)],
-        };
-      } else if (key.toLowerCase().contains('privilege')) {
-        return {
-          'key': key,
-          'title': key,
-          'icon': Icons.star_border,
-          'gradient': [const Color(0xFF00897B), const Color(0xFF26A69A)],
-        };
-      } else if (key.toLowerCase().contains('compensatory') || key.toLowerCase().contains('comp off')) {
-        return {
-          'key': key,
-          'title': 'Comp. Off',
-          'icon': Icons.access_time,
-          'gradient': [const Color(0xFFAB47BC), const Color(0xFFBA68C8)],
-        };
-      } else if (key.toLowerCase().contains('maternity')) {
-        return {
-          'key': key,
-          'title': key,
-          'icon': Icons.family_restroom,
-          'gradient': [const Color(0xFFD81B60), const Color(0xFFEC407A)],
-        };
-      } else if (key.toLowerCase().contains('paternity')) {
-        return {
-          'key': key,
-          'title': key,
-          'icon': Icons.family_restroom,
-          'gradient': [const Color(0xFF1E88E5), const Color(0xFF42A5F5)],
-        };
-      } else if (key.toLowerCase().contains('loss of pay') || key.toLowerCase().contains('lop')) {
-        return {
-          'key': key,
-          'title': key,
-          'icon': Icons.money_off,
-          'gradient': [const Color(0xFFE53935), const Color(0xFFEF5350)],
+          'gradient': const [Color(0xFF42A5F5), Color(0xFF7E57C2)],
+          'lightColor': const Color(0xFF42A5F5).withOpacity(0.1),
         };
       } else {
         return {
           'key': key,
           'title': key,
           'icon': Icons.event_note,
-          'gradient': [Colors.grey[700]!, Colors.grey[500]!],
+          'gradient': const [Color(0xFF757F9A), Color(0xFFD7DDE8)],
+          'lightColor': Colors.grey.withOpacity(0.1),
         };
       }
     }).toList();
@@ -201,15 +198,9 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final media = MediaQuery.of(context);
-    final width = media.size.width;
-    final height = media.size.height;
-    final padding = media.padding;
-    final safeBottom = padding.bottom;
-    
-    // Responsive sizes
-    final isSmallScreen = width < 360;
-    final isTablet = width > 600;
+    final size = MediaQuery.of(context).size;
+    final padding = MediaQuery.of(context).padding;
+    final isTablet = size.width > 600;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -219,390 +210,349 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
         systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: isDark ? Colors.grey[900] : Colors.grey[50],
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _loadLeaveData,
-            color: theme.primaryColor,
-            backgroundColor: isDark ? Colors.grey[800] : Colors.white,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              slivers: [
-                // App Bar - Fixed the overflow issue
-                SliverAppBar(
-                  expandedHeight: height * 0.15,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-                  elevation: 0,
-                  leading: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_rounded,
-                      color: isDark ? Colors.white : Colors.grey[800],
-                      size: width * 0.06,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.refresh_rounded,
-                        color: isDark ? Colors.white : Colors.grey[800],
-                        size: width * 0.06,
-                      ),
-                      onPressed: _loadLeaveData,
-                      tooltip: 'Refresh',
-                    ),
-                  ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: EdgeInsets.only(
-                      left: width * 0.05,
-                      bottom: height * 0.01, // Reduced bottom padding
-                    ),
-                    title: Container(
-                      constraints: BoxConstraints(
-                        maxHeight: height * 0.06, // Constrain the height
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min, // Important: prevents overflow
-                        children: [
-                          Text(
-                            'Leave Balance',
-                            style: TextStyle(
-                              fontSize: isTablet ? 24 : 20,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : Colors.grey[900],
-                            ),
-                          ),
-                          if (_employeeName != null)
-                            Text(
-                              _employeeName!,
-                              style: TextStyle(
-                                fontSize: isTablet ? 14 : 12,
-                                color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isDark
-                              ? [Colors.grey[900]!, Colors.grey[850]!]
-                              : [Colors.white, Colors.grey[50]!],
-                        ),
-                      ),
-                    ),
+        backgroundColor: isDark ? Colors.grey[900] : const Color(0xFFF5F7FA),
+        body: Stack(
+          children: [
+            // Background Gradient
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [Colors.grey[900]!, Colors.grey[850]!]
+                        : [Colors.white, const Color(0xFFF5F7FA)],
                   ),
                 ),
-
-                // Main Content
-                SliverPadding(
-                  padding: EdgeInsets.all(width * 0.04),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      // Welcome Card
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: _buildWelcomeCard(isDark, width, height, isTablet),
-                        ),
-                      ),
-
-                      SizedBox(height: height * 0.025),
-
-                      // Summary Cards (Allocated, Taken, Remaining)
-                      if (!_isLoading && _errorMessage == null)
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: _buildSummaryCards(isDark, width, height, isTablet),
-                        ),
-
-                      SizedBox(height: height * 0.025),
-
-                      // Summary Header
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(width * 0.015),
-                                  decoration: BoxDecoration(
-                                    color: theme.primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(width * 0.015),
-                                  ),
-                                  child: Icon(
-                                    Icons.analytics_rounded,
-                                    color: theme.primaryColor,
-                                    size: width * 0.045,
-                                  ),
-                                ),
-                                SizedBox(width: width * 0.02),
-                                Text(
-                                  'Leave Breakdown',
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 20 : 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : Colors.grey[900],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: width * 0.03,
-                                vertical: height * 0.006,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(width * 0.03),
-                                border: Border.all(
-                                  color: theme.primaryColor.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Text(
-                                '${DateTime.now().year}',
-                                style: TextStyle(
-                                  color: theme.primaryColor,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: isTablet ? 14 : 11,
-                                ),
-                              ),
+              ),
+            ),
+            
+            // Animated Background Circles
+            ..._buildBackgroundCircles(isDark, size),
+            
+            SafeArea(
+              child: RefreshIndicator(
+                onRefresh: _loadLeaveData,
+                color: theme.primaryColor,
+                backgroundColor: isDark ? Colors.grey[800] : Colors.white,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  slivers: [
+                    // Premium App Bar
+                    SliverAppBar(
+                      expandedHeight: size.height * 0.18,
+                      floating: false,
+                      pinned: true,
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      leading: Container(
+                        margin: EdgeInsets.all(size.width * 0.02),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey[800]!.withOpacity(0.8) : Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
                             ),
                           ],
                         ),
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.arrow_back_rounded,
+                            color: isDark ? Colors.white : Colors.grey[800],
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
                       ),
-
-                      SizedBox(height: height * 0.02),
-
-                      // Loading State
-                      if (_isLoading)
-                        SizedBox(
-                          height: height * 0.3,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: width * 0.1,
-                                  height: width * 0.1,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: theme.primaryColor,
-                                  ),
-                                ),
-                                SizedBox(height: height * 0.015),
-                                Text(
-                                  'Fetching your leave balances...',
-                                  style: TextStyle(
-                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                    fontSize: isTablet ? 14 : 12,
-                                  ),
-                                ),
-                              ],
+                      actions: [
+                        Container(
+                          margin: EdgeInsets.all(size.width * 0.02),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.grey[800]!.withOpacity(0.8) : Colors.white.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.refresh_rounded,
+                              color: isDark ? Colors.white : Colors.grey[800],
                             ),
+                            onPressed: _loadLeaveData,
                           ),
                         ),
-
-                      // Error State
-                      if (_errorMessage != null && !_isLoading)
-                        _buildErrorWidget(isDark, width, height, theme),
-
-                      // Leave Cards Grid
-                      if (!_isLoading && _errorMessage == null)
-                        _buildLeaveCardsGrid(isDark, width, height, isTablet),
-
-                      SizedBox(height: height * 0.02),
-
-                      // Recent Activity Section
-                      if (!_isLoading && _errorMessage == null)
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      ],
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                theme.primaryColor,
+                                theme.primaryColor.withOpacity(0.7),
+                              ],
+                            ),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(30),
+                              bottomRight: Radius.circular(30),
+                            ),
+                          ),
+                          child: Stack(
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(width * 0.015),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(width * 0.015),
-                                    ),
-                                    child: Icon(
-                                      Icons.history_rounded,
-                                      color: Colors.blue,
-                                      size: width * 0.045,
-                                    ),
+                              Positioned(
+                                top: -50,
+                                right: -50,
+                                child: Container(
+                                  width: 150,
+                                  height: 150,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(0.1),
                                   ),
-                                  SizedBox(width: width * 0.02),
-                                  Text(
-                                    'Recent Activity',
-                                    style: TextStyle(
-                                      fontSize: isTablet ? 18 : 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? Colors.white : Colors.grey[900],
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                              SizedBox(height: height * 0.012),
-                              _buildRecentActivityCard(isDark, width, height),
+                              Positioned(
+                                bottom: -30,
+                                left: -30,
+                                child: Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(0.1),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
+                      ),
+                    ),
 
-                      SizedBox(height: height * 0.025),
+                    // Main Content
+                    SliverPadding(
+                      padding: EdgeInsets.all(size.width * 0.04),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          // Profile Header
+                          _buildProfileHeader(isDark, size, isTablet),
+                          
+                          SizedBox(height: size.height * 0.02),
 
-                      // Bottom Info
-                      if (!_isLoading && _errorMessage == null)
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Container(
-                            padding: EdgeInsets.all(width * 0.035),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey[800]! : Colors.grey[100]!,
-                              borderRadius: BorderRadius.circular(width * 0.03),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                  size: width * 0.04,
-                                ),
-                                SizedBox(width: width * 0.02),
-                                Expanded(
-                                  child: Text(
-                                    'Leave balances are updated automatically based on your approved leave allocations.',
-                                    style: TextStyle(
-                                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                      fontSize: isTablet ? 13 : 11,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                          // Year Selector
+                          _buildYearSelector(isDark, size),
 
-                      // Extra bottom padding
-                      SizedBox(height: safeBottom > 0 ? safeBottom : height * 0.02),
-                    ]),
-                  ),
+                          SizedBox(height: size.height * 0.025),
+
+                          // Stats Cards
+                          if (!_isLoading && _errorMessage == null && !_needsLogin)
+                            _buildStatsCards(isDark, size),
+
+                          if (!_isLoading && _errorMessage == null && !_needsLogin)
+                            SizedBox(height: size.height * 0.025),
+
+                          // Section Title
+                          if (!_isLoading && _errorMessage == null && !_needsLogin)
+                            _buildSectionTitle(isDark, size, 'Leave Breakdown'),
+
+                          if (!_isLoading && _errorMessage == null && !_needsLogin)
+                            SizedBox(height: size.height * 0.015),
+
+                          // Loading State
+                          if (_isLoading)
+                            _buildLoadingState(isDark, size),
+
+                          // Error State
+                          if (_errorMessage != null && !_isLoading)
+                            _buildErrorState(isDark, size, theme),
+
+                          // Leave Cards Grid
+                          if (!_isLoading && _errorMessage == null && !_needsLogin && _leaveDetails.isNotEmpty)
+                            _buildLeaveCards(isDark, size, isTablet),
+
+                          // No Data State
+                          if (!_isLoading && _errorMessage == null && !_needsLogin && _leaveDetails.isEmpty)
+                            _buildNoDataState(isDark, size),
+
+                          SizedBox(height: size.height * 0.02),
+
+                          // Info Card
+                          if (!_isLoading && _errorMessage == null && !_needsLogin && _leaveDetails.isNotEmpty)
+                            _buildInfoCard(isDark, size),
+
+                          SizedBox(height: padding.bottom + size.height * 0.02),
+                        ]),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeCard(bool isDark, double width, double height, bool isTablet) {
-    final theme = Theme.of(context);
-    
+  List<Widget> _buildBackgroundCircles(bool isDark, Size size) {
+    return [
+      Positioned(
+        top: -size.width * 0.4,
+        right: -size.width * 0.2,
+        child: Transform.rotate(
+          angle: math.pi / 4,
+          child: Container(
+            width: size.width * 0.8,
+            height: size.width * 0.8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Theme.of(context).primaryColor.withOpacity(0.05),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      Positioned(
+        bottom: -size.width * 0.3,
+        left: -size.width * 0.2,
+        child: Container(
+          width: size.width * 0.6,
+          height: size.width * 0.6,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                Colors.amber.withOpacity(0.05),
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildProfileHeader(bool isDark, Size size, bool isTablet) {
     return Container(
-      padding: EdgeInsets.all(width * 0.04),
+      padding: EdgeInsets.all(size.width * 0.05),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            theme.primaryColor,
-            theme.primaryColor.withOpacity(0.8),
+            Theme.of(context).primaryColor,
+            Theme.of(context).primaryColor.withOpacity(0.8),
           ],
         ),
-        borderRadius: BorderRadius.circular(width * 0.04),
+        borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: theme.primaryColor.withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: Theme.of(context).primaryColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Row(
         children: [
+          // Profile Image or Avatar
+          Container(
+            width: size.width * 0.15,
+            height: size.width * 0.15,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+              image: _employeeImage != null
+                  ? DecorationImage(
+                      image: NetworkImage(_employeeImage!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: _employeeImage == null
+                ? Icon(
+                    Icons.person_rounded,
+                    color: Colors.white,
+                    size: size.width * 0.08,
+                  )
+                : null,
+          ),
+          
+          SizedBox(width: size.width * 0.04),
+          
+          // User Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Welcome back,',
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: isTablet ? 14 : 12,
+                    fontSize: isTablet ? 16 : 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(height: height * 0.003),
+                SizedBox(height: size.height * 0.005),
                 Text(
                   _employeeName ?? 'Employee',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: isTablet ? 22 : 18,
+                    fontSize: isTablet ? 24 : 20,
                     fontWeight: FontWeight.w700,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: height * 0.01),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: width * 0.025,
-                    vertical: height * 0.004,
+                if (_employeeId != null)
+                  Text(
+                    'ID: $_employeeId',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: isTablet ? 14 : 12,
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(width * 0.04),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        color: Colors.white,
-                        size: width * 0.03,
-                      ),
-                      SizedBox(width: width * 0.01),
-                      Text(
-                        _getFormattedDate(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isTablet ? 13 : 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
+          
+          // Date Badge
           Container(
-            padding: EdgeInsets.all(width * 0.025),
+            padding: EdgeInsets.symmetric(
+              horizontal: size.width * 0.03,
+              vertical: size.height * 0.01,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(
-              Icons.beach_access_rounded,
-              color: Colors.white,
-              size: width * 0.08,
+            child: Text(
+              _getFormattedDate(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -610,94 +560,130 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     );
   }
 
-  Widget _buildSummaryCards(bool isDark, double width, double height, bool isTablet) {
+  Widget _buildYearSelector(bool isDark, Size size) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: size.width * 0.04,
+        vertical: size.height * 0.01,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Year $_currentYear',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.grey[800],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: size.width * 0.03,
+              vertical: size.height * 0.005,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Current Year',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsCards(bool isDark, Size size) {
     return Row(
       children: [
         Expanded(
-          child: _buildSummaryCard(
-            title: 'Allocated',
-            value: _totals['allocated']?.floor().toString() ?? '0',
-            icon: Icons.card_giftcard,
-            color: Colors.blue,
-            isDark: isDark,
-            width: width,
+          child: _buildStatCard(
+            'Allocated',
+            _totals['allocated']?.toStringAsFixed(1) ?? '0',
+            Icons.card_giftcard,
+            Colors.blue,
+            isDark,
+            size,
           ),
         ),
-        SizedBox(width: width * 0.02),
+        SizedBox(width: size.width * 0.03),
         Expanded(
-          child: _buildSummaryCard(
-            title: 'Taken',
-            value: _totals['taken']?.floor().toString() ?? '0',
-            icon: Icons.event_busy,
-            color: Colors.orange,
-            isDark: isDark,
-            width: width,
+          child: _buildStatCard(
+            'Taken',
+            _totals['taken']?.toStringAsFixed(1) ?? '0',
+            Icons.event_busy,
+            Colors.orange,
+            isDark,
+            size,
           ),
         ),
-        SizedBox(width: width * 0.02),
+        SizedBox(width: size.width * 0.03),
         Expanded(
-          child: _buildSummaryCard(
-            title: 'Remaining',
-            value: _totals['remaining']?.floor().toString() ?? '0',
-            icon: Icons.account_balance_wallet,
-            color: Colors.green,
-            isDark: isDark,
-            width: width,
+          child: _buildStatCard(
+            'Remaining',
+            _totals['remaining']?.toStringAsFixed(1) ?? '0',
+            Icons.account_balance_wallet,
+            Colors.green,
+            isDark,
+            size,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSummaryCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required bool isDark,
-    required double width,
-  }) {
+  Widget _buildStatCard(String label, String value, IconData icon, Color color, bool isDark, Size size) {
     return Container(
-      padding: EdgeInsets.all(width * 0.025),
+      padding: EdgeInsets.all(size.width * 0.04),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.white,
-        borderRadius: BorderRadius.circular(width * 0.025),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(0.1),
+            color.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withOpacity(0.2),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: EdgeInsets.all(width * 0.015),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: width * 0.04),
-          ),
-          SizedBox(height: width * 0.01),
+          Icon(icon, color: color, size: size.width * 0.06),
+          SizedBox(height: size.height * 0.01),
           Text(
             value,
             style: TextStyle(
-              fontSize: width * 0.04,
-              fontWeight: FontWeight.w700,
+              fontSize: size.width * 0.045,
+              fontWeight: FontWeight.w800,
               color: color,
             ),
           ),
           Text(
-            title,
+            label,
             style: TextStyle(
-              fontSize: width * 0.025,
+              fontSize: size.width * 0.03,
               color: isDark ? Colors.grey[400] : Colors.grey[600],
             ),
           ),
@@ -706,53 +692,66 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
     );
   }
 
-  Widget _buildLeaveCardsGrid(bool isDark, double width, double height, bool isTablet) {
-    final leaveTypes = _leaveTypes;
-
-    if (leaveTypes.isEmpty) {
-      return Container(
-        padding: EdgeInsets.all(width * 0.08),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[800] : Colors.white,
-          borderRadius: BorderRadius.circular(width * 0.04),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.info_outline,
-              size: width * 0.1,
-              color: Colors.grey,
+  Widget _buildSectionTitle(bool isDark, Size size, String title) {
+    return Row(
+      children: [
+        Container(
+          width: 5,
+          height: 25,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Theme.of(context).primaryColor, Theme.of(context).primaryColor.withOpacity(0.5)],
             ),
-            SizedBox(height: height * 0.01),
-            Text(
-              'No leave allocations found',
-              style: TextStyle(
-                color: isDark ? Colors.grey[400] : Colors.grey[600],
-                fontSize: isTablet ? 16 : 14,
-              ),
-            ),
-          ],
+            borderRadius: BorderRadius.circular(5),
+          ),
         ),
-      );
-    }
+        SizedBox(width: size.width * 0.03),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: size.width * 0.045,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : Colors.grey[900],
+          ),
+        ),
+        const Spacer(),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: size.width * 0.03,
+            vertical: size.height * 0.005,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Text(
+            '${_leaveDetails.length} Types',
+            style: TextStyle(
+              fontSize: size.width * 0.03,
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildLeaveCards(bool isDark, Size size, bool isTablet) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isTablet ? 4 : 2,
-        crossAxisSpacing: width * 0.03,
-        mainAxisSpacing: height * 0.015,
-        childAspectRatio: 1.0,
+        crossAxisCount: isTablet ? 3 : 2,
+        crossAxisSpacing: size.width * 0.03,
+        mainAxisSpacing: size.height * 0.015,
+        childAspectRatio: 0.9,
       ),
-      itemCount: leaveTypes.length,
+      itemCount: _leaveTypes.length,
       itemBuilder: (context, index) {
-        final leaveType = leaveTypes[index];
+        final leaveType = _leaveTypes[index];
         final key = leaveType['key'] as String;
-        final details = _leaveDetails[key] ?? {'allocated': 0, 'taken': 0, 'remaining': 0};
-        final balance = details['remaining'] ?? 0.0;
-        final allocated = details['allocated'] ?? 0.0;
+        final details = _leaveDetails[key]!;
         
         return TweenAnimationBuilder(
           tween: Tween<double>(begin: 0, end: 1),
@@ -762,15 +761,11 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
             return Transform.scale(
               scale: value,
               child: _buildLeaveCard(
-                title: leaveType['title'],
-                balance: balance,
-                allocated: allocated,
-                icon: leaveType['icon'],
-                gradientColors: leaveType['gradient'],
+                leaveType: leaveType,
+                details: details,
                 index: index,
                 isDark: isDark,
-                width: width,
-                height: height,
+                size: size,
               ),
             );
           },
@@ -780,277 +775,370 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
   }
 
   Widget _buildLeaveCard({
-    required String title,
-    required double balance,
-    required double allocated,
-    required IconData icon,
-    required List<Color> gradientColors,
+    required Map<String, dynamic> leaveType,
+    required Map<String, double> details,
     required int index,
     required bool isDark,
-    required double width,
-    required double height,
+    required Size size,
   }) {
-    final colors = [
-      gradientColors.first,
-      gradientColors.last,
-    ];
-    
-    // Calculate percentage for progress bar
-    double percentage = allocated > 0 ? (balance / allocated) : 0;
+    final remaining = details['remaining'] ?? 0;
+    final allocated = details['allocated'] ?? 0;
+    final percentage = allocated > 0 ? (remaining / allocated) : 0;
+    final gradient = leaveType['gradient'] as List<Color>;
     
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(width * 0.035),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: colors,
+          colors: gradient,
         ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: colors.first.withOpacity(0.2),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: gradient.first.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            _showLeaveDetails(context, title, balance, allocated, icon, colors.first);
-          },
-          borderRadius: BorderRadius.circular(width * 0.035),
-          child: Padding(
-            padding: EdgeInsets.all(width * 0.03),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(width * 0.015),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(width * 0.015),
-                      ),
-                      child: Icon(
-                        icon,
-                        color: Colors.white,
-                        size: width * 0.05,
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: width * 0.015,
-                        vertical: height * 0.002,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(width * 0.03),
-                      ),
-                      child: Text(
-                        '${_getUsagePercentage(balance, allocated)}%',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: width * 0.022,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Spacer(),
-                Text(
-                  title.length > 12 ? '${title.substring(0, 10)}...' : title,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: width * 0.03,
-                    fontWeight: FontWeight.w500,
+          onTap: () => _showLeaveDetails(
+            context,
+            leaveType['title'],
+            remaining,
+            allocated,
+            leaveType['icon'],
+            gradient.first,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // Decorative Circles
+              Positioned(
+                top: -20,
+                right: -20,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
                   ),
                 ),
-                SizedBox(height: height * 0.003),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              ),
+              
+              Padding(
+                padding: EdgeInsets.all(size.width * 0.04),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Icon and Percentage
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(size.width * 0.02),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            leaveType['icon'],
+                            color: Colors.white,
+                            size: size.width * 0.05,
+                          ),
+                        ),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: size.width * 0.02,
+                            vertical: size.height * 0.002,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${_getUsagePercentage(remaining, allocated)}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const Spacer(),
+                    
+                    // Leave Title
                     Text(
-                      balance.floor().toString(),
-                      style: TextStyle(
+                      leaveType['title'],
+                      style: const TextStyle(
                         color: Colors.white,
-                        fontSize: width * 0.07,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    SizedBox(height: size.height * 0.005),
+                    
+                    // Remaining Days
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          remaining.toStringAsFixed(1),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 3),
+                          child: Text(
+                            'days',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    SizedBox(height: size.height * 0.01),
+                    
+                    // Progress Bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                       // value: percentage.clamp(0.0, 1.0),
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        minHeight: 4,
                       ),
                     ),
-                    SizedBox(width: width * 0.005),
-                    Padding(
-                      padding: EdgeInsets.only(bottom: height * 0.006),
-                      child: Text(
-                        'days',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: width * 0.025,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    
+                    SizedBox(height: size.height * 0.005),
+                    
+                    // Allocated Info
+                    Text(
+                      'of ${allocated.toStringAsFixed(1)} days',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: height * 0.003),
-                LinearProgressIndicator(
-                  value: percentage.clamp(0.0, 1.0),
-                  backgroundColor: Colors.white.withOpacity(0.15),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                  minHeight: height * 0.003,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                SizedBox(height: height * 0.002),
-                Text(
-                  'of ${allocated.floor()} days',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: width * 0.02,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildRecentActivityCard(bool isDark, double width, double height) {
+  Widget _buildLoadingState(bool isDark, Size size) {
     return Container(
-      padding: EdgeInsets.all(width * 0.035),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.white,
-        borderRadius: BorderRadius.circular(width * 0.035),
-        border: Border.all(
-          color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(width * 0.025),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.history_rounded,
-              color: Colors.blue,
-              size: width * 0.045,
-            ),
-          ),
-          SizedBox(width: width * 0.025),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+      height: size.height * 0.4,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  'No recent activity',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.grey[900],
-                    fontSize: width * 0.035,
-                    fontWeight: FontWeight.w600,
+                SizedBox(
+                  width: size.width * 0.15,
+                  height: size.width * 0.15,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                   ),
                 ),
-                SizedBox(height: height * 0.002),
-                Text(
-                  'Your recent leave applications will appear here',
-                  style: TextStyle(
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    fontSize: width * 0.028,
+                ScaleTransition(
+                  scale: _pulseController,
+                  child: Container(
+                    width: size.width * 0.1,
+                    height: size.width * 0.1,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            SizedBox(height: size.height * 0.03),
+            Text(
+              'Fetching your leave data...',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : Colors.grey[800],
+              ),
+            ),
+            SizedBox(height: size.height * 0.01),
+            Text(
+              'Please wait',
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildErrorWidget(bool isDark, double width, double height, ThemeData theme) {
+  Widget _buildErrorState(bool isDark, Size size, ThemeData theme) {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(width * 0.05),
+      padding: EdgeInsets.all(size.width * 0.08),
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[800] : Colors.white,
-        borderRadius: BorderRadius.circular(width * 0.04),
-        border: Border.all(color: Colors.red.shade200, width: 1.2),
+        borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: (_needsLogin ? Colors.orange : Colors.red).withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: EdgeInsets.all(width * 0.03),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.error_outline_rounded,
-              color: Colors.red.shade700,
-              size: width * 0.08,
-            ),
+          Icon(
+            _needsLogin ? Icons.timer_off_rounded : Icons.error_outline_rounded,
+            size: size.width * 0.15,
+            color: _needsLogin ? Colors.orange : Colors.red,
           ),
-          SizedBox(height: height * 0.015),
+          SizedBox(height: size.height * 0.02),
           Text(
-            'Failed to Load Data',
+            _needsLogin ? 'Session Expired' : 'Oops! Something went wrong',
             style: TextStyle(
-              fontSize: width * 0.04,
+              fontSize: size.width * 0.045,
               fontWeight: FontWeight.w700,
               color: isDark ? Colors.white : Colors.grey[900],
             ),
           ),
-          SizedBox(height: height * 0.008),
+          SizedBox(height: size.height * 0.01),
           Text(
             _errorMessage ?? 'Unknown error occurred',
-            style: TextStyle(
-              color: Colors.red.shade700,
-              fontSize: width * 0.032,
-            ),
             textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _needsLogin ? Colors.orange : Colors.red,
+              fontSize: size.width * 0.035,
+            ),
           ),
-          SizedBox(height: height * 0.02),
+          SizedBox(height: size.height * 0.03),
           SizedBox(
-            width: width * 0.5,
-            child: ElevatedButton.icon(
-              onPressed: _loadLeaveData,
-              icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Try Again'),
+            width: size.width * 0.5,
+            child: ElevatedButton(
+              onPressed: _needsLogin 
+                  ? () => Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false)
+                  : _loadLeaveData,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
+                backgroundColor: _needsLogin ? Colors.orange : Colors.red,
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
-                  horizontal: width * 0.03,
-                  vertical: height * 0.012,
-                ),
+                padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(width * 0.025),
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                elevation: 0,
+              ),
+              child: Text(_needsLogin ? 'Login Again' : 'Try Again'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoDataState(bool isDark, Size size) {
+    return Container(
+      padding: EdgeInsets.all(size.width * 0.08),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: size.width * 0.15,
+            color: Colors.grey,
+          ),
+          SizedBox(height: size.height * 0.02),
+          Text(
+            'No Leave Allocations',
+            style: TextStyle(
+              fontSize: size.width * 0.045,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.grey[900],
+            ),
+          ),
+          SizedBox(height: size.height * 0.01),
+          Text(
+            'You have no leave records for $_currentYear',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              fontSize: size.width * 0.035,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(bool isDark, Size size) {
+    return Container(
+      padding: EdgeInsets.all(size.width * 0.04),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(size.width * 0.02),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.info_rounded,
+              color: Theme.of(context).primaryColor,
+              size: size.width * 0.05,
+            ),
+          ),
+          SizedBox(width: size.width * 0.03),
+          Expanded(
+            child: Text(
+              'Leave balances shown are for the current year ($_currentYear) only.',
+              style: TextStyle(
+                fontSize: size.width * 0.03,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                height: 1.4,
               ),
             ),
           ),
@@ -1061,89 +1149,148 @@ class _LeaveBalanceScreenState extends State<LeaveBalanceScreen>
 
   void _showLeaveDetails(BuildContext context, String title, double remaining, double allocated, IconData icon, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final width = MediaQuery.of(context).size.width;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final size = MediaQuery.of(context).size;
     final taken = allocated - remaining;
     
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: Container(
-          padding: EdgeInsets.only(
-            left: width * 0.05,
-            right: width * 0.05,
-            top: width * 0.05,
-            bottom: bottomPadding > 0 ? bottomPadding : width * 0.05,
-          ),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.grey[900] : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 35,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              SizedBox(height: 15),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 28),
-              ),
-              SizedBox(height: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.grey[900],
-                ),
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildDetailColumn('Allocated', allocated.floor().toString(), Colors.blue),
-                  _buildDetailColumn('Taken', taken.floor().toString(), Colors.orange),
-                  _buildDetailColumn('Remaining', remaining.floor().toString(), Colors.green),
+      builder: (context) => Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.4,
+          minChildSize: 0.3,
+          maxChildSize: 0.6,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[900] : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
                 ],
               ),
-              SizedBox(height: 15),
-            ],
-          ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: EdgeInsets.all(size.width * 0.05),
+                      children: [
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(icon, color: color, size: 32),
+                          ),
+                        ),
+                        SizedBox(height: size.height * 0.02),
+                        Text(
+                          title,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.grey[900],
+                          ),
+                        ),
+                        SizedBox(height: size.height * 0.03),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildDetailItem('Allocated', allocated, Colors.blue, size),
+                            _buildDetailItem('Taken', taken, Colors.orange, size),
+                            _buildDetailItem('Remaining', remaining, Colors.green, size),
+                          ],
+                        ),
+                        SizedBox(height: size.height * 0.03),
+                        Container(
+                          padding: EdgeInsets.all(size.width * 0.04),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.grey[800] : Colors.grey[50],
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Utilization Rate',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_getUsagePercentage(remaining, allocated)}%',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: color,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: size.height * 0.01),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(3),
+                                child: LinearProgressIndicator(
+                                 value: (allocated > 0 ? (taken / allocated) : 0.0).toDouble().clamp(0.0, 1.0),
+                                  backgroundColor: Colors.grey[300],
+                                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                                  minHeight: 6,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildDetailColumn(String label, String value, Color color) {
+  Widget _buildDetailItem(String label, double value, Color color, Size size) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          value,
+          value.toStringAsFixed(1),
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
             color: color,
           ),
         ),
-        SizedBox(height: 4),
+        SizedBox(height: size.height * 0.005),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 13,
             color: Colors.grey[600],
           ),
         ),

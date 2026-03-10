@@ -1251,10 +1251,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         backgroundColor: backgroundColor,
         body: SafeArea(
           child: _isLoading
-              ? Center(
+              ? const Center(
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    valueColor: const AlwaysStoppedAnimation<Color>(skyBlue),
+                    valueColor: AlwaysStoppedAnimation<Color>(skyBlue),
                   ),
                 )
               : RefreshIndicator(

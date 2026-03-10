@@ -4,18 +4,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
 class LeaveBalanceService {
-  // Your API credentials
-  static const String _apiKey = 'bc0862f769a4795';
-  static const String _apiSecret = '3f8a6293af90228';
   static const String baseUrl = 'https://ppecon.erpnext.com';
 
-  // Fetch leave balances for logged in user using custom API method
+  // Fetch leave balances for logged in user
   Future<Map<String, dynamic>> fetchLeaveBalances() async {
+    debugPrint('🚀 Starting fetchLeaveBalances...');
+    
     try {
-      // Get employee ID from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       
-      // Try all possible keys that might contain employee ID
+      // Get employee ID
       String? employeeId = prefs.getString('employee_id') ?? 
                            prefs.getString('employee') ?? 
                            prefs.getString('emp_code') ??
@@ -23,174 +21,232 @@ class LeaveBalanceService {
                            prefs.getString('userId') ??
                            prefs.getString('employeeId');
       
-      // If still null, try to get from user data map
-      if (employeeId == null) {
+      debugPrint('🔍 Employee ID: $employeeId');
+
+      // Get cookies - handle both String and List types
+      final cookiesData = prefs.get('cookies');
+      final sidData = prefs.get('sid');
+      final cookiesListData = prefs.getStringList('cookies_list');
+      
+      String? cookies;
+      String? sid;
+      
+      if (cookiesData is String) {
+        cookies = cookiesData;
+        debugPrint('🍪 Cookies found as String');
+      } else if (cookiesData is List) {
+        cookies = (cookiesData as List).join('; ');
+        debugPrint('🍪 Cookies found as List, converted to String');
+      } else if (cookiesListData != null && cookiesListData.isNotEmpty) {
+        cookies = cookiesListData.join('; ');
+        debugPrint('🍪 Cookies found in cookies_list');
+      }
+      
+      if (sidData is String) {
+        sid = sidData;
+        debugPrint('🔑 SID found as String');
+      } else if (sidData is List && sidData.isNotEmpty) {
+        sid = sidData.first as String?;
+        debugPrint('🔑 SID found as List');
+      }
+
+      // If employee ID is null, try user_data
+      if (employeeId == null || employeeId.isEmpty) {
         final String? userData = prefs.getString('user_data');
         if (userData != null) {
           try {
             final Map<String, dynamic> userMap = jsonDecode(userData);
-            employeeId = userMap['employee_id'] ?? 
-                        userMap['employee'] ?? 
-                        userMap['emp_code'] ??
-                        userMap['employeeId'];
+            employeeId = userMap['employee_id'] ?? userMap['employee'];
           } catch (e) {
             debugPrint('Error parsing user_data: $e');
           }
         }
       }
 
-      // If still null, try from profile provider data
-      if (employeeId == null) {
-        final String? profileData = prefs.getString('profile_data');
-        if (profileData != null) {
-          try {
-            final Map<String, dynamic> profileMap = jsonDecode(profileData);
-            employeeId = profileMap['employee_id'] ?? 
-                        profileMap['employee'] ?? 
-                        profileMap['name'];
-          } catch (e) {
-            debugPrint('Error parsing profile_data: $e');
-          }
-        }
+      if (employeeId == null || employeeId.isEmpty) {
+        return {
+          'success': false,
+          'message': 'Employee ID not found. Please login again.',
+        };
       }
 
-      // Final fallback for testing
-      employeeId = employeeId ?? 'HR-EMP-00152';
-      debugPrint('📌 Using Employee ID: $employeeId');
+      // Build cookies string
+      String cookieString = '';
+      if (cookies != null && cookies.isNotEmpty) {
+        cookieString = cookies;
+      } else if (sid != null && sid.isNotEmpty) {
+        cookieString = 'sid=$sid';
+      }
 
-      // Use the custom API endpoint that returns processed leave balance data
+      if (cookieString.isEmpty) {
+        return {
+          'success': false,
+          'message': 'Session expired. Please login again.',
+          'needsLogin': true,
+        };
+      }
+
+      return await _fetchFromMainAPI(employeeId, cookieString);
+      
+    } catch (e) {
+      debugPrint('❌ Error: $e');
+      return {
+        'success': false,
+        'message': 'Error fetching leave data: ${e.toString()}',
+      };
+    }
+  }
+
+  // Fetch from API
+  Future<Map<String, dynamic>> _fetchFromMainAPI(String employeeId, String cookies) async {
+    try {
       final url = Uri.parse('$baseUrl/api/method/ppecon_erp.leave_application.leave_balance.get_my_leave_balance');
       
-      // Add employee ID as query parameter if needed
-      final requestUrl = url.replace(queryParameters: {'employee': employeeId});
-      
-      debugPrint('🌐 URL: $requestUrl');
+      debugPrint('🌐 API URL: $url');
 
-      // Make API request with your credentials
       final response = await http.get(
-        requestUrl,
+        url,
         headers: {
-          'Authorization': 'token $_apiKey:$_apiSecret',
+          'Cookie': cookies,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
       );
 
-      debugPrint('📊 Status Code: ${response.statusCode}');
-      debugPrint('📦 Response Body: ${response.body}');
+      debugPrint('📊 API Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         
-        // Extract the message/data from response
-        // The API returns { "message": { "employee": "...", "data": [...] } }
-        final Map<String, dynamic>? message = jsonResponse['message'];
-        
-        if (message != null && message['data'] != null) {
-          final List<dynamic> leaveData = message['data'] ?? [];
+        if (jsonResponse.containsKey('message')) {
+          final message = jsonResponse['message'];
           
-          // Process the leave data
-          return _processLeaveData(leaveData, message['employee'] ?? employeeId);
-        } else {
-          debugPrint('⚠️ No data in response message');
-          return _getDemoData(employeeId);
+          if (message is Map && message.containsKey('data')) {
+            final List<dynamic> allLeaveData = message['data'] ?? [];
+            debugPrint('📦 Total records from API: ${allLeaveData.length}');
+            
+            // FILTER FOR CURRENT YEAR ONLY
+            final currentYear = DateTime.now().year;
+            final filteredData = _filterCurrentYearData(allLeaveData, currentYear);
+            
+            debugPrint('🎯 Records after filtering for $currentYear: ${filteredData.length}');
+            
+            return _processAPIResponse(filteredData, employeeId);
+          }
         }
+        
+        return {
+          'success': true,
+          'employeeId': employeeId,
+          'leaveDetails': {},
+          'totals': {'allocated': 0, 'taken': 0, 'remaining': 0}
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': 'Session expired. Please login again.',
+          'needsLogin': true,
+        };
       } else {
-        debugPrint('⚠️ API failed with status ${response.statusCode}: ${response.body}');
-        return _getDemoData(employeeId);
+        return {
+          'success': false,
+          'message': 'Failed to load leave data',
+        };
       }
     } catch (e) {
-      debugPrint('❌ Error in fetchLeaveBalances: $e');
-      return _getDemoData('HR-EMP-00152');
+      debugPrint('❌ Exception: $e');
+      return {
+        'success': false,
+        'message': 'Network error. Please check your connection.',
+      };
     }
   }
 
-  // Process the leave data from API
-  Map<String, dynamic> _processLeaveData(List<dynamic> leaveData, String employeeId) {
+  // Filter data for current year only
+  List<dynamic> _filterCurrentYearData(List<dynamic> data, int currentYear) {
+    return data.where((item) {
+      try {
+        // Check from_date
+        if (item['from_date'] != null) {
+          final fromDate = item['from_date'].toString();
+          // Extract year from date string (YYYY-MM-DD)
+          final yearMatch = RegExp(r'(\d{4})').firstMatch(fromDate);
+          if (yearMatch != null) {
+            final year = int.parse(yearMatch.group(1)!);
+            if (year == currentYear) {
+              return true;
+            }
+          }
+        }
+        
+        // Check to_date if from_date not in current year
+        if (item['to_date'] != null) {
+          final toDate = item['to_date'].toString();
+          final yearMatch = RegExp(r'(\d{4})').firstMatch(toDate);
+          if (yearMatch != null) {
+            final year = int.parse(yearMatch.group(1)!);
+            if (year == currentYear) {
+              return true;
+            }
+          }
+        }
+        
+        return false;
+      } catch (e) {
+        debugPrint('Error filtering date: $e');
+        return false;
+      }
+    }).toList();
+  }
+
+  // Process API response - SUM values for same leave type
+  Map<String, dynamic> _processAPIResponse(List<dynamic> leaveData, String employeeId) {
     Map<String, Map<String, double>> leaveDetails = {};
     double totalAllocated = 0;
     double totalTaken = 0;
     double totalRemaining = 0;
 
-    debugPrint('📊 Processing ${leaveData.length} leave entries');
+    debugPrint('🔄 Processing ${leaveData.length} filtered leave records...');
 
+    // First, group and sum by leave type
     for (var item in leaveData) {
-      final leaveType = item['leave_type'] as String? ?? 'Unknown';
-      final allocated = (item['allocated'] ?? 0).toDouble();
-      final taken = (item['taken'] ?? 0).toDouble();
-      final remaining = (item['remaining'] ?? 0).toDouble();
+      final leaveType = _extractStringValue(item, ['leave_type', 'leaveType', 'type']) ?? 'Unknown Leave';
+      final allocated = _extractDoubleValue(item, ['allocated', 'allocated_leaves']) ?? 0.0;
+      final taken = _extractDoubleValue(item, ['taken', 'taken_leaves']) ?? 0.0;
+      final remaining = _extractDoubleValue(item, ['remaining', 'remaining_leaves', 'balance']) ?? 0.0;
 
-      // Add to leave details map
-      leaveDetails[leaveType] = {
-        'allocated': allocated,
-        'taken': taken,
-        'remaining': remaining,
-      };
+      debugPrint('📊 Processing: $leaveType → Allocated: $allocated, Taken: $taken, Remaining: $remaining');
 
-      // Update totals
-      totalAllocated += allocated;
-      totalTaken += taken;
-      totalRemaining += remaining;
-
-      debugPrint('📌 $leaveType: Allocated=$allocated, Taken=$taken, Remaining=$remaining');
+      // If this leave type already exists, SUM the values
+      if (leaveDetails.containsKey(leaveType)) {
+        final existing = leaveDetails[leaveType]!;
+        leaveDetails[leaveType] = {
+          'allocated': existing['allocated']! + allocated,
+          'taken': existing['taken']! + taken,
+          'remaining': existing['remaining']! + remaining,
+        };
+        debugPrint('   ➕ Adding to existing $leaveType');
+      } else {
+        // New leave type
+        leaveDetails[leaveType] = {
+          'allocated': allocated,
+          'taken': taken,
+          'remaining': remaining,
+        };
+        debugPrint('   ✅ New $leaveType added');
+      }
     }
 
-    debugPrint('✅ Total Allocated: $totalAllocated');
-    debugPrint('✅ Total Taken: $totalTaken');
-    debugPrint('✅ Total Remaining: $totalRemaining');
+    // Calculate totals
+    for (var entry in leaveDetails.entries) {
+      totalAllocated += entry.value['allocated']!;
+      totalTaken += entry.value['taken']!;
+      totalRemaining += entry.value['remaining']!;
+    }
 
-    return {
-      'success': true,
-      'employeeId': employeeId,
-      'leaveDetails': leaveDetails,
-      'totals': {
-        'allocated': totalAllocated,
-        'taken': totalTaken,
-        'remaining': totalRemaining,
-      }
-    };
-  }
-
-  // Demo data for testing (when API fails)
-  Map<String, dynamic> _getDemoData(String employeeId) {
-    debugPrint('⚠️ Using demo data for employee: $employeeId');
-    
-    Map<String, Map<String, double>> leaveDetails = {
-      'Annual Leave': {
-        'allocated': 18,
-        'taken': 5,
-        'remaining': 13,
-      },
-      'Sick Leave': {
-        'allocated': 10,
-        'taken': 2,
-        'remaining': 8,
-      },
-      'Casual Leave': {
-        'allocated': 8,
-        'taken': 1,
-        'remaining': 7,
-      },
-      'Privilege Leave': {
-        'allocated': 15,
-        'taken': 3,
-        'remaining': 12,
-      },
-      'Compensatory Off': {
-        'allocated': 5,
-        'taken': 0,
-        'remaining': 5,
-      },
-    };
-
-    double totalAllocated = 0;
-    double totalTaken = 0;
-    double totalRemaining = 0;
-
+    debugPrint('✅ Final grouped data (${leaveDetails.length} leave types):');
     leaveDetails.forEach((key, value) {
-      totalAllocated += value['allocated']!;
-      totalTaken += value['taken']!;
-      totalRemaining += value['remaining']!;
+      debugPrint('   $key → Allocated: ${value['allocated']}, Taken: ${value['taken']}, Remaining: ${value['remaining']}');
     });
 
     return {
@@ -205,45 +261,40 @@ class LeaveBalanceService {
     };
   }
 
-  // Get formatted leave balance for dashboard
+  // Helper to extract string value
+  String? _extractStringValue(Map<String, dynamic> map, List<String> possibleKeys) {
+    for (var key in possibleKeys) {
+      if (map.containsKey(key) && map[key] != null) {
+        return map[key].toString();
+      }
+    }
+    return null;
+  }
+
+  // Helper to extract double value
+  double? _extractDoubleValue(Map<String, dynamic> map, List<String> possibleKeys) {
+    for (var key in possibleKeys) {
+      if (map.containsKey(key) && map[key] != null) {
+        final value = map[key];
+        if (value is num) {
+          return value.toDouble();
+        } else if (value is String) {
+          return double.tryParse(value) ?? 0.0;
+        }
+      }
+    }
+    return null;
+  }
+
+  // Get dashboard balance
   static Future<double> getDashboardLeaveBalance() async {
     try {
       final service = LeaveBalanceService();
       final result = await service.fetchLeaveBalances();
-      
-      if (result['success'] == true) {
-        return result['totals']['remaining'] ?? 0.0;
-      }
-      return 18.0; // Default demo value
+      return result['success'] == true ? (result['totals']['remaining'] ?? 0.0) : 0.0;
     } catch (e) {
-      debugPrint('Error getting dashboard balance: $e');
-      return 18.0; // Default demo value
-    }
-  }
-
-  // Test method to verify credentials and API
-  static Future<void> testCredentials() async {
-    try {
-      final url = Uri.parse('$baseUrl/api/method/ppecon_erp.leave_application.leave_balance.get_my_leave_balance')
-          .replace(queryParameters: {'employee': 'HR-EMP-00152'});
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'token $_apiKey:$_apiSecret',
-          'Content-Type': 'application/json', 
-        },
-      );
-
-      debugPrint('🧪 Test Status: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        debugPrint('✅ Credentials are working!');
-        debugPrint('📦 Response: ${response.body}');
-      } else {
-        debugPrint('❌ Credentials test failed: ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('🧪 Test Error: $e');
+      debugPrint('Error: $e');
+      return 0.0;
     }
   }
 }
