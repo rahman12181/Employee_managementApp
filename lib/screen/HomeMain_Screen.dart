@@ -7,12 +7,12 @@ import 'package:intl/intl.dart';
 import 'package:management_app/providers/employee_provider.dart';
 import 'package:management_app/providers/profile_provider.dart';
 import 'package:management_app/providers/punch_provider.dart';
-import 'package:management_app/providers/slide_provider.dart';
 import 'package:management_app/providers/attendance_provider.dart';
 import 'package:management_app/services/auth_service.dart';
 import 'package:management_app/services/checkin_service.dart';
 import 'package:management_app/services/location_service.dart';
 import 'package:management_app/services/connectivity_service.dart';
+import 'package:management_app/services/biometric_service.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -37,10 +37,17 @@ class _HomemainScreenState extends State<HomemainScreen>
   final ConnectivityService _connectivityService = ConnectivityService();
 
   bool _isPunching = false;
+  bool _isAuthenticating = false;
   bool _showSuccess = false;
   String _successText = "";
   bool _hasError = false;
   String _errorMessage = "";
+  String _errorActionText = "";
+  VoidCallback? _errorAction;
+
+  // Debounce mechanism
+  Timer? _debounceTimer;
+  static const int _debounceDuration = 800; // milliseconds
 
   // Location variables
   Position? _currentPosition;
@@ -56,22 +63,25 @@ class _HomemainScreenState extends State<HomemainScreen>
   ConnectivityResult _connectionType = ConnectivityResult.none;
   StreamSubscription? _connectivitySubscription;
 
+  // Biometric info
+  String _biometricType = "Fingerprint";
+  bool _biometricAvailable = false;
+
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
   late AnimationController _glowAnimationController;
 
-  // Sky Blue Color Palette - Matching Dashboard
-  static const Color skyBlue = Color(0xFF87CEEB); // Sky blue primary
-  static const Color lightSky = Color(0xFFE0F2FE); // Very light sky
-  static const Color mediumSky = Color(0xFF7EC8E0); // Medium sky
-  static const Color deepSky = Color(0xFF00A5E0); // Deep sky for accents
+  // Sky Blue Color Palette
+  static const Color skyBlue = Color(0xFF87CEEB);
+  static const Color lightSky = Color(0xFFE0F2FE);
+  static const Color mediumSky = Color(0xFF7EC8E0);
+  static const Color deepSky = Color(0xFF00A5E0);
   static const Color offWhite = Color(0xFFF8FAFC);
   static const Color pureWhite = Color(0xFFFFFFFF);
   static const Color charcoal = Color(0xFF1E293B);
   static const Color slate = Color(0xFF334155);
   static const Color steel = Color(0xFF475569);
 
-  // Get header gradient colors based on theme (matching dashboard)
   List<Color> _getHeaderGradientColors(bool isDarkMode) {
     return isDarkMode
         ? [charcoal, slate, const Color(0xFF1E1E2E)]
@@ -107,7 +117,6 @@ class _HomemainScreenState extends State<HomemainScreen>
       }
     });
 
-    // Initialize connectivity service
     _connectivityService.initialize();
     _checkInternetConnection();
 
@@ -122,12 +131,11 @@ class _HomemainScreenState extends State<HomemainScreen>
       }
     });
 
-    // Fetch location on init with delay to ensure UI is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchLocation();
+      _checkBiometricAvailability();
     });
 
-    // Refresh location periodically
     _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
       if (mounted) {
         _fetchLocation();
@@ -135,6 +143,16 @@ class _HomemainScreenState extends State<HomemainScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _initializeData());
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    final status = await BiometricService.checkBiometricStatus();
+    final type = await BiometricService.getBiometricTypeName();
+    
+    setState(() {
+      _biometricType = type;
+      _biometricAvailable = status == BiometricStatus.available;
+    });
   }
 
   Future<void> _checkInternetConnection() async {
@@ -171,7 +189,6 @@ class _HomemainScreenState extends State<HomemainScreen>
   }
 
   Future<void> _fetchLocation() async {
-    // Don't fetch if already loading
     if (_isLocationLoading) return;
 
     setState(() {
@@ -193,11 +210,9 @@ class _HomemainScreenState extends State<HomemainScreen>
         _locationError = "";
         _locationType = "success";
 
-        // Show coordinates immediately
         _locationAddress =
             "📍 ${result['position'].latitude.toStringAsFixed(6)}, ${result['position'].longitude.toStringAsFixed(6)}";
 
-        // Get address in background
         _getAddressFromCoordinates(
           result['position'].latitude,
           result['position'].longitude,
@@ -206,7 +221,6 @@ class _HomemainScreenState extends State<HomemainScreen>
         _locationError = result['error'];
         _locationType = result['type'];
 
-        // Set appropriate message based on error type
         if (result['type'] == 'permission_denied' ||
             result['type'] == 'permanent') {
           _locationAddress = "Permission required";
@@ -256,13 +270,15 @@ class _HomemainScreenState extends State<HomemainScreen>
     _greetingTimer?.cancel();
     _locationTimer?.cancel();
     _connectivitySubscription?.cancel();
+    _debounceTimer?.cancel();
     _animationController.dispose();
     _glowAnimationController.dispose();
+    BiometricService.stopAuthentication();
     super.dispose();
   }
 
   Color _fingerprintColor(PunchProvider punchProvider) {
-    if (_isPunching) return skyBlue;
+    if (_isPunching || _isAuthenticating) return skyBlue;
     if (punchProvider.punchInTime == null) return skyBlue;
     if (punchProvider.punchOutTime == null) return deepSky;
     return mediumSky;
@@ -313,8 +329,6 @@ class _HomemainScreenState extends State<HomemainScreen>
       ),
     ];
   }
-
-  // ==================== PREMIUM DIALOGS ====================
 
   void _showSuccessDialog({required String message, required bool isPunchIn}) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -398,7 +412,6 @@ class _HomemainScreenState extends State<HomemainScreen>
       },
     );
 
-    // Auto close after 2 seconds
     Timer(const Duration(seconds: 2), () {
       if (mounted) {
         Navigator.pop(context);
@@ -406,7 +419,7 @@ class _HomemainScreenState extends State<HomemainScreen>
     });
   }
 
-  void _showErrorDialog(String message) {
+  void _showErrorDialog(String message, {VoidCallback? onAction, String actionText = 'OK'}) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -469,6 +482,21 @@ class _HomemainScreenState extends State<HomemainScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (onAction != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      onAction();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      backgroundColor: Colors.red.withOpacity(0.1),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    ),
+                    child: Text(actionText),
+                  ),
+                ],
               ],
             ),
           ),
@@ -476,12 +504,13 @@ class _HomemainScreenState extends State<HomemainScreen>
       },
     );
 
-    // Auto close after 2 seconds
-    Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    });
+    if (onAction == null) {
+      Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
+    }
   }
 
   void _showInfoDialog(String message, {Color color = Colors.blue}) {
@@ -566,16 +595,91 @@ class _HomemainScreenState extends State<HomemainScreen>
     });
   }
 
-  // ==================== PUNCH LOGIC ====================
+  void _showBiometricDialog(String message) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final gradientColors = _getHeaderGradientColors(
+      Theme.of(context).brightness == Brightness.dark,
+    );
 
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: screenWidth * 0.7,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? slate
+                  : pureWhite,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: gradientColors.first.withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: gradientColors),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.fingerprint_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? pureWhite
+                        : charcoal,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const CircularProgressIndicator(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ✅ PRODUCTION-READY BIOMETRIC PUNCH LOGIC WITH DEBOUNCE
   Future<void> _onPunchTap() async {
     final punchProvider = Provider.of<PunchProvider>(context, listen: false);
-    final slideProvider = Provider.of<SlideProvider>(context, listen: false);
 
+    // Debounce: Cancel any pending tap
+    if (_debounceTimer?.isActive ?? false) {
+      return;
+    }
+
+    _debounceTimer = Timer(const Duration(milliseconds: _debounceDuration), () {});
+
+    // Clear previous errors
     if (_hasError) {
       setState(() {
         _hasError = false;
         _errorMessage = "";
+        _errorAction = null;
+        _errorActionText = "";
       });
     }
 
@@ -586,14 +690,131 @@ class _HomemainScreenState extends State<HomemainScreen>
       return;
     }
 
+    // Check if already punching or authenticating
+    if (_isPunching || _isAuthenticating) {
+      return;
+    }
+
     HapticFeedback.lightImpact();
 
-    // Show slide button for punch in/out
-    if (punchProvider.punchInTime != null &&
-        punchProvider.punchOutTime == null) {
-      slideProvider.showSlideButton(false, _performPunch);
-    } else if (punchProvider.punchInTime == null) {
-      slideProvider.showSlideButton(true, _performPunch);
+    // Check biometric availability first
+    bool isSupported = await BiometricService.isDeviceSupported();
+    if (!isSupported) {
+      setState(() {
+        _hasError = true;
+        _errorMessage = 'Your device does not support biometric authentication';
+      });
+      _showErrorDialog('Your device does not support fingerprint');
+      return;
+    }
+
+    // Check biometric status
+    BiometricStatus status = await BiometricService.checkBiometricStatus();
+    
+    if (status == BiometricStatus.notEnrolled) {
+      setState(() {
+        _hasError = true;
+        _errorMessage = 'No fingerprint enrolled';
+        _errorActionText = 'Open Settings';
+        _errorAction = () => BiometricService.openSecuritySettings();
+      });
+      
+      _showErrorDialog(
+        'Please enroll fingerprint in device settings',
+        onAction: BiometricService.openSecuritySettings,
+        actionText: 'Open Settings',
+      );
+      return;
+    }
+    
+    if (status != BiometricStatus.available) {
+      setState(() {
+        _hasError = true;
+        _errorMessage = 'Biometric authentication not available';
+      });
+      _showErrorDialog('Biometric authentication not available');
+      return;
+    }
+
+    // Determine punch type
+    bool isPunchIn;
+    if (punchProvider.punchInTime == null) {
+      isPunchIn = true;
+    } else if (punchProvider.punchOutTime == null) {
+      isPunchIn = false;
+    } else {
+      return; // Already completed
+    }
+
+    // Show biometric dialog with loading
+    _showBiometricDialog(
+      'Please scan your ${_biometricType.toLowerCase()} to ${isPunchIn ? "punch in" : "punch out"}'
+    );
+
+    // Authenticate with fingerprint
+    await _authenticateAndPunch(isPunchIn);
+  }
+
+  // ✅ ENHANCED AUTHENTICATION METHOD WITH PROPER ERROR HANDLING
+  Future<void> _authenticateAndPunch(bool isPunchIn) async {
+    setState(() {
+      _isAuthenticating = true;
+    });
+
+    String reason = isPunchIn 
+        ? 'Authenticate to punch in'
+        : 'Authenticate to punch out';
+    
+    // Authenticate with biometrics using enhanced service
+    BiometricResult result = await BiometricService.authenticate(reason: reason);
+    
+    // Close the loading dialog
+    if (mounted) {
+      Navigator.pop(context); // Close biometric dialog
+    }
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _isAuthenticating = false;
+    });
+    
+    if (result.success) {
+      // ✅ Success - proceed with punch
+      HapticFeedback.mediumImpact();
+      await _performPunch(isPunchIn);
+    } else {
+      // ❌ Handle different error types
+      HapticFeedback.heavyImpact();
+      
+      setState(() {
+        _hasError = true;
+        _errorMessage = result.message;
+        
+        if (result.errorType == BiometricErrorType.notEnrolled) {
+          _errorActionText = 'Open Settings';
+          _errorAction = () => BiometricService.openSecuritySettings();
+        } else if (result.errorType == BiometricErrorType.lockedOut) {
+          _errorActionText = 'OK';
+          _errorAction = null;
+        } else {
+          _errorActionText = '';
+          _errorAction = null;
+        }
+      });
+      
+      if (result.errorType == BiometricErrorType.canceled) {
+        // Just show brief message for cancellation
+        _showInfoDialog(result.message, color: Colors.orange);
+      } else if (result.errorType == BiometricErrorType.notEnrolled) {
+        _showErrorDialog(
+          result.message,
+          onAction: BiometricService.openSecuritySettings,
+          actionText: 'Open Settings',
+        );
+      } else {
+        _showErrorDialog(result.message);
+      }
     }
   }
 
@@ -610,7 +831,6 @@ class _HomemainScreenState extends State<HomemainScreen>
 
     if (employeeId == null || _isPunching) return;
 
-    // Double check if already punched
     if (isPunchIn && punchProvider.punchInTime != null) {
       _showInfoDialog('Already checked in today');
       return;
@@ -635,7 +855,6 @@ class _HomemainScreenState extends State<HomemainScreen>
       final utcNow = DateTime.now().toUtc();
       final riyadhNow = utcNow.add(const Duration(hours: 3));
 
-      // Get fresh location
       Position? freshPosition;
       bool locationSuccess = false;
 
@@ -650,7 +869,6 @@ class _HomemainScreenState extends State<HomemainScreen>
         if (locationResult['success']) {
           freshPosition = locationResult['position'];
 
-          // Validate coordinates
           if (freshPosition!.latitude != 0 || freshPosition.longitude != 0) {
             locationSuccess = true;
 
@@ -695,7 +913,6 @@ class _HomemainScreenState extends State<HomemainScreen>
         });
       }
 
-      // If location failed, show error and stop
       if (!locationSuccess || freshPosition == null) {
         setState(() {
           _isPunching = false;
@@ -717,7 +934,6 @@ class _HomemainScreenState extends State<HomemainScreen>
         return;
       }
 
-      // Call ERP API with location
       final result = await _checkinService.checkIn(
         employeeId: employeeId,
         logType: logType,
@@ -728,7 +944,6 @@ class _HomemainScreenState extends State<HomemainScreen>
         _isPunching = false;
       });
 
-      // Handle offline mode
       if (result['offlineMode'] == true) {
         _successText = isPunchIn
             ? "✓ Checked in (Offline Mode)"
@@ -738,7 +953,6 @@ class _HomemainScreenState extends State<HomemainScreen>
           _showSuccess = true;
         });
 
-        // Save locally
         if (isPunchIn) {
           await punchProvider.setPunchIn(utcNow);
         } else {
@@ -753,10 +967,7 @@ class _HomemainScreenState extends State<HomemainScreen>
         Timer(const Duration(seconds: 2), () {
           if (mounted) setState(() => _showSuccess = false);
         });
-      }
-      // Handle successful punch
-      else if (result['success']) {
-        // Save locally
+      } else if (result['success']) {
         if (isPunchIn) {
           await punchProvider.setPunchIn(utcNow);
         } else {
@@ -771,7 +982,6 @@ class _HomemainScreenState extends State<HomemainScreen>
           _showSuccess = true;
         });
 
-        // Show success dialog
         _showSuccessDialog(
           message: result['message'] ?? _successText,
           isPunchIn: isPunchIn,
@@ -785,15 +995,12 @@ class _HomemainScreenState extends State<HomemainScreen>
 
         final currentMonth = DateTime(utcNow.year, utcNow.month);
         await attendanceProvider.loadMonthAttendance(employeeId, currentMonth);
-      }
-      // Handle other errors
-      else {
+      } else {
         setState(() {
           _hasError = true;
           _errorMessage = result['message'] ?? "Punch failed";
         });
 
-        // Show error dialog
         _showErrorDialog(result['message'] ?? 'Punch failed');
 
         Timer(const Duration(seconds: 3), () {
@@ -824,8 +1031,6 @@ class _HomemainScreenState extends State<HomemainScreen>
       });
     }
   }
-
-  // ==================== PREMIUM UI WIDGETS ====================
 
   Widget _buildTimeWidget(
     String time,
@@ -1134,7 +1339,7 @@ class _HomemainScreenState extends State<HomemainScreen>
           ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.005),
           Text(
-            "Tap the fingerprint to begin",
+            "Use ${_biometricType} to begin",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: screenWidth * 0.032,
@@ -1161,7 +1366,7 @@ class _HomemainScreenState extends State<HomemainScreen>
           ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.005),
           Text(
-            "Tap to end your productive shift",
+            "Use ${_biometricType} to end your shift",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: screenWidth * 0.032,
@@ -1268,7 +1473,7 @@ class _HomemainScreenState extends State<HomemainScreen>
       );
     }
 
-    if (_isPunching) {
+    if (_isPunching || _isAuthenticating) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
@@ -1283,7 +1488,7 @@ class _HomemainScreenState extends State<HomemainScreen>
           ),
           SizedBox(height: buttonSize * 0.04),
           Text(
-            "Processing...",
+            _isAuthenticating ? "Authenticating..." : "Processing...",
             style: TextStyle(
               fontSize: screenWidth * 0.035,
               fontWeight: FontWeight.w800,
@@ -1373,7 +1578,7 @@ class _HomemainScreenState extends State<HomemainScreen>
 
         if (punchProvider.punchInTime == null)
           Text(
-            "Start your day",
+            "Tap for ${_biometricType}",
             style: TextStyle(
               fontSize: screenWidth * 0.03,
               color: skyBlue,
@@ -1382,7 +1587,7 @@ class _HomemainScreenState extends State<HomemainScreen>
           )
         else if (punchProvider.punchOutTime == null)
           Text(
-            "End your shift",
+            "Tap for ${_biometricType}",
             style: TextStyle(
               fontSize: screenWidth * 0.03,
               color: deepSky,
@@ -1441,7 +1646,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                   ),
                   child: Column(
                     children: [
-                      // Premium Header with Sky Blue Gradient
                       Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
@@ -1465,7 +1669,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                         ),
                         child: Stack(
                           children: [
-                            // Decorative circles
                             Positioned(
                               top: -screenHeight * 0.1,
                               right: -screenWidth * 0.1,
@@ -1500,7 +1703,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                                 ),
                               ),
                             ),
-
                             Padding(
                               padding: EdgeInsets.only(
                                 top: screenHeight * 0.02,
@@ -1691,8 +1893,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                           ],
                         ),
                       ),
-
-                      // Main Content
                       Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: screenWidth * 0.05,
@@ -1701,11 +1901,9 @@ class _HomemainScreenState extends State<HomemainScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Premium Fingerprint Circle with Sky Blue Theme
                             Stack(
                               alignment: Alignment.center,
                               children: [
-                                // Glow effect
                                 Container(
                                   width: glowSize,
                                   height: glowSize,
@@ -1722,7 +1920,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                                     ),
                                   ),
                                 ),
-                                // Progress indicator
                                 SizedBox(
                                   width: progressSize,
                                   height: progressSize,
@@ -1741,7 +1938,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                                     strokeCap: StrokeCap.round,
                                   ),
                                 ),
-                                // Pulse ring for punch out state
                                 if (punchProvider.punchInTime != null &&
                                     punchProvider.punchOutTime == null)
                                   ScaleTransition(
@@ -1758,7 +1954,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                                       ),
                                     ),
                                   ),
-                                // Main fingerprint button
                                 Material(
                                   color: Colors.transparent,
                                   shape: const CircleBorder(),
@@ -1767,16 +1962,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                                     borderRadius: BorderRadius.circular(
                                       buttonSize,
                                     ),
-                                    onTap: () {
-                                      final slideProvider =
-                                          Provider.of<SlideProvider>(
-                                            context,
-                                            listen: false,
-                                          );
-                                      if (!slideProvider.showSlideToPunch) {
-                                        _onPunchTap();
-                                      }
-                                    },
+                                    onTap: _biometricAvailable ? _onPunchTap : null,
                                     child: AnimatedContainer(
                                       duration: const Duration(
                                         milliseconds: 300,
@@ -1808,10 +1994,7 @@ class _HomemainScreenState extends State<HomemainScreen>
                                 ),
                               ],
                             ),
-
                             SizedBox(height: screenHeight * 0.03),
-
-                            // Premium Time Cards with Sky Blue Theme
                             Container(
                               padding: EdgeInsets.all(screenWidth * 0.04),
                               decoration: BoxDecoration(
@@ -1869,16 +2052,11 @@ class _HomemainScreenState extends State<HomemainScreen>
                                 ],
                               ),
                             ),
-
                             SizedBox(height: screenHeight * 0.015),
-
-                            // Status widgets
                             _buildInternetStatusWidget(),
                             SizedBox(height: screenHeight * 0.015),
                             _buildLocationWidget(),
                             SizedBox(height: screenHeight * 0.015),
-
-                            // Progress message
                             Container(
                               padding: EdgeInsets.all(screenWidth * 0.04),
                               decoration: BoxDecoration(
@@ -1893,7 +2071,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                               ),
                               child: _buildProgressWidget(punchProvider),
                             ),
-
                             if (_hasError)
                               Padding(
                                 padding: EdgeInsets.only(
@@ -1962,6 +2139,18 @@ class _HomemainScreenState extends State<HomemainScreen>
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
+                                              if (_errorAction != null) ...[
+                                                SizedBox(height: screenHeight * 0.005),
+                                                TextButton(
+                                                  onPressed: _errorAction,
+                                                  style: TextButton.styleFrom(
+                                                    foregroundColor: Colors.white,
+                                                    backgroundColor: Colors.white.withOpacity(0.2),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                                  ),
+                                                  child: Text(_errorActionText),
+                                                ),
+                                              ],
                                             ],
                                           ),
                                         ),
@@ -1970,7 +2159,6 @@ class _HomemainScreenState extends State<HomemainScreen>
                                   ),
                                 ),
                               ),
-
                             SizedBox(
                               height:
                                   mediaQuery.viewInsets.bottom +

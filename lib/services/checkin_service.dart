@@ -13,9 +13,6 @@ class CheckinService {
     required Position currentPosition,
   }) async {
     
-    print("🔍 CHECKIN SERVICE");
-    print("📍 Location: ${currentPosition.latitude}, ${currentPosition.longitude}");
-
     try {
       // Internet check
       bool hasInternet = await _connectivityService.hasInternetConnection();
@@ -32,7 +29,7 @@ class CheckinService {
       final riyadhTime = DateTime.now().toUtc().add(const Duration(hours: 3));
       final formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(riyadhTime);
 
-      // API Body - Sirf employee ID, log type, time, location
+      // API Body
       Map<String, dynamic> requestBody = {
         "employee": employeeId,
         "log_type": logType,
@@ -40,8 +37,6 @@ class CheckinService {
         "latitude": currentPosition.latitude,
         "longitude": currentPosition.longitude,
       };
-
-      print("📦 REQUEST BODY: ${jsonEncode(requestBody)}");
 
       // API Call
       final apiResponse = await AuthService.client.post(
@@ -52,9 +47,6 @@ class CheckinService {
         },
         body: jsonEncode(requestBody),
       );
-
-      print("📡 RESPONSE STATUS: ${apiResponse.statusCode}");
-      print("📡 RESPONSE BODY: ${apiResponse.body}");
 
       // Parse response
       Map<String, dynamic> responseData = {};
@@ -71,14 +63,11 @@ class CheckinService {
             if (messages.isNotEmpty) {
               var msgObj = jsonDecode(messages[0]);
               message = msgObj['message'] ?? '';
-              
-              // Clean up message (remove emoji if needed)
               message = message.replaceAll('✅', '').replaceAll('❌', '').trim();
             }
           } catch (_) {}
         }
         
-        // Agar message nahi mila to exception lo
         if (message.isEmpty) {
           message = responseData['exception'] ?? 
                    responseData['message'] ??
@@ -97,7 +86,6 @@ class CheckinService {
       };
 
     } catch (e) {
-      print("❌ ERROR: $e");
       return {
         'success': false,
         'message': 'Error: ${e.toString()}',
